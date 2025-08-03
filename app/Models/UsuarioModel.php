@@ -103,4 +103,46 @@ class UsuarioModel extends Model
         
         return $builder->countAllResults() > 0;
     }
+
+    /**
+     * Obtener últimos usuarios registrados
+     */
+    public function getUltimosUsuarios($limit = 5)
+    {
+        return $this->select('usuarios.*, roles.nombre_rol')
+                   ->join('roles', 'roles.id_rol = usuarios.id_rol')
+                   ->orderBy('usuarios.created_at', 'DESC')
+                   ->limit($limit)
+                   ->findAll();
+    }
+
+    /**
+     * Obtener usuarios con información de empleado
+     */
+    public function getUsuariosConEmpleado()
+    {
+        return $this->select('usuarios.*, roles.nombre_rol, empleados.nombres, empleados.apellidos, empleados.tipo_empleado')
+                   ->join('roles', 'roles.id_rol = usuarios.id_rol')
+                   ->join('empleados', 'empleados.id_usuario = usuarios.id_usuario', 'left')
+                   ->findAll();
+    }
+
+    /**
+     * Obtener estadísticas de usuarios
+     */
+    public function getEstadisticasUsuarios()
+    {
+        $db = \Config\Database::connect();
+        
+        $query = $db->query("
+            SELECT 
+                COUNT(*) as total_usuarios,
+                SUM(CASE WHEN activo = 1 THEN 1 ELSE 0 END) as usuarios_activos,
+                SUM(CASE WHEN activo = 0 THEN 1 ELSE 0 END) as usuarios_inactivos,
+                COUNT(CASE WHEN last_login IS NOT NULL THEN 1 END) as usuarios_con_acceso
+            FROM usuarios
+        ");
+        
+        return $query->getRow();
+    }
 } 

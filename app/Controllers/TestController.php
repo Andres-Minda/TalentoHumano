@@ -8,14 +8,35 @@ class TestController extends Controller
 {
     public function index()
     {
-        echo "<h1>Test de CodeIgniter</h1>";
-        echo "<p>Si puedes ver esta página, CodeIgniter está funcionando correctamente.</p>";
-        echo "<p><a href='" . site_url('login') . "'>Ir al Login</a></p>";
-        echo "<p><strong>Información del sistema:</strong></p>";
-        echo "<ul>";
-        echo "<li>PHP Version: " . PHP_VERSION . "</li>";
-        echo "<li>CodeIgniter Version: " . \CodeIgniter\CodeIgniter::CI_VERSION . "</li>";
-        echo "<li>Base URL: " . base_url() . "</li>";
-        echo "</ul>";
+        try {
+            $db = \Config\Database::connect();
+            
+            // Test basic database connection
+            $result = $db->query("SELECT 1 as test")->getRow();
+            
+            // Test models
+            $empleadoModel = new \App\Models\EmpleadoModel();
+            $usuarios = $empleadoModel->getAllEmpleadosCompletos();
+            
+            $capacitacionModel = new \App\Models\CapacitacionModel();
+            $capacitaciones = $capacitacionModel->getCapacitacionesConEstadisticas();
+            
+            $data = [
+                'success' => true,
+                'message' => 'Database connection successful',
+                'empleados_count' => count($usuarios),
+                'capacitaciones_count' => count($capacitaciones),
+                'test_result' => $result
+            ];
+            
+            return $this->response->setJSON($data);
+            
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Database connection failed: ' . $e->getMessage(),
+                'error' => $e->getTraceAsString()
+            ]);
+        }
     }
 } 
