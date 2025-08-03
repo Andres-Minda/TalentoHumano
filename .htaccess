@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# Redirigir todo al directorio public
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteRule ^(.*)$ public/$1 [L]
+
+# Si acceden directamente a la raíz, redirigir al login
+RewriteRule ^$ public/index.php/login [L,R=301] 

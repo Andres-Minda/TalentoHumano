@@ -1,0 +1,22 @@
+/* Estilos personalizados para el sidebar */
+.left-sidebar {
+    width: 300px !important; /* Aumentamos el ancho del sidebar de 270px a 300px */
+}
+
+/* Ajustamos el contenido principal para que no se superponga con el sidebar más ancho */
+.body-wrapper {
+    margin-left: 300px !important;
+}
+
+/* Mejoramos la visualización del texto en el menú */
+#sidebarnav .sidebar-link {
+    padding: 12px 15px;
+    white-space: normal;
+    line-height: 1.4;
+}
+
+/* Ajustamos el espacio para los íconos */
+#sidebarnav .sidebar-link i, 
+#sidebarnav .sidebar-link span:first-child {
+    margin-right: 10px;
+}
