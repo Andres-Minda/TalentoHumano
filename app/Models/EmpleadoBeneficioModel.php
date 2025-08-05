@@ -36,4 +36,15 @@ class EmpleadoBeneficioModel extends Model
         $builder->where('(be.fecha_fin IS NULL OR be.fecha_fin >= CURDATE())');
         return $builder->get()->getResultArray();
     }
+
+    public function getBeneficiosPorEmpleado($idEmpleado)
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table('empleados_beneficios eb');
+        $builder->select('eb.*, b.nombre as nombre_beneficio, b.descripcion as descripcion_beneficio, b.tipo as tipo_beneficio');
+        $builder->join('beneficios b', 'b.id_beneficio = eb.id_beneficio');
+        $builder->where('eb.id_empleado', $idEmpleado);
+        $builder->orderBy('eb.fecha_asignacion', 'DESC');
+        return $builder->get()->getResultArray();
+    }
 } 

@@ -31,4 +31,17 @@ class EvaluacionModel extends Model
     {
         return $this->where('estado', 'En curso')->findAll();
     }
+
+    public function getEvaluacionesPorEmpleado($idEmpleado)
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table('evaluaciones_empleados ee');
+        $builder->select('ee.*, e.nombre as nombre_evaluacion, 
+                         CONCAT(evaluador.nombres, " ", evaluador.apellidos) as evaluador_nombre');
+        $builder->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion');
+        $builder->join('empleados evaluador', 'evaluador.id_empleado = ee.id_evaluador');
+        $builder->where('ee.id_empleado', $idEmpleado);
+        $builder->orderBy('ee.fecha_evaluacion', 'DESC');
+        return $builder->get()->getResultArray();
+    }
 } 

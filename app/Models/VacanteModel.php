@@ -20,10 +20,10 @@ class VacanteModel extends Model
     {
         $db = \Config\Database::connect();
         $builder = $db->table('vacantes v');
-        $builder->select('v.*, p.nombre as puesto_nombre, d.nombre as departamento_nombre, p.salario_base, COUNT(c.id_candidato) as total_candidatos');
+        $builder->select('v.*, p.nombre as puesto_nombre, d.nombre as departamento_nombre, p.salario_base, COUNT(po.id_postulacion) as total_candidatos');
         $builder->join('puestos p', 'p.id_puesto = v.id_puesto');
         $builder->join('departamentos d', 'd.id_departamento = p.id_departamento');
-        $builder->join('candidatos c', 'c.id_vacante = v.id_vacante', 'left');
+        $builder->join('postulaciones po', 'po.id_vacante = v.id_vacante', 'left');
         $builder->groupBy('v.id_vacante');
         $builder->orderBy('v.fecha_publicacion', 'DESC');
         return $builder->get()->getResultArray();

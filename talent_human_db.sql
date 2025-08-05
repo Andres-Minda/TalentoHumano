@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 03, 2025 at 07:45 AM
+-- Generation Time: Aug 03, 2025 at 07:40 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -45,15 +45,15 @@ CREATE TABLE `asistencias` (
 --
 
 INSERT INTO `asistencias` (`id_asistencia`, `id_empleado`, `fecha`, `hora_entrada`, `hora_salida`, `tipo`, `estado`, `observaciones`, `created_at`, `horas_trabajadas`) VALUES
-(1, 1, '2025-08-01', '08:00:00', '17:00:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', NULL),
-(2, 1, '2025-08-02', '08:15:00', '17:00:00', 'Normal', 'Tardanza', 'Tráfico', '2025-08-03 04:16:45', NULL),
-(3, 1, '2025-08-03', '08:00:00', '17:00:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', NULL),
-(4, 2, '2025-08-01', '08:00:00', '17:00:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', NULL),
-(5, 2, '2025-08-02', '08:00:00', '17:00:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', NULL),
-(6, 2, '2025-08-03', '08:00:00', '17:00:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', NULL),
-(7, 3, '2025-08-01', '07:30:00', '16:30:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', NULL),
-(8, 3, '2025-08-02', '07:30:00', '16:30:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', NULL),
-(9, 3, '2025-08-03', '07:30:00', '16:30:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', NULL);
+(1, 1, '2025-08-01', '08:00:00', '17:00:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', 9.00),
+(2, 1, '2025-08-02', '08:15:00', '17:00:00', 'Normal', 'Tardanza', 'Tráfico', '2025-08-03 04:16:45', 8.75),
+(3, 1, '2025-08-03', '08:00:00', '17:00:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', 9.00),
+(4, 2, '2025-08-01', '08:00:00', '17:00:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', 9.00),
+(5, 2, '2025-08-02', '08:00:00', '17:00:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', 9.00),
+(6, 2, '2025-08-03', '08:00:00', '17:00:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', 9.00),
+(7, 3, '2025-08-01', '07:30:00', '16:30:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', 9.00),
+(8, 3, '2025-08-02', '07:30:00', '16:30:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', 9.00),
+(9, 3, '2025-08-03', '07:30:00', '16:30:00', 'Normal', 'Puntual', NULL, '2025-08-03 04:16:45', 9.00);
 
 -- --------------------------------------------------------
 
@@ -783,9 +783,9 @@ CREATE TABLE `vacantes` (
 --
 
 INSERT INTO `vacantes` (`id_vacante`, `id_puesto`, `fecha_publicacion`, `fecha_cierre`, `estado`, `descripcion`, `requisitos`, `created_at`, `nombre`, `salario_min`, `salario_max`) VALUES
-(1, 4, '2025-08-01', '2025-08-31', 'Abierta', 'Desarrollador Full Stack', 'Experiencia en PHP, JavaScript, MySQL', '2025-08-03 04:16:45', NULL, 0.00, 0.00),
-(2, 6, '2025-08-01', '2025-08-31', 'Abierta', 'Coordinador Académico', 'Maestría en Educación, experiencia en gestión académica', '2025-08-03 04:16:45', NULL, 0.00, 0.00),
-(3, 8, '2025-08-01', '2025-08-31', 'Abierta', 'Asistente Administrativo', 'Bachillerato, experiencia en administración', '2025-08-03 04:16:45', NULL, 0.00, 0.00);
+(1, 4, '2025-08-01', '2025-08-31', 'Abierta', 'Desarrollador Full Stack', 'Experiencia en PHP, JavaScript, MySQL', '2025-08-03 04:16:45', 'Desarrollador de Sistemas', 1600.00, 2400.00),
+(2, 6, '2025-08-01', '2025-08-31', 'Abierta', 'Coordinador Académico', 'Maestría en Educación, experiencia en gestión académica', '2025-08-03 04:16:45', 'Coordinador Académico', 1760.00, 2640.00),
+(3, 8, '2025-08-01', '2025-08-31', 'Abierta', 'Asistente Administrativo', 'Bachillerato, experiencia en administración', '2025-08-03 04:16:45', 'Asistente Administrativo', 960.00, 1440.00);
 
 --
 -- Indexes for dumped tables
@@ -1007,7 +1007,8 @@ ALTER TABLE `usuarios`
 --
 ALTER TABLE `vacantes`
   ADD PRIMARY KEY (`id_vacante`),
-  ADD KEY `id_puesto` (`id_puesto`);
+  ADD KEY `id_puesto` (`id_puesto`),
+  ADD KEY `idx_vacantes_fecha` (`fecha_publicacion`);
 
 --
 -- AUTO_INCREMENT for dumped tables

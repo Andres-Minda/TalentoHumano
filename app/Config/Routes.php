@@ -6,6 +6,24 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 
+// Rutas problemáticas movidas al principio para evitar conflictos
+$routes->get('super-admin/respaldo', 'SuperAdminController::respaldo');
+$routes->get('super-admin/reportes-sistema', 'SuperAdminController::reportesSistema');
+
+// Rutas para descarga de respaldos
+$routes->post('super-admin/respaldo/crear', 'SuperAdminController::crearRespaldo');
+$routes->get('super-admin/respaldo/descargar/(:num)', 'SuperAdminController::descargarRespaldo/$1');
+$routes->get('super-admin/respaldo/descargar', 'SuperAdminController::descargarRespaldo');
+
+// Rutas para descarga de reportes
+$routes->post('super-admin/reportes-sistema/generar', 'SuperAdminController::generarReporte');
+$routes->post('super-admin/reportes-sistema/global', 'SuperAdminController::generarReporteGlobal');
+$routes->get('super-admin/reportes-sistema/descargar/(:num)', 'SuperAdminController::descargarReporte/$1');
+$routes->get('super-admin/reportes-sistema/descargar', 'SuperAdminController::descargarReporte');
+
+// Ruta de prueba para descarga
+$routes->get('test-descarga', 'SuperAdminController::testDescarga');
+
 // Rutas de autenticación
 $routes->get('login', 'AuthController::index');
 $routes->post('auth/attemptLogin', 'AuthController::attemptLogin');
@@ -23,8 +41,6 @@ $routes->post('super-admin/usuarios/eliminar', 'SuperAdminController::eliminarUs
 $routes->get('super-admin/roles', 'SuperAdminController::roles');
 $routes->get('super-admin/departamentos', 'SuperAdminController::departamentos');
 $routes->get('super-admin/configuracion', 'SuperAdminController::configuracion');
-$routes->get('super-admin/backup', 'SuperAdminController::backup');
-$routes->get('super-admin/reportes', 'SuperAdminController::reportes');
 $routes->get('super-admin/logs', 'SuperAdminController::logs');
 $routes->get('super-admin/perfil', 'SuperAdminController::perfil');
 $routes->post('super-admin/perfil/actualizar', 'SuperAdminController::actualizarPerfil');
@@ -84,22 +100,17 @@ $routes->post('docente/cuenta/configurar-notificaciones', 'DocenteController::co
 $routes->post('docente/cuenta/configurar-privacidad', 'DocenteController::configurarPrivacidad');
 $routes->post('docente/cuenta/cerrar-sesiones', 'DocenteController::cerrarSesiones');
 
-// Ruta de prueba
-$routes->get('test', 'TestController::index');
+// Docente - Asistencias
+$routes->get('docente/asistencias', 'DocenteController::asistencias');
+$routes->post('docente/asistencias/guardar', 'DocenteController::guardarAsistencia');
 
-// Test route for dropdown functionality
-$routes->get('test-dropdown', function() {
-    return view('test_dropdown');
+// Test routes específicas para verificar el problema
+$routes->get('test-respaldo-direct', function() {
+    return "Test Respaldo Direct funcionando - " . date('Y-m-d H:i:s');
 });
 
-// Test route for system with ITSI structure
-$routes->get('test-system', function() {
-    return view('test_system');
-});
-
-// Test route for sidebar detection
-$routes->get('test-sidebar', function() {
-    return view('test_sidebar');
+$routes->get('test-reportes-direct', function() {
+    return "Test Reportes Direct funcionando - " . date('Y-m-d H:i:s');
 });
 
 // Ruta por defecto

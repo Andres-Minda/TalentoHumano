@@ -55,7 +55,7 @@
                     </a>
                 </li>
                 <li class="sidebar-item">
-                    <a class="sidebar-link" href="<?= base_url('super-admin/backup') ?>" aria-expanded="false">
+                    <a class="sidebar-link" href="<?= base_url('super-admin/respaldo') ?>" aria-expanded="false">
                         <span><i class="bi bi-cloud-arrow-up"></i></span>
                         <span class="hide-menu">Respaldo y Restauración</span>
                     </a>
@@ -65,7 +65,7 @@
                     <span class="hide-menu">REPORTES</span>
                 </li>
                 <li class="sidebar-item">
-                    <a class="sidebar-link" href="<?= base_url('super-admin/reportes') ?>" aria-expanded="false">
+                    <a class="sidebar-link" href="<?= base_url('super-admin/reportes-sistema') ?>" aria-expanded="false">
                         <span><i class="bi bi-bar-chart"></i></span>
                         <span class="hide-menu">Reportes del Sistema</span>
                     </a>

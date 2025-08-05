@@ -83,4 +83,15 @@ class RolModel extends Model
         $result = $query->getRow();
         return $result->total > 0;
     }
+
+    public function getRolesConEstadisticas()
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table('roles r');
+        $builder->select('r.*, COUNT(u.id_usuario) as total_usuarios');
+        $builder->join('usuarios u', 'u.id_rol = r.id_rol', 'left');
+        $builder->groupBy('r.id_rol');
+        $builder->orderBy('total_usuarios', 'DESC');
+        return $builder->get()->getResultArray();
+    }
 } 

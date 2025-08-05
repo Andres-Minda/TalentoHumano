@@ -323,7 +323,7 @@ class AdminTHController extends Controller
         $chartData = [
             'empleados_por_departamento' => $empleadoModel->getEmpleadosPorDepartamentoChart(),
             'estado_vacantes' => $vacanteModel->getEstadoVacantes(),
-            'capacitaciones_por_tipo' => $capacitacionModel->getCapacitacionesPorTipo(),
+            'capacitaciones_por_tipo' => $capacitacionModel->getCapacitacionesPorTipoParaGraficos(),
             'asistencias_por_mes' => $asistenciaModel->getAsistenciasPorMes()
         ];
         
@@ -335,7 +335,7 @@ class AdminTHController extends Controller
                 'rol' => session()->get('nombre_rol')
             ],
             'estadisticas' => [
-                'total_empleados' => $estadisticasEmpleados['total'] ?? 0,
+                'total_empleados' => $estadisticasEmpleados->total_empleados ?? 0,
                 'total_departamentos' => $estadisticasDepartamentos['total'] ?? 0,
                 'total_capacitaciones' => $estadisticasCapacitaciones['total'] ?? 0,
                 'total_vacantes' => $estadisticasVacantes['total'] ?? 0

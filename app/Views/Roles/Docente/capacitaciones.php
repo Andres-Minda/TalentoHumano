@@ -77,10 +77,10 @@
                                                     <?= $capacitacion['tipo'] ?>
                                                 </span>
                                             </td>
-                                            <td><?= $capacitacion['instructor'] ?></td>
+                                            <td><?= $capacitacion['proveedor'] ?? 'N/A' ?></td>
                                             <td><?= date('d/m/Y', strtotime($capacitacion['fecha_inicio'])) ?></td>
                                             <td><?= date('d/m/Y', strtotime($capacitacion['fecha_fin'])) ?></td>
-                                            <td><?= $capacitacion['duracion_horas'] ?> horas</td>
+                                            <td><?= $capacitacion['costo'] ?? 'N/A' ?></td>
                                             <td>
                                                 <span class="badge bg-info">
                                                     <?= $capacitacion['total_inscritos'] ?? 0 ?> / <?= $capacitacion['cupo_maximo'] ?>
@@ -126,7 +126,7 @@
                                                     <?= $capacitacion['tipo'] ?>
                                                 </span>
                                             </td>
-                                            <td><?= $capacitacion['instructor'] ?></td>
+                                            <td><?= $capacitacion['proveedor'] ?? 'N/A' ?></td>
                                             <td><?= date('d/m/Y', strtotime($capacitacion['fecha_inicio'])) ?></td>
                                             <td><?= date('d/m/Y', strtotime($capacitacion['fecha_fin'])) ?></td>
                                             <td>

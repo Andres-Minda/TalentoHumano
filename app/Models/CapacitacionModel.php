@@ -38,21 +38,27 @@ class CapacitacionModel extends Model
     public function getCapacitacionesDisponibles($idEmpleado)
     {
         $db = \Config\Database::connect();
-        $builder = $db->table('capacitaciones c');
-        $builder->select('c.*, COUNT(ec.id_empleado_capacitacion) as total_inscritos');
-        $builder->join('empleados_capacitaciones ec', 'ec.id_capacitacion = c.id_capacitacion', 'left');
-        $builder->where('c.fecha_inicio >=', date('Y-m-d'));
-        $builder->where('c.estado', 'Planificada');
-        $builder->groupBy('c.id_capacitacion');
         
-        // Excluir capacitaciones en las que ya está inscrito
-        $subquery = $db->table('empleados_capacitaciones')
-                       ->select('id_capacitacion')
-                       ->where('id_empleado', $idEmpleado);
+        // Query simple sin subconsultas complejas
+        $sql = "SELECT c.*, 
+                       (SELECT COUNT(*) FROM empleados_capacitaciones ec WHERE ec.id_capacitacion = c.id_capacitacion) as inscritos_actuales
+                FROM capacitaciones c
+                WHERE c.estado = 'Planificada'
+                AND c.fecha_inicio >= CURDATE()";
         
-        $builder->whereNotIn('c.id_capacitacion', $subquery);
+        if ($idEmpleado) {
+            $sql .= " AND c.id_capacitacion NOT IN (SELECT ec.id_capacitacion FROM empleados_capacitaciones ec WHERE ec.id_empleado = ?)";
+        }
         
-        return $builder->get()->getResultArray();
+        $sql .= " AND (SELECT COUNT(*) FROM empleados_capacitaciones ec WHERE ec.id_capacitacion = c.id_capacitacion) < c.cupo_maximo";
+        
+        if ($idEmpleado) {
+            $query = $db->query($sql, [$idEmpleado]);
+        } else {
+            $query = $db->query($sql);
+        }
+        
+        return $query->getResultArray();
     }
 
     // Obtener estadísticas de capacitaciones

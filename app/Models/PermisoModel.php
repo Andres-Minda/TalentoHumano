@@ -35,4 +35,11 @@ class PermisoModel extends Model
     {
         return $this->where('id_empleado', $idEmpleado)->orderBy('fecha_inicio', 'DESC')->findAll();
     }
+
+    public function getPermisosPorEmpleado($idEmpleado)
+    {
+        return $this->where('id_empleado', $idEmpleado)
+                    ->orderBy('fecha_inicio', 'DESC')
+                    ->findAll();
+    }
 } 

@@ -34,18 +34,30 @@ class DepartamentoModel extends Model
     {
         $db = \Config\Database::connect();
         $builder = $db->table('departamentos d');
-        $builder->select('d.*, COUNT(e.id_empleado) as total_empleados');
+        $builder->select('d.*, 
+                         COUNT(e.id_empleado) as total_empleados,
+                         j.nombres as jefe_nombres, 
+                         j.apellidos as jefe_apellidos,
+                         CONCAT(j.nombres, " ", j.apellidos) as jefe_nombre');
         $builder->join('empleados e', 'e.id_departamento = d.id_departamento', 'left');
+        $builder->join('empleados j', 'j.id_empleado = d.id_jefe', 'left');
         $builder->groupBy('d.id_departamento');
         return $builder->get()->getResultArray();
     }
 
     public function getEstadisticasDepartamentos()
     {
-        $total = $this->countAllResults();
-        $conEmpleados = $this->join('empleados e', 'e.id_departamento = departamentos.id_departamento')
-                             ->groupBy('departamentos.id_departamento')
-                             ->countAllResults();
+        $db = \Config\Database::connect();
+        
+        // Contar total de departamentos
+        $query = $db->query("SELECT COUNT(*) as total FROM departamentos");
+        $total = $query->getRow()->total;
+        
+        // Contar departamentos con empleados
+        $query = $db->query("SELECT COUNT(DISTINCT d.id_departamento) as con_empleados 
+                             FROM departamentos d 
+                             JOIN empleados e ON e.id_departamento = d.id_departamento");
+        $conEmpleados = $query->getRow()->con_empleados;
         
         return [
             'total' => $total,
