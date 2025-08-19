@@ -64,12 +64,17 @@ class DepartamentoModel extends Model
      */
     public function getDepartamentosConEstadisticas()
     {
-        return $this->db->table('departamentos d')
-            ->select('d.*, 
-                     (SELECT COUNT(*) FROM empleados e WHERE e.id_departamento = d.id_departamento AND e.activo = 1) as total_empleados,
-                     (SELECT COUNT(*) FROM puestos p WHERE p.id_departamento = d.id_departamento) as total_puestos')
-            ->get()
-            ->getResultArray();
+        $db = \Config\Database::connect();
+        $builder = $db->table('departamentos d');
+        $builder->select('d.*, 
+                         COUNT(e.id_empleado) as total_empleados,
+                         j.nombres as jefe_nombres, 
+                         j.apellidos as jefe_apellidos,
+                         CONCAT(j.nombres, " ", j.apellidos) as jefe_nombre');
+        $builder->join('empleados e', 'e.id_departamento = d.id_departamento', 'left');
+        $builder->join('empleados j', 'j.id_empleado = d.id_jefe', 'left');
+        $builder->groupBy('d.id_departamento');
+        return $builder->get()->getResultArray();
     }
 
     /**
@@ -77,22 +82,27 @@ class DepartamentoModel extends Model
      */
     public function getEstadisticasDepartamentos()
     {
-        $db = $this->db;
+        $db = \Config\Database::connect();
         
-        $totalDepartamentos = $db->table('departamentos')
-            ->countAllResults();
-            
-        $empleadosPorDepartamento = $db->table('departamentos d')
-            ->select('d.nombre, COUNT(e.id_empleado) as total')
-            ->join('empleados e', 'e.id_departamento = d.id_departamento', 'left')
-            ->where('e.activo', 1)
-            ->groupBy('d.id_departamento')
-            ->get()
-            ->getResultArray();
-            
+        // Contar total de departamentos
+        $query = $db->query("SELECT COUNT(*) as total FROM departamentos");
+        $total = $query->getRow()->total;
+        
+        // Contar departamentos con empleados
+        $query = $db->query("SELECT COUNT(DISTINCT d.id_departamento) as con_empleados 
+                             FROM departamentos d 
+                             JOIN empleados e ON e.id_departamento = d.id_departamento");
+        $conEmpleados = $query->getRow()->con_empleados;
+        
+        // Contar departamentos sin empleados
+        $query = $db->query("SELECT COUNT(*) as sin_empleados FROM departamentos d 
+                             WHERE NOT EXISTS (SELECT 1 FROM empleados e WHERE e.id_departamento = d.id_departamento)");
+        $sinEmpleados = $query->getRow()->sin_empleados;
+        
         return [
-            'total' => $totalDepartamentos,
-            'empleados_por_departamento' => $empleadosPorDepartamento
+            'total' => $total,
+            'con_empleados' => $conEmpleados,
+            'sin_empleados' => $sinEmpleados
         ];
     }
 } 

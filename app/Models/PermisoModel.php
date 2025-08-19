@@ -163,4 +163,11 @@ class PermisoModel extends Model
             'rechazados' => $permisosRechazados
         ];
     }
+
+    public function getPermisosPorEmpleado($idEmpleado)
+    {
+        return $this->where('id_empleado', $idEmpleado)
+                    ->orderBy('fecha_inicio', 'DESC')
+                    ->findAll();
+    }
 } 

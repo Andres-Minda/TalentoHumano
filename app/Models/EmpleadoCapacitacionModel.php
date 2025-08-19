@@ -133,4 +133,15 @@ class EmpleadoCapacitacionModel extends Model
             'en_progreso' => $asignacionesEnProgreso
         ];
     }
+
+    public function getCapacitacionesPorEmpleado($idEmpleado)
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table('empleados_capacitaciones ec');
+        $builder->select('ec.*, c.nombre, c.tipo, c.fecha_inicio, c.fecha_fin, c.proveedor, c.costo, c.estado as capacitacion_estado');
+        $builder->join('capacitaciones c', 'c.id_capacitacion = ec.id_capacitacion');
+        $builder->where('ec.id_empleado', $idEmpleado);
+        $builder->orderBy('c.fecha_inicio', 'DESC');
+        return $builder->get()->getResultArray();
+    }
 } 

@@ -61,6 +61,33 @@ class CapacitacionModel extends Model
     protected $skipValidation       = false;
     protected $cleanValidationRules = true;
 
+    // Obtener capacitaciones disponibles para un empleado
+    public function getCapacitacionesDisponibles($idEmpleado)
+    {
+        $db = \Config\Database::connect();
+        
+        // Query simple sin subconsultas complejas
+        $sql = "SELECT c.*, 
+                       (SELECT COUNT(*) FROM empleados_capacitaciones ec WHERE ec.id_capacitacion = c.id_capacitacion) as inscritos_actuales
+                FROM capacitaciones c
+                WHERE c.estado = 'Planificada'
+                AND c.fecha_inicio >= CURDATE()";
+        
+        if ($idEmpleado) {
+            $sql .= " AND c.id_capacitacion NOT IN (SELECT ec.id_capacitacion FROM empleados_capacitaciones ec WHERE ec.id_empleado = ?)";
+        }
+        
+        $sql .= " AND (SELECT COUNT(*) FROM empleados_capacitaciones ec WHERE ec.id_capacitacion = c.id_capacitacion) < c.cupo_maximo";
+        
+        if ($idEmpleado) {
+            $query = $db->query($sql, [$idEmpleado]);
+        } else {
+            $query = $db->query($sql);
+        }
+        
+        return $query->getResultArray();
+    }
+
     // Callbacks
     protected $allowCallbacks = true;
     protected $beforeInsert   = [];
