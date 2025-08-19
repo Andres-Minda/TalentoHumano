@@ -1,0 +1,132 @@
+---
+alwaysApply: true
+---
+# Reglas de Cursor para Desarrollo Autónomo
+
+## Permisos Generales de Modificación
+
+### Base de Datos
+- **PERMITIDO**: Modificar, crear, eliminar tablas, columnas, índices y relaciones según sea necesario
+- **PERMITIDO**: Ejecutar migraciones automáticamente para implementar cambios
+- **PERMITIDO**: Crear seeders y factories para datos de prueba
+- **PERMITIDO**: Modificar esquemas existentes para nuevas funcionalidades
+
+### Comandos de Terminal
+- **PERMITIDO**: Ejecutar comandos artisan (migrate, make:controller, make:model, etc.)
+- **PERMITIDO**: Instalar dependencias con composer o npm
+- **PERMITIDO**: Ejecutar comandos de build y compilación
+- **PERMITIDO**: Limpiar cache, configuraciones y optimizaciones
+
+### Estructura MVC
+- **PERMITIDO**: Crear nuevos controladores con sus métodos correspondientes
+- **PERMITIDO**: Generar nuevas vistas (Blade templates) con layouts apropiados
+- **PERMITIDO**: Crear modelos con relaciones, scopes y mutators/accessors
+- **PERMITIDO**: Modificar controladores, vistas y modelos existentes según necesidad
+
+## Reglas Específicas de Implementación
+
+### Al Recibir una Solicitud de Funcionalidad:
+
+1. **Análisis Automático**:
+   - Evalúa qué componentes necesitas crear/modificar
+   - Identifica cambios requeridos en base de datos
+   - Planifica la estructura MVC necesaria
+
+2. **Ejecución Directa**:
+   - Crea migraciones si necesitas cambios en BD
+   - Genera controladores, modelos y vistas necesarios
+   - Implementa la lógica completa de la funcionalidad
+   - Ejecuta comandos necesarios sin pedir confirmación
+
+3. **Mejores Prácticas**:
+   - Sigue convenciones de Laravel/framework en uso
+   - Implementa validaciones apropiadas
+   - Agrega comentarios en código complejo
+   - Mantén consistencia con el código existente
+
+### Comandos Autorizados a Ejecutar:
+
+```bash
+# Artisan Commands
+php artisan make:controller
+php artisan make:model
+php artisan make:migration
+php artisan migrate
+php artisan db:seed
+php artisan cache:clear
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+
+# Composer
+composer install
+composer update
+composer require [package]
+
+# NPM/Node
+npm install
+npm run dev
+npm run build
+
+# Git (si es necesario)
+git add .
+git commit -m "mensaje"
+```
+
+## Estructura de Archivos Autorizada
+
+### Controladores
+- Crear en `app/Http/Controllers/`
+- Usar namespaces apropiados
+- Implementar resource controllers cuando sea apropiado
+
+### Modelos
+- Crear en `app/Models/`
+- Definir relaciones Eloquent
+- Implementar fillable, hidden, casts según necesidad
+
+### Vistas
+- Crear en `resources/views/`
+- Usar layouts consistentes
+- Implementar componentes Blade reutilizables
+
+### Migraciones
+- Crear en `database/migrations/`
+- Usar nomenclatura descriptiva con timestamps
+- Incluir rollback apropiado en método down()
+
+## Casos de Uso Permitidos
+
+✅ **Puedes hacer sin preguntar**:
+- Modificar cualquier archivo del proyecto
+- Crear nuevas funcionalidades completas
+- Cambiar estructura de base de datos
+- Instalar nuevas dependencias necesarias
+- Generar código boilerplate
+- Ejecutar comandos de mantenimiento
+
+❌ **Requiere confirmación**:
+- Eliminar archivos importantes del proyecto
+- Cambios que puedan afectar funcionalidad existente crítica
+- Modificaciones a configuraciones de producción
+
+## Flujo de Trabajo Recomendado
+
+1. **Recibo solicitud** → Analizo requerimientos
+2. **Planifico cambios** → Identifico componentes a crear/modificar
+3. **Ejecuto migraciones** → Si hay cambios de BD
+4. **Creo/Modifico código** → Controladores, modelos, vistas
+5. **Pruebo funcionalidad** → Verifico que todo funcione
+6. **Reporto cambios** → Informo qué se creó/modificó
+
+## Notas Importantes
+
+- Siempre mantén backup implícito usando Git
+- Comenta código complejo para futura referencia
+- Sigue PSR-4 y convenciones del framework
+- Prioriza seguridad y validación de datos
+- Usa eloquent ORM apropiadamente para operaciones de BD
+
+---
+
+**Estas reglas te dan autonomía completa para implementar cualquier funcionalidad que solicite el usuario, modificando todo lo necesario en el proyecto.**

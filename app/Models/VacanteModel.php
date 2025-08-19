@@ -6,74 +6,112 @@ use CodeIgniter\Model;
 
 class VacanteModel extends Model
 {
-    protected $table = 'vacantes';
-    protected $primaryKey = 'id_vacante';
-    protected $allowedFields = [
+    protected $table            = 'vacantes';
+    protected $primaryKey       = 'id_vacante';
+    protected $useAutoIncrement = true;
+    protected $returnType       = 'array';
+    protected $useSoftDeletes   = false;
+    protected $protectFields    = true;
+    protected $allowedFields    = [
         'id_puesto', 'fecha_publicacion', 'fecha_cierre', 'estado', 
-        'descripcion', 'requisitos'
+        'descripcion', 'requisitos', 'nombre', 'salario_min', 'salario_max'
     ];
-    protected $useTimestamps = true;
-    protected $createdField = 'created_at';
-    protected $returnType = 'array';
 
+    // Dates
+    protected $useTimestamps = true;
+    protected $dateFormat    = 'datetime';
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
+
+    // Validation
+    protected $validationRules      = [
+        'id_puesto' => 'required|integer',
+        'fecha_publicacion' => 'required|valid_date',
+        'fecha_cierre' => 'permit_empty|valid_date',
+        'estado' => 'required|max_length[20]',
+        'descripcion' => 'permit_empty|max_length[1000]',
+        'requisitos' => 'permit_empty|max_length[1000]',
+        'nombre' => 'permit_empty|max_length[200]',
+        'salario_min' => 'permit_empty|decimal',
+        'salario_max' => 'permit_empty|decimal'
+    ];
+
+    protected $validationMessages = [
+        'id_puesto' => [
+            'required' => 'El puesto es obligatorio',
+            'integer' => 'El puesto debe ser un número entero'
+        ],
+        'fecha_publicacion' => [
+            'required' => 'La fecha de publicación es obligatoria',
+            'valid_date' => 'La fecha de publicación debe ser una fecha válida'
+        ]
+    ];
+
+    protected $skipValidation       = false;
+    protected $cleanValidationRules = true;
+
+    // Callbacks
+    protected $allowCallbacks = true;
+    protected $beforeInsert   = [];
+    protected $afterInsert    = [];
+    protected $beforeUpdate   = [];
+    protected $afterUpdate    = [];
+    protected $beforeFind     = [];
+    protected $afterFind      = [];
+    protected $beforeDelete   = [];
+    protected $afterDelete    = [];
+
+    /**
+     * Obtiene vacantes completas con información de puesto y departamento
+     */
     public function getVacantesCompletas()
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('vacantes v');
-        $builder->select('v.*, p.nombre as puesto_nombre, d.nombre as departamento_nombre, p.salario_base, COUNT(c.id_candidato) as total_candidatos');
-        $builder->join('puestos p', 'p.id_puesto = v.id_puesto');
-        $builder->join('departamentos d', 'd.id_departamento = p.id_departamento');
-        $builder->join('candidatos c', 'c.id_vacante = v.id_vacante', 'left');
-        $builder->groupBy('v.id_vacante');
-        $builder->orderBy('v.fecha_publicacion', 'DESC');
-        return $builder->get()->getResultArray();
+        return $this->db->table('vacantes v')
+            ->select('v.*, p.nombre as puesto_nombre, d.nombre as departamento_nombre')
+            ->join('puestos p', 'p.id_puesto = v.id_puesto', 'left')
+            ->join('departamentos d', 'd.id_departamento = p.id_departamento', 'left')
+            ->orderBy('v.fecha_publicacion', 'DESC')
+            ->get()
+            ->getResultArray();
     }
 
+    /**
+     * Obtiene vacantes activas
+     */
     public function getVacantesActivas()
     {
-        return $this->where('estado', 'Abierta')->findAll();
+        return $this->where('estado', 'Activa')
+            ->where('fecha_cierre >=', date('Y-m-d'))
+            ->findAll();
     }
 
+    /**
+     * Obtiene estadísticas de vacantes
+     */
     public function getEstadisticasVacantes()
     {
-        $abiertas = $this->where('estado', 'Abierta')->countAllResults();
-        $cerradas = $this->where('estado', 'Cerrada')->countAllResults();
-        $canceladas = $this->where('estado', 'Cancelada')->countAllResults();
+        $db = $this->db;
+        
+        $totalVacantes = $db->table('vacantes')->countAllResults();
+        $vacantesActivas = $db->table('vacantes')->where('estado', 'Activa')->countAllResults();
+        $vacantesCerradas = $db->table('vacantes')->where('estado', 'Cerrada')->countAllResults();
         
         return [
-            'abiertas' => $abiertas,
-            'cerradas' => $cerradas,
-            'canceladas' => $canceladas,
-            'total' => $abiertas + $cerradas + $canceladas
+            'total' => $totalVacantes,
+            'activas' => $vacantesActivas,
+            'cerradas' => $vacantesCerradas
         ];
     }
 
+    /**
+     * Obtiene estado de vacantes para gráficos
+     */
     public function getEstadoVacantes()
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('vacantes');
-        $builder->select('estado, COUNT(*) as cantidad');
-        $builder->groupBy('estado');
-        $result = $builder->get()->getResultArray();
-        
-        // Asegurar que todos los estados estén representados
-        $estados = ['Abierta', 'Cerrada', 'Cancelada'];
-        $data = [];
-        
-        foreach ($estados as $estado) {
-            $encontrado = false;
-            foreach ($result as $row) {
-                if ($row['estado'] == $estado) {
-                    $data[] = $row;
-                    $encontrado = true;
-                    break;
-                }
-            }
-            if (!$encontrado) {
-                $data[] = ['estado' => $estado, 'cantidad' => 0];
-            }
-        }
-        
-        return $data;
+        return $this->db->table('vacantes')
+            ->select('estado, COUNT(*) as total')
+            ->groupBy('estado')
+            ->get()
+            ->getResultArray();
     }
 } 

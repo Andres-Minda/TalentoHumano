@@ -44,4 +44,12 @@ class SolicitudModel extends Model
                     ->where('activo', 1)
                     ->findAll();
     }
+
+    public function getSolicitudesPorEmpleado($idEmpleado)
+    {
+        return $this->where('id_empleado', $idEmpleado)
+                    ->where('activo', 1)
+                    ->orderBy('fecha_solicitud', 'DESC')
+                    ->findAll();
+    }
 } 

@@ -6,37 +6,97 @@ use CodeIgniter\Model;
 
 class PuestoModel extends Model
 {
-    protected $table = 'puestos';
-    protected $primaryKey = 'id_puesto';
-    protected $allowedFields = [
-        'nombre', 'descripcion', 'salario_base', 'id_departamento'
+    protected $table            = 'puestos';
+    protected $primaryKey       = 'id_puesto';
+    protected $useAutoIncrement = true;
+    protected $returnType       = 'array';
+    protected $useSoftDeletes   = false;
+    protected $protectFields    = true;
+    protected $allowedFields    = [
+        'nombre', 'descripcion', 'id_departamento', 'salario_min', 'salario_max', 'salario_base'
     ];
-    protected $useTimestamps = true;
-    protected $createdField = 'created_at';
-    protected $returnType = 'array';
 
+    // Dates
+    protected $useTimestamps = true;
+    protected $dateFormat    = 'datetime';
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
+
+    // Validation
+    protected $validationRules      = [
+        'nombre' => 'required|min_length[2]|max_length[100]',
+        'descripcion' => 'permit_empty|max_length[500]',
+        'id_departamento' => 'required|integer',
+        'salario_min' => 'permit_empty|decimal',
+        'salario_max' => 'permit_empty|decimal',
+        'salario_base' => 'required|decimal'
+    ];
+
+    protected $validationMessages = [
+        'nombre' => [
+            'required' => 'El nombre del puesto es obligatorio',
+            'min_length' => 'El nombre debe tener al menos 2 caracteres',
+            'max_length' => 'El nombre no puede exceder 100 caracteres'
+        ],
+        'id_departamento' => [
+            'required' => 'El departamento es obligatorio',
+            'integer' => 'El departamento debe ser un número entero'
+        ]
+    ];
+
+    protected $skipValidation       = false;
+    protected $cleanValidationRules = true;
+
+    // Callbacks
+    protected $allowCallbacks = true;
+    protected $beforeInsert   = [];
+    protected $afterInsert    = [];
+    protected $beforeUpdate   = [];
+    protected $afterUpdate    = [];
+    protected $beforeFind     = [];
+    protected $afterFind      = [];
+    protected $beforeDelete   = [];
+    protected $afterDelete    = [];
+
+    /**
+     * Obtiene puestos con departamento
+     */
     public function getPuestosConDepartamento()
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('puestos p');
-        $builder->select('p.*, d.nombre as departamento_nombre');
-        $builder->join('departamentos d', 'd.id_departamento = p.id_departamento');
-        return $builder->get()->getResultArray();
+        return $this->db->table('puestos p')
+            ->select('p.*, d.nombre as departamento')
+            ->join('departamentos d', 'd.id_departamento = p.id_departamento', 'left')
+            ->get()
+            ->getResultArray();
     }
 
-    public function getPuestosPorDepartamento($idDepartamento)
-    {
-        return $this->where('id_departamento', $idDepartamento)->findAll();
-    }
-
+    /**
+     * Obtiene puestos con estadísticas
+     */
     public function getPuestosConEstadisticas()
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('puestos p');
-        $builder->select('p.*, d.nombre as departamento_nombre, COUNT(e.id_empleado) as total_empleados');
-        $builder->join('departamentos d', 'd.id_departamento = p.id_departamento');
-        $builder->join('empleados e', 'e.id_puesto = p.id_puesto', 'left');
-        $builder->groupBy('p.id_puesto');
-        return $builder->get()->getResultArray();
+        return $this->db->table('puestos p')
+            ->select('p.*, d.nombre as departamento,
+                     (SELECT COUNT(*) FROM empleados e WHERE e.id_puesto = p.id_puesto AND e.activo = 1) as total_empleados')
+            ->join('departamentos d', 'd.id_departamento = p.id_departamento', 'left')
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Obtiene puestos activos
+     */
+    public function getPuestosActivos()
+    {
+        return $this->findAll();
+    }
+
+    /**
+     * Obtiene puestos por departamento
+     */
+    public function getPuestosPorDepartamento($departamentoId)
+    {
+        return $this->where('id_departamento', $departamentoId)
+            ->findAll();
     }
 } 

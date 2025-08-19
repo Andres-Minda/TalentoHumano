@@ -73,6 +73,42 @@ class DocumentoModel extends Model
         return $builder->findAll();
     }
 
+    public function getDocumentosPorEmpleado($idEmpleado)
+    {
+        return $this->where('id_empleado', $idEmpleado)
+                    ->orderBy('created_at', 'DESC')
+                    ->findAll();
+    }
+
+    public function getEstadisticasDocumentos($idEmpleado)
+    {
+        $db = \Config\Database::connect();
+        
+        // Total documentos del empleado
+        $query = $db->query("SELECT COUNT(*) as total FROM documentos WHERE id_empleado = ?", [$idEmpleado]);
+        $total = $query->getRow()->total;
+        
+        // Documentos por estado
+        $query = $db->query("SELECT 
+                                COUNT(*) as total_documentos,
+                                SUM(CASE WHEN fecha_vencimiento IS NULL OR fecha_vencimiento >= CURDATE() THEN 1 ELSE 0 END) as documentos_vigentes,
+                                SUM(CASE WHEN fecha_vencimiento < CURDATE() THEN 1 ELSE 0 END) as documentos_vencidos
+                             FROM documentos 
+                             WHERE id_empleado = ?", [$idEmpleado]);
+        $estados = $query->getRow();
+        
+        // Categorías disponibles
+        $query = $db->query("SELECT COUNT(*) as categorias FROM categorias WHERE activo = 1");
+        $categorias = $query->getRow()->categorias;
+        
+        return [
+            'total_documentos' => $total,
+            'documentos_vigentes' => $estados->documentos_vigentes ?? 0,
+            'documentos_vencidos' => $estados->documentos_vencidos ?? 0,
+            'categorias' => $categorias
+        ];
+    }
+
     public function subirDocumento($data)
     {
         try {

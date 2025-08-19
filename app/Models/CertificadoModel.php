@@ -35,4 +35,16 @@ class CertificadoModel extends Model
                     ->where('activo', 1)
                     ->findAll();
     }
+
+    public function getCertificadosPorEmpleado($idEmpleado)
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table('certificados c');
+        $builder->select('c.*, cap.nombre as capacitacion_nombre');
+        $builder->join('capacitaciones cap', 'cap.id_capacitacion = c.id_capacitacion', 'left');
+        $builder->where('c.id_empleado', $idEmpleado);
+        $builder->where('c.activo', 1);
+        $builder->orderBy('c.fecha_emision', 'DESC');
+        return $builder->get()->getResultArray();
+    }
 } 

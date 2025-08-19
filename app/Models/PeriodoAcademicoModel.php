@@ -6,82 +6,129 @@ use CodeIgniter\Model;
 
 class PeriodoAcademicoModel extends Model
 {
-    protected $table = 'periodos_academicos';
-    protected $primaryKey = 'id_periodo';
-    protected $allowedFields = [
+    protected $table            = 'periodos_academicos';
+    protected $primaryKey       = 'id_periodo';
+    protected $useAutoIncrement = true;
+    protected $returnType       = 'array';
+    protected $useSoftDeletes   = false;
+    protected $protectFields    = true;
+    protected $allowedFields    = [
         'nombre', 'fecha_inicio', 'fecha_fin', 'estado', 'descripcion'
     ];
-    protected $useTimestamps = true;
-    protected $createdField = 'created_at';
-    protected $returnType = 'array';
 
+    // Dates
+    protected $useTimestamps = true;
+    protected $dateFormat    = 'datetime';
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
+
+    // Validation
+    protected $validationRules      = [
+        'nombre'       => 'required|min_length[3]|max_length[100]',
+        'fecha_inicio' => 'required|valid_date',
+        'fecha_fin'    => 'required|valid_date',
+        'estado'       => 'required|in_list[ACTIVO,INACTIVO,PLANIFICADO,FINALIZADO]',
+        'descripcion'  => 'permit_empty|max_length[500]'
+    ];
+
+    protected $validationMessages = [
+        'nombre' => [
+            'required' => 'El nombre del período es obligatorio',
+            'min_length' => 'El nombre debe tener al menos 3 caracteres',
+            'max_length' => 'El nombre no puede exceder 100 caracteres'
+        ],
+        'fecha_inicio' => [
+            'required' => 'La fecha de inicio es obligatoria',
+            'valid_date' => 'La fecha de inicio debe ser una fecha válida'
+        ],
+        'fecha_fin' => [
+            'required' => 'La fecha de fin es obligatoria',
+            'valid_date' => 'La fecha de fin debe ser una fecha válida'
+        ],
+        'estado' => [
+            'required' => 'El estado es obligatorio',
+            'in_list' => 'El estado debe ser ACTIVO, INACTIVO, PLANIFICADO o FINALIZADO'
+        ]
+    ];
+
+    protected $skipValidation       = false;
+    protected $cleanValidationRules = true;
+
+    // Callbacks
+    protected $allowCallbacks = true;
+    protected $beforeInsert   = [];
+    protected $afterInsert    = [];
+    protected $beforeUpdate   = [];
+    protected $afterUpdate    = [];
+    protected $beforeFind     = [];
+    protected $afterFind      = [];
+    protected $beforeDelete   = [];
+    protected $afterDelete    = [];
+
+    /**
+     * Obtiene el período académico activo
+     */
     public function getPeriodoActivo()
     {
-        return $this->where('estado', 'Activo')->first();
+        return $this->where('estado', 'ACTIVO')->first();
     }
 
-    public function getPeriodosActivos()
-    {
-        return $this->where('estado', 'Activo')->findAll();
-    }
-
+    /**
+     * Obtiene períodos disponibles (activos y planificados)
+     */
     public function getPeriodosDisponibles()
     {
-        return $this->whereIn('estado', ['Activo', 'Inactivo'])->findAll();
+        return $this->whereIn('estado', ['ACTIVO', 'PLANIFICADO'])
+            ->orderBy('fecha_inicio', 'ASC')
+            ->findAll();
     }
 
-    public function activarPeriodo($idPeriodo)
+    /**
+     * Obtiene períodos por estado
+     */
+    public function getPeriodosPorEstado($estado)
     {
-        // Desactivar todos los periodos
-        $this->set('estado', 'Inactivo')->update();
-        
-        // Activar el periodo seleccionado
-        return $this->update($idPeriodo, ['estado' => 'Activo']);
+        return $this->where('estado', $estado)
+            ->orderBy('fecha_inicio', 'DESC')
+            ->findAll();
     }
 
-    public function getEstadisticasPeriodo($idPeriodo)
+    /**
+     * Obtiene períodos por año
+     */
+    public function getPeriodosPorAno($ano)
     {
-        $db = \Config\Database::connect();
-        
-        $query = $db->query("
-            SELECT 
-                COUNT(DISTINCT e.id_empleado) as total_empleados,
-                COUNT(DISTINCT c.id_capacitacion) as total_capacitaciones,
-                COUNT(DISTINCT a.id_asistencia) as total_asistencias
-            FROM periodos_academicos pa
-            LEFT JOIN empleados e ON e.periodo_academico_id = pa.id_periodo
-            LEFT JOIN capacitaciones c ON c.periodo_academico_id = pa.id_periodo
-            LEFT JOIN asistencias a ON a.id_empleado = e.id_empleado
-            WHERE pa.id_periodo = ?
-        ", [$idPeriodo]);
-        
-        return $query->getRow();
+        return $this->where('YEAR(fecha_inicio)', $ano)
+            ->orderBy('fecha_inicio', 'ASC')
+            ->findAll();
     }
 
-    public function getEmpleadosPorPeriodo($idPeriodo)
+    /**
+     * Obtiene períodos recientes
+     */
+    public function getPeriodosRecientes($limite = 5)
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('empleados e');
-        $builder->select('e.*, u.email, u.cedula, r.nombre_rol, d.nombre as departamento_nombre, p.nombre as puesto_nombre');
-        $builder->join('usuarios u', 'u.id_usuario = e.id_usuario');
-        $builder->join('roles r', 'r.id_rol = u.id_rol');
-        $builder->join('departamentos d', 'd.id_departamento = e.id_departamento', 'left');
-        $builder->join('puestos p', 'p.id_puesto = e.id_puesto', 'left');
-        $builder->where('e.periodo_academico_id', $idPeriodo);
-        $builder->where('e.activo', 1);
-        $builder->orderBy('e.apellidos', 'ASC');
-        return $builder->get()->getResultArray();
+        return $this->orderBy('created_at', 'DESC')
+            ->limit($limite)
+            ->findAll();
     }
 
-    public function getCapacitacionesPorPeriodo($idPeriodo)
+    /**
+     * Verifica si existe un período activo
+     */
+    public function tienePeriodoActivo()
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('capacitaciones c');
-        $builder->select('c.*, COUNT(ec.id_empleado_capacitacion) as total_inscritos');
-        $builder->join('empleados_capacitaciones ec', 'ec.id_capacitacion = c.id_capacitacion', 'left');
-        $builder->where('c.periodo_academico_id', $idPeriodo);
-        $builder->groupBy('c.id_capacitacion');
-        $builder->orderBy('c.fecha_inicio', 'DESC');
-        return $builder->get()->getResultArray();
+        return $this->where('estado', 'ACTIVO')->countAllResults() > 0;
+    }
+
+    /**
+     * Obtiene el próximo período planificado
+     */
+    public function getProximoPeriodo()
+    {
+        return $this->where('estado', 'PLANIFICADO')
+            ->where('fecha_inicio >', date('Y-m-d'))
+            ->orderBy('fecha_inicio', 'ASC')
+            ->first();
     }
 } 

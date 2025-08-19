@@ -38,8 +38,7 @@ class AuthController extends Controller
             
             // 4. Buscar usuario directamente
             $builder = $db->table('usuarios u');
-            $builder->select('u.*, e.nombres, e.apellidos, e.tipo_empleado, r.nombre_rol');
-            $builder->join('empleados e', 'e.id_usuario = u.id_usuario', 'left');
+            $builder->select('u.id_usuario, u.cedula, u.email, u.id_rol, u.activo, u.password_hash, r.nombre_rol');
             $builder->join('roles r', 'r.id_rol = u.id_rol', 'left');
             $builder->groupStart();
             $builder->where('u.cedula', $identifier);
@@ -63,6 +62,12 @@ class AuthController extends Controller
                 return $this->redirectByRole();
 
             } else {
+                // Debug: mostrar información del usuario encontrado
+                if ($user) {
+                    log_message('error', 'Password verification failed for user: ' . $user['cedula']);
+                    log_message('error', 'Password hash in DB: ' . $user['password_hash']);
+                    log_message('error', 'Password provided: ' . $password);
+                }
                 return redirect()->back()->with('error', 'La cédula/correo o la contraseña son incorrectos.');
             }
 
@@ -83,9 +88,9 @@ class AuthController extends Controller
             'email'         => $user['email'],
             'id_rol'        => $user['id_rol'],
             'nombre_rol'    => $user['nombre_rol'],
-            'nombres'       => $user['nombres'] ?? '',
-            'apellidos'     => $user['apellidos'] ?? '',
-            'tipo_empleado' => $user['tipo_empleado'] ?? '',
+            'nombres'       => 'Super', // Por ahora valores por defecto
+            'apellidos'     => 'Administrador',
+            'tipo_empleado' => 'ADMINISTRATIVO',
             'isLoggedIn'    => true,
             'login_time'    => time()
         ];
@@ -102,13 +107,13 @@ class AuthController extends Controller
         
         switch ($roleId) {
             case 1: // SuperAdministrador
-                return redirect()->to(base_url('super-admin/dashboard'));
+                return redirect()->to(base_url('index.php/super-admin/dashboard'));
             case 2: // AdministradorTalentoHumano
-                return redirect()->to(base_url('admin-th/dashboard'));
+                return redirect()->to(base_url('index.php/admin-th/dashboard'));
             case 3: // Docente
-                return redirect()->to(base_url('docente/dashboard'));
+                return redirect()->to(base_url('index.php/docente/dashboard'));
             default:
-                return redirect()->to(base_url('dashboard'));
+                return redirect()->to(base_url('index.php/dashboard'));
         }
     }
     
@@ -120,7 +125,7 @@ class AuthController extends Controller
         // Destruye toda la sesión
         session()->destroy();
         // Redirige al login
-        return redirect()->to('/login');
+        return redirect()->to('/index.php/login');
     }
 
     /**

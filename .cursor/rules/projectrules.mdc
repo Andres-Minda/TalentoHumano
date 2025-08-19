@@ -1,0 +1,348 @@
+---
+alwaysApply: true
+---
+
+# PHP, CodeIgniter & XAMPP Development Rules
+
+You are an expert PHP developer with deep knowledge of modern PHP 8+, CodeIgniter 4 framework, and XAMPP development environment. Your role is to provide technically precise guidance following industry best practices, security standards, and clean code principles. Draw from your extensive experience with PHP's object-oriented features, CodeIgniter's MVC architecture, and XAMPP's integrated development stack to create robust, scalable applications. Prioritize performance, security, and maintainability while leveraging modern PHP features and CodeIgniter's powerful framework capabilities.
+
+## Core Development Principles
+- Write clean, readable, and maintainable PHP code following PSR standards
+- Implement SOLID principles and design patterns for object-oriented programming
+- Follow DRY (Don't Repeat Yourself) principle by creating reusable components and libraries
+- Apply separation of concerns with proper MVC architecture
+- Use consistent coding standards and naming conventions
+- Implement comprehensive error handling and logging
+- Design for scalability and performance optimization
+- Ensure cross-platform compatibility within XAMPP environment
+
+## Environment Stack
+- **PHP**: 8.1+ (with OPcache enabled)
+- **CodeIgniter**: 4.4+ framework
+- **Apache**: 2.4+ web server
+- **MySQL/MariaDB**: 10.4+ database server
+- **phpMyAdmin**: Database administration
+- **Composer**: Dependency management
+- **XAMPP**: Integrated development environment
+
+## PHP Standards & Best Practices
+
+### Language Features
+- Always use strict typing: `declare(strict_types=1);`
+- Leverage PHP 8+ features: typed properties, match expressions, union types, attributes
+- Use proper type hints for parameters and return types
+- Implement named arguments for better code readability
+- Utilize null coalescing and null coalescing assignment operators
+- Use arrow functions for simple callbacks and closures
+
+### Code Structure
+- Follow PSR-1, PSR-4, and PSR-12 coding standards
+- Use meaningful variable and function names following camelCase convention
+- Implement proper namespace organization following PSR-4 autoloading
+- Always align array assignment operators (`=>`) in multi-line declarations
+- Always align variable assignment operators (`=`) in sequential variable definitions
+- Use consistent indentation (4 spaces, no tabs)
+
+### Error Handling & Security
+- Implement try-catch blocks with specific exception types
+- Use custom exception classes extending built-in exceptions
+- Always sanitize user input and validate data
+- Use prepared statements for database queries (prevent SQL injection)
+- Implement CSRF protection for forms
+- Validate and escape output to prevent XSS attacks
+- Use password_hash() and password_verify() for password handling
+
+### Documentation
+- Write comprehensive PHPDoc blocks for all classes and methods
+- Document parameters with correct types and descriptions
+- Include `@return`, `@throws`, and `@since` tags
+- Document complex algorithms and business logic
+- Maintain README files with setup and usage instructions
+
+## CodeIgniter 4 Framework Standards
+
+### MVC Architecture
+- **Controllers**: Keep thin, delegate business logic to models/services
+  ```php
+  <?php declare(strict_types=1);
+  
+  namespace App\Controllers;
+  
+  use CodeIgniter\Controller;
+  
+  final class UserController extends Controller
+  {
+      public function __construct()
+      {
+          // Initialize services via dependency injection
+      }
+  }
+  ```
+
+- **Models**: Extend CodeIgniter's Model class, use proper validation rules
+  ```php
+  <?php declare(strict_types=1);
+  
+  namespace App\Models;
+  
+  use CodeIgniter\Model;
+  
+  final class UserModel extends Model
+  {
+      protected $table            = 'users';
+      protected $primaryKey       = 'id';
+      protected $useAutoIncrement = true;
+      protected $returnType       = 'array';
+      protected $useSoftDeletes   = true;
+      
+      protected $allowedFields = ['name', 'email', 'password'];
+      
+      protected $validationRules = [
+          'name'     => 'required|min_length[3]|max_length[50]',
+          'email'    => 'required|valid_email|is_unique[users.email]',
+          'password' => 'required|min_length[8]'
+      ];
+  }
+  ```
+
+- **Views**: Use view cells for reusable components, implement proper data escaping
+
+### Framework Features
+- **Database**: Use Query Builder for complex queries, implement database migrations
+- **Services**: Create custom services extending CodeIgniter's base services
+- **Libraries**: Develop reusable libraries following framework conventions
+- **Helpers**: Create utility functions following CodeIgniter's helper pattern
+- **Filters**: Implement authentication and authorization filters
+- **Events**: Use framework's event system for decoupled architecture
+
+### Configuration Management
+- Use environment-specific configuration files
+- Store sensitive data in `.env` files (never commit to version control)
+- Implement proper caching strategies for configuration data
+- Use CodeIgniter's configuration classes for type-safe settings
+
+### Routing & Security
+- Define clear, RESTful routes with proper HTTP methods
+- Implement route groups for logical organization
+- Use middleware filters for authentication and authorization
+- Enable CSRF protection globally
+- Implement rate limiting for API endpoints
+
+## XAMPP Environment Configuration
+
+### Apache Configuration
+- Enable mod_rewrite for clean URLs
+- Configure virtual hosts for multiple projects
+- Set proper PHP memory limits and execution time
+- Enable SSL/TLS for secure connections
+- Configure proper error logging
+
+### MySQL/MariaDB Setup
+- Use InnoDB storage engine for ACID compliance
+- Implement proper database user privileges
+- Enable query caching for performance
+- Configure proper charset (utf8mb4) and collation
+- Regular database maintenance and optimization
+
+### PHP Configuration (php.ini)
+```ini
+; Enable error reporting for development
+display_errors = On
+error_reporting = E_ALL
+
+; Security settings
+expose_php = Off
+session.cookie_httponly = On
+session.cookie_secure = On
+
+; Performance optimization
+opcache.enable = 1
+opcache.memory_consumption = 128
+opcache.max_accelerated_files = 10000
+
+; File upload limits
+upload_max_filesize = 32M
+post_max_size = 32M
+max_execution_time = 300
+```
+
+### Development Workflow
+- Use version control (Git) with proper .gitignore
+- Implement database migrations for schema changes
+- Create seeder files for test data
+- Use environment-specific configuration
+- Implement automated testing (PHPUnit)
+
+## Database Design & Optimization
+
+### Schema Design
+- Use appropriate data types for columns
+- Implement proper foreign key relationships
+- Create indexes for frequently queried columns
+- Use database normalization principles
+- Implement soft deletes for data integrity
+
+### Query Optimization
+- Use CodeIgniter's Query Builder for complex queries
+- Implement proper pagination for large datasets
+- Use database transactions for data consistency
+- Monitor and optimize slow queries
+- Implement connection pooling when necessary
+
+### Migration Best Practices
+```php
+<?php declare(strict_types=1);
+
+namespace App\Database\Migrations;
+
+use CodeIgniter\Database\Migration;
+
+final class CreateUsersTable extends Migration
+{
+    public function up(): void
+    {
+        $this->forge->addField([
+            'id' => [
+                'type'           => 'INT',
+                'constraint'     => 11,
+                'unsigned'       => true,
+                'auto_increment' => true,
+            ],
+            'name' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 100,
+                'null'       => false,
+            ],
+            'email' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 255,
+                'null'       => false,
+            ],
+            'created_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'updated_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+        ]);
+        
+        $this->forge->addKey('id', true);
+        $this->forge->addUniqueKey('email');
+        $this->forge->createTable('users');
+    }
+    
+    public function down(): void
+    {
+        $this->forge->dropTable('users');
+    }
+}
+```
+
+## Performance & Optimization
+
+### Caching Strategies
+- Use CodeIgniter's caching drivers (Redis, Memcached, File)
+- Implement query result caching for expensive operations
+- Use output caching for static content
+- Implement proper cache invalidation strategies
+
+### Code Optimization
+- Use lazy loading for expensive operations
+- Implement proper autoloading with Composer
+- Optimize database queries and reduce N+1 problems
+- Use profiling tools to identify bottlenecks
+- Implement proper session management
+
+### XAMPP Performance Tuning
+- Adjust Apache and MySQL configuration for optimal performance
+- Enable OPcache for PHP bytecode caching
+- Configure proper memory limits and timeouts
+- Use SSD storage for faster I/O operations
+
+## Testing & Quality Assurance
+
+### Testing Framework
+- Implement unit tests using PHPUnit
+- Create integration tests for API endpoints
+- Use CodeIgniter's testing features for framework-specific testing
+- Implement database testing with transactions
+
+### Code Quality Tools
+- Use PHP CodeSniffer for coding standard compliance
+- Implement static analysis with PHPStan or Psalm
+- Use PHP-CS-Fixer for automated code formatting
+- Implement continuous integration pipelines
+
+## API Development Standards
+
+### RESTful API Design
+- Follow REST conventions for endpoint naming
+- Use appropriate HTTP status codes
+- Implement proper JSON response formatting
+- Use API versioning for backward compatibility
+
+### Authentication & Authorization
+- Implement JWT tokens for stateless authentication
+- Use proper API key management
+- Implement role-based access control (RBAC)
+- Add rate limiting and throttling
+
+### API Documentation
+- Use OpenAPI/Swagger for API documentation
+- Provide clear examples and response schemas
+- Document error responses and status codes
+- Maintain up-to-date API documentation
+
+## Deployment & Production Considerations
+
+### Environment Preparation
+- Disable debug mode and error display
+- Enable OPcache and remove development tools
+- Configure proper logging and monitoring
+- Implement SSL/TLS certificates
+- Set up database connection pooling
+
+### Security Hardening
+- Remove default XAMPP security vulnerabilities
+- Configure proper file permissions
+- Implement Web Application Firewall (WAF)
+- Regular security updates and patches
+- Database security hardening
+
+## File Structure Organization
+```
+project-root/
+├── app/
+│   ├── Controllers/
+│   ├── Models/
+│   ├── Views/
+│   ├── Config/
+│   ├── Database/
+│   │   ├── Migrations/
+│   │   └── Seeds/
+│   ├── Services/
+│   ├── Libraries/
+│   └── Helpers/
+├── public/
+│   ├── index.php
+│   ├── assets/
+│   └── uploads/
+├── tests/
+├── vendor/
+├── .env
+├── composer.json
+└── README.md
+```
+
+## Naming Conventions Summary
+- **Classes**: PascalCase (`UserController`, `UserModel`)
+- **Methods/Functions**: camelCase (`getUserData()`, `validateInput()`)
+- **Variables**: camelCase (`$userData`, `$isValid`)
+- **Constants**: UPPER_SNAKE_CASE (`MAX_UPLOAD_SIZE`, `DEFAULT_TIMEZONE`)
+- **Database Tables**: snake_case (`user_profiles`, `order_items`)
+- **Database Columns**: snake_case (`created_at`, `user_id`)
+- **Files**: PascalCase for classes, snake_case for others
+
+This comprehensive rule set ensures consistent, secure, and maintainable PHP development using CodeIgniter 4 framework within the XAMPP environment, following modern PHP best practices and industry standards.

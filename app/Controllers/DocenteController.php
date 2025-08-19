@@ -55,22 +55,37 @@ class DocenteController extends Controller
     {
         $capacitacionModel = new \App\Models\CapacitacionModel();
         $empleadoCapacitacionModel = new \App\Models\EmpleadoCapacitacionModel();
-        $empleadoModel = new \App\Models\EmpleadoModel();
+        $idEmpleado = session()->get('id_empleado');
         
-        // Obtener ID del empleado actual
-        $empleado = $empleadoModel->getEmpleadoByUsuarioId(session()->get('id_usuario'));
-        $idEmpleado = $empleado['id_empleado'] ?? null;
+        // Si no hay id_empleado en la sesión, obtenerlo del usuario
+        if (!$idEmpleado) {
+            $empleadoModel = new \App\Models\EmpleadoModel();
+            $empleado = $empleadoModel->getEmpleadoByUsuarioId(session()->get('id_usuario'));
+            $idEmpleado = $empleado ? $empleado['id_empleado'] : null;
+        }
+        
+        // Obtener capacitaciones disponibles y mis capacitaciones
+        $capacitacionesDisponibles = $idEmpleado ? $capacitacionModel->getCapacitacionesDisponibles($idEmpleado) : [];
+        $misCapacitaciones = $idEmpleado ? $empleadoCapacitacionModel->getCapacitacionesPorEmpleado($idEmpleado) : [];
+        
+        // Estadísticas
+        $estadisticas = [
+            'total_disponibles' => count($capacitacionesDisponibles),
+            'total_inscrito' => count($misCapacitaciones),
+            'total_completadas' => count(array_filter($misCapacitaciones, function($c) { return $c['aprobo'] == 1; })),
+            'total_pendientes' => count(array_filter($misCapacitaciones, function($c) { return $c['aprobo'] == 0; }))
+        ];
         
         $data = [
-            'title' => 'Mis Capacitaciones',
+            'title' => 'Mis Capacitaciones - Docente',
             'user' => [
                 'nombres' => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
                 'rol' => session()->get('nombre_rol')
             ],
-            'capacitacionesDisponibles' => $capacitacionModel->getCapacitacionesDisponibles($idEmpleado),
-            'misCapacitaciones' => $empleadoCapacitacionModel->getCapacitacionesEmpleado($idEmpleado),
-            'estadisticas' => $empleadoCapacitacionModel->getEstadisticasEmpleado($idEmpleado)
+            'capacitaciones_disponibles' => $capacitacionesDisponibles,
+            'mis_capacitaciones' => $misCapacitaciones,
+            'estadisticas' => $estadisticas
         ];
         
         return view('Roles/Docente/capacitaciones', $data);
@@ -80,22 +95,21 @@ class DocenteController extends Controller
     {
         $documentoModel = new \App\Models\DocumentoModel();
         $categoriaModel = new \App\Models\CategoriaModel();
-        $empleadoModel = new \App\Models\EmpleadoModel();
+        $idEmpleado = session()->get('id_empleado');
         
-        // Obtener ID del empleado actual
-        $empleado = $empleadoModel->getEmpleadoByUsuarioId(session()->get('id_usuario'));
-        $idEmpleado = $empleado['id_empleado'] ?? null;
+        // Obtener estadísticas
+        $estadisticas = $documentoModel->getEstadisticasDocumentos($idEmpleado);
         
         $data = [
-            'title' => 'Mis Documentos',
+            'title' => 'Mis Documentos - Docente',
             'user' => [
                 'nombres' => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
                 'rol' => session()->get('nombre_rol')
             ],
-            'documentos' => $documentoModel->getDocumentosEmpleado($idEmpleado),
-            'categorias' => $categoriaModel->getCategoriasActivas(),
-            'estadisticas' => $documentoModel->getEstadisticasEmpleado($idEmpleado)
+            'documentos' => $documentoModel->getDocumentosPorEmpleado($idEmpleado),
+            'categorias' => $categoriaModel->findAll(),
+            'estadisticas' => $estadisticas
         ];
         
         return view('Roles/Docente/documentos', $data);
@@ -103,105 +117,312 @@ class DocenteController extends Controller
 
     public function certificados()
     {
+        $certificadoModel = new \App\Models\CertificadoModel();
+        $idEmpleado = session()->get('id_empleado');
+        
+        // Obtener certificados del empleado
+        $certificados = $certificadoModel->getCertificadosPorEmpleado($idEmpleado);
+        
+        // Estadísticas
+        $estadisticas = [
+            'total_certificados' => count($certificados),
+            'certificados_vigentes' => count(array_filter($certificados, function($c) { 
+                return $c['estado'] == 'Vigente'; 
+            })),
+            'certificados_vencidos' => count(array_filter($certificados, function($c) { 
+                return $c['estado'] == 'Vencido'; 
+            })),
+            'proximos_vencer' => count(array_filter($certificados, function($c) { 
+                return $c['estado'] == 'Próximo a vencer'; 
+            }))
+        ];
+        
         $data = [
-            'title' => 'Certificados',
+            'title' => 'Mis Certificados - Docente',
             'user' => [
                 'nombres' => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
                 'rol' => session()->get('nombre_rol')
-            ]
+            ],
+            'certificados' => $certificados,
+            'estadisticas' => $estadisticas
         ];
+        
         return view('Roles/Docente/certificados', $data);
     }
 
     public function evaluaciones()
     {
+        $evaluacionModel = new \App\Models\EvaluacionModel();
+        $idEmpleado = session()->get('id_empleado');
+        
+        // Obtener evaluaciones del empleado
+        $evaluaciones = $evaluacionModel->getEvaluacionesPorEmpleado($idEmpleado);
+        
+        // Calcular estadísticas
+        $totalEvaluaciones = count($evaluaciones);
+        $promedioPuntaje = $totalEvaluaciones > 0 ? array_sum(array_column($evaluaciones, 'puntaje_total')) / $totalEvaluaciones : 0;
+        $ultimaEvaluacion = $totalEvaluaciones > 0 ? date('d/m/Y', strtotime($evaluaciones[0]['fecha_evaluacion'])) : 'N/A';
+        
+        $estadisticas = [
+            'total_evaluaciones' => $totalEvaluaciones,
+            'promedio_puntaje' => round($promedioPuntaje, 1),
+            'ultima_evaluacion' => $ultimaEvaluacion,
+            'competencias_evaluadas' => count(array_unique(array_column($evaluaciones, 'id_competencia')))
+        ];
+        
         $data = [
-            'title' => 'Mis Evaluaciones',
+            'title' => 'Mis Evaluaciones - Docente',
             'user' => [
                 'nombres' => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
                 'rol' => session()->get('nombre_rol')
-            ]
+            ],
+            'evaluaciones' => $evaluaciones,
+            'estadisticas' => $estadisticas
         ];
+        
         return view('Roles/Docente/evaluaciones', $data);
     }
 
     public function competencias()
     {
+        $empleadoCompetenciaModel = new \App\Models\EmpleadoCompetenciaModel();
+        $idEmpleado = session()->get('id_empleado');
+        
+        // Obtener competencias del empleado
+        $competencias = $empleadoCompetenciaModel->getCompetenciasPorEmpleado($idEmpleado);
+        
+        // Calcular estadísticas
+        $totalCompetencias = count($competencias);
+        $nivelExperto = count(array_filter($competencias, function($c) { return $c['nivel_actual'] == 'Experto'; }));
+        $nivelAvanzado = count(array_filter($competencias, function($c) { return $c['nivel_actual'] == 'Avanzado'; }));
+        
+        $estadisticas = [
+            'total_competencias' => $totalCompetencias,
+            'nivel_experto' => $nivelExperto,
+            'nivel_avanzado' => $nivelAvanzado,
+            'promedio_nivel' => $totalCompetencias > 0 ? round(($nivelExperto + $nivelAvanzado) / $totalCompetencias * 100, 1) : 0
+        ];
+        
         $data = [
-            'title' => 'Mis Competencias',
+            'title' => 'Mis Competencias - Docente',
             'user' => [
                 'nombres' => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
                 'rol' => session()->get('nombre_rol')
-            ]
+            ],
+            'competencias' => $competencias,
+            'estadisticas' => $estadisticas
         ];
+        
         return view('Roles/Docente/competencias', $data);
     }
 
     public function asistencias()
     {
+        $asistenciaModel = new \App\Models\AsistenciaModel();
+        $empleadoId = session('id_empleado');
+        
+        // Obtener estadísticas de asistencias del docente
+        $estadisticas = $asistenciaModel->getEstadisticasAsistencias();
+        
+        // Obtener asistencias del docente
+        $asistencias = $asistenciaModel->getAsistenciasEmpleado($empleadoId);
+        
         $data = [
-            'title' => 'Mis Asistencias',
+            'title' => 'Control de Asistencias - Docente',
             'user' => [
-                'nombres' => session()->get('nombres'),
-                'apellidos' => session()->get('apellidos'),
-                'rol' => session()->get('nombre_rol')
-            ]
+                'nombres' => session('nombres'),
+                'apellidos' => session('apellidos'),
+                'rol' => session('nombre_rol')
+            ],
+            'estadisticas' => [
+                'total_dias' => count($asistencias),
+                'puntuales' => $estadisticas->puntuales ?? 0,
+                'tardanzas' => $estadisticas->tardanzas ?? 0,
+                'ausencias' => $estadisticas->ausencias ?? 0
+            ],
+            'asistencias' => $asistencias
         ];
+        
         return view('Roles/Docente/asistencias', $data);
+    }
+
+    public function guardarAsistencia()
+    {
+        $asistenciaModel = new \App\Models\AsistenciaModel();
+        $empleadoId = session('id_empleado');
+        
+        $data = [
+            'id_empleado' => $empleadoId,
+            'fecha' => $this->request->getPost('fecha'),
+            'hora_entrada' => $this->request->getPost('hora_entrada'),
+            'hora_salida' => $this->request->getPost('hora_salida'),
+            'estado' => $this->request->getPost('estado'),
+            'observaciones' => $this->request->getPost('observaciones')
+        ];
+        
+        // Calcular horas trabajadas si hay entrada y salida
+        if ($data['hora_entrada'] && $data['hora_salida']) {
+            $entrada = strtotime($data['hora_entrada']);
+            $salida = strtotime($data['hora_salida']);
+            $data['horas_trabajadas'] = ($salida - $entrada) / 3600;
+        }
+        
+        try {
+            $asistenciaModel->insert($data);
+            return $this->response->setJSON(['success' => true, 'message' => 'Asistencia registrada correctamente']);
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error al registrar asistencia']);
+        }
     }
 
     public function permisos()
     {
+        $permisoModel = new \App\Models\PermisoModel();
+        $idEmpleado = session()->get('id_empleado');
+        
+        // Obtener permisos del empleado
+        $permisos = $permisoModel->getPermisosPorEmpleado($idEmpleado);
+        
+        // Calcular estadísticas
+        $totalPermisos = count($permisos);
+        $permisosAprobados = count(array_filter($permisos, function($p) { return $p['estado'] == 'Aprobado'; }));
+        $permisosPendientes = count(array_filter($permisos, function($p) { return $p['estado'] == 'Solicitado'; }));
+        $permisosRechazados = count(array_filter($permisos, function($p) { return $p['estado'] == 'Rechazado'; }));
+        
+        $estadisticas = [
+            'total_permisos' => $totalPermisos,
+            'permisos_aprobados' => $permisosAprobados,
+            'permisos_pendientes' => $permisosPendientes,
+            'permisos_rechazados' => $permisosRechazados
+        ];
+        
         $data = [
-            'title' => 'Mis Permisos',
+            'title' => 'Mis Permisos - Docente',
             'user' => [
                 'nombres' => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
                 'rol' => session()->get('nombre_rol')
-            ]
+            ],
+            'permisos' => $permisos,
+            'estadisticas' => $estadisticas
         ];
+        
         return view('Roles/Docente/permisos', $data);
     }
 
     public function nomina()
     {
+        $nominaModel = new \App\Models\NominaModel();
+        $detalleNominaModel = new \App\Models\DetalleNominaModel();
+        $idEmpleado = session()->get('id_empleado');
+        
+        // Obtener nóminas del empleado
+        $nominas = $detalleNominaModel->getNominasPorEmpleado($idEmpleado);
+        
+        // Calcular estadísticas
+        $salarioBase = 0;
+        $totalIngresos = 0;
+        $totalDescuentos = 0;
+        $netoPagar = 0;
+        
+        if (!empty($nominas)) {
+            $salarioBase = $nominas[0]['salario_base'] ?? 0;
+            $totalIngresos = array_sum(array_column($nominas, 'total_ingresos'));
+            $totalDescuentos = array_sum(array_column($nominas, 'total_descuentos'));
+            $netoPagar = array_sum(array_column($nominas, 'neto_pagar'));
+        }
+        
+        $estadisticas = [
+            'salario_base' => $salarioBase,
+            'total_ingresos' => $totalIngresos,
+            'total_descuentos' => $totalDescuentos,
+            'neto_pagar' => $netoPagar
+        ];
+        
         $data = [
-            'title' => 'Mi Nómina',
+            'title' => 'Mi Nómina - Docente',
             'user' => [
                 'nombres' => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
                 'rol' => session()->get('nombre_rol')
-            ]
+            ],
+            'nominas' => $nominas,
+            'estadisticas' => $estadisticas
         ];
+        
         return view('Roles/Docente/nomina', $data);
     }
 
     public function beneficios()
     {
+        $empleadoBeneficioModel = new \App\Models\EmpleadoBeneficioModel();
+        $idEmpleado = session()->get('id_empleado');
+        
+        // Obtener beneficios del empleado
+        $beneficios = $empleadoBeneficioModel->getBeneficiosPorEmpleado($idEmpleado);
+        
+        // Calcular estadísticas
+        $totalBeneficios = count($beneficios);
+        $beneficiosActivos = count(array_filter($beneficios, function($b) { return $b['estado'] == 'Activo'; }));
+        $beneficiosVencidos = count(array_filter($beneficios, function($b) { return $b['estado'] == 'Vencido'; }));
+        $tiposBeneficios = count(array_unique(array_column($beneficios, 'tipo_beneficio')));
+        
+        $estadisticas = [
+            'total_beneficios' => $totalBeneficios,
+            'beneficios_activos' => $beneficiosActivos,
+            'beneficios_vencidos' => $beneficiosVencidos,
+            'tipos_beneficios' => $tiposBeneficios
+        ];
+        
         $data = [
-            'title' => 'Mis Beneficios',
+            'title' => 'Mis Beneficios - Docente',
             'user' => [
                 'nombres' => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
                 'rol' => session()->get('nombre_rol')
-            ]
+            ],
+            'beneficios' => $beneficios,
+            'estadisticas' => $estadisticas
         ];
+        
         return view('Roles/Docente/beneficios', $data);
     }
 
     public function solicitudes()
     {
+        $solicitudModel = new \App\Models\SolicitudModel();
+        $idEmpleado = session()->get('id_empleado');
+        
+        // Obtener solicitudes del empleado
+        $solicitudes = $solicitudModel->getSolicitudesPorEmpleado($idEmpleado);
+        
+        // Calcular estadísticas
+        $totalSolicitudes = count($solicitudes);
+        $solicitudesAprobadas = count(array_filter($solicitudes, function($s) { return $s['estado'] == 'Aprobada'; }));
+        $solicitudesPendientes = count(array_filter($solicitudes, function($s) { return $s['estado'] == 'Pendiente'; }));
+        $solicitudesRechazadas = count(array_filter($solicitudes, function($s) { return $s['estado'] == 'Rechazada'; }));
+        
+        $estadisticas = [
+            'total_solicitudes' => $totalSolicitudes,
+            'solicitudes_aprobadas' => $solicitudesAprobadas,
+            'solicitudes_pendientes' => $solicitudesPendientes,
+            'solicitudes_rechazadas' => $solicitudesRechazadas
+        ];
+        
         $data = [
-            'title' => 'Mis Solicitudes',
+            'title' => 'Mis Solicitudes - Docente',
             'user' => [
                 'nombres' => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
                 'rol' => session()->get('nombre_rol')
-            ]
+            ],
+            'solicitudes' => $solicitudes,
+            'estadisticas' => $estadisticas
         ];
+        
         return view('Roles/Docente/solicitudes', $data);
     }
 
@@ -215,6 +436,7 @@ class DocenteController extends Controller
                 'rol' => session()->get('nombre_rol')
             ]
         ];
+        
         return view('Roles/Docente/nueva_solicitud', $data);
     }
 
