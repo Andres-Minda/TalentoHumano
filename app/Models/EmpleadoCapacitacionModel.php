@@ -13,8 +13,8 @@ class EmpleadoCapacitacionModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'id_empleado', 'id_capacitacion', 'fecha_asignacion', 'estado',
-        'fecha_completado', 'puntaje', 'observaciones', 'certificado_url'
+        'id_empleado', 'id_capacitacion', 'asistio', 'aprobo',
+        'certificado_url'
     ];
 
     // Dates
@@ -27,11 +27,8 @@ class EmpleadoCapacitacionModel extends Model
     protected $validationRules      = [
         'id_empleado' => 'required|integer',
         'id_capacitacion' => 'required|integer',
-        'fecha_asignacion' => 'required|valid_date',
-        'estado' => 'required|in_list[ASIGNADA,EN_PROGRESO,COMPLETADA,CANCELADA]',
-        'fecha_completado' => 'permit_empty|valid_date',
-        'puntaje' => 'permit_empty|decimal',
-        'observaciones' => 'permit_empty|max_length[1000]'
+        'asistio' => 'permit_empty|in_list[0,1]',
+        'aprobo' => 'permit_empty|in_list[0,1]'
     ];
 
     protected $validationMessages = [
@@ -43,13 +40,11 @@ class EmpleadoCapacitacionModel extends Model
             'required' => 'La capacitación es obligatoria',
             'integer' => 'La capacitación debe ser un número entero'
         ],
-        'fecha_asignacion' => [
-            'required' => 'La fecha de asignación es obligatoria',
-            'valid_date' => 'La fecha de asignación debe ser una fecha válida'
+        'asistio' => [
+            'in_list' => 'El valor de asistencia debe ser 0 o 1'
         ],
-        'estado' => [
-            'required' => 'El estado es obligatorio',
-            'in_list' => 'El estado debe ser ASIGNADA, EN_PROGRESO, COMPLETADA o CANCELADA'
+        'aprobo' => [
+            'in_list' => 'El valor de aprobación debe ser 0 o 1'
         ]
     ];
 
@@ -73,11 +68,11 @@ class EmpleadoCapacitacionModel extends Model
     public function getAsignacionesCompletas()
     {
         return $this->db->table('empleados_capacitaciones ec')
-            ->select('ec.*, e.nombres, e.apellidos, u.cedula, c.nombre as capacitacion_nombre, c.tipo as capacitacion_tipo')
+            ->select('ec.*, e.nombres as empleado_nombres, e.apellidos as empleado_apellidos, u.cedula, c.nombre as capacitacion_nombre, c.tipo as capacitacion_tipo')
             ->join('empleados e', 'e.id_empleado = ec.id_empleado', 'left')
             ->join('usuarios u', 'u.id_usuario = e.id_usuario', 'left')
             ->join('capacitaciones c', 'c.id_capacitacion = ec.id_capacitacion', 'left')
-            ->orderBy('ec.fecha_asignacion', 'DESC')
+            ->orderBy('ec.created_at', 'DESC')
             ->get()
             ->getResultArray();
     }
@@ -91,7 +86,7 @@ class EmpleadoCapacitacionModel extends Model
             ->select('ec.*, c.nombre as capacitacion_nombre, c.tipo as capacitacion_tipo, c.fecha_inicio, c.fecha_fin')
             ->join('capacitaciones c', 'c.id_capacitacion = ec.id_capacitacion', 'left')
             ->where('ec.id_empleado', $empleadoId)
-            ->orderBy('ec.fecha_asignacion', 'DESC')
+            ->orderBy('ec.created_at', 'DESC')
             ->get()
             ->getResultArray();
     }
@@ -101,8 +96,8 @@ class EmpleadoCapacitacionModel extends Model
      */
     public function getAsignacionesPorEstado($estado)
     {
-        return $this->where('estado', $estado)
-            ->orderBy('fecha_asignacion', 'DESC')
+        return $this->where('aprobo', $estado == 'COMPLETADA' ? 1 : 0)
+            ->orderBy('created_at', 'DESC')
             ->findAll();
     }
 
@@ -111,7 +106,7 @@ class EmpleadoCapacitacionModel extends Model
      */
     public function getAsignacionesRecientes($limite = 10)
     {
-        return $this->orderBy('fecha_asignacion', 'DESC')
+        return $this->orderBy('created_at', 'DESC')
             ->limit($limite)
             ->findAll();
     }
@@ -124,8 +119,8 @@ class EmpleadoCapacitacionModel extends Model
         $db = $this->db;
         
         $totalAsignaciones = $db->table('empleados_capacitaciones')->countAllResults();
-        $asignacionesCompletadas = $db->table('empleados_capacitaciones')->where('estado', 'COMPLETADA')->countAllResults();
-        $asignacionesEnProgreso = $db->table('empleados_capacitaciones')->where('estado', 'EN_PROGRESO')->countAllResults();
+        $asignacionesCompletadas = $db->table('empleados_capacitaciones')->where('aprobo', 1)->countAllResults();
+        $asignacionesEnProgreso = $db->table('empleados_capacitaciones')->where('aprobo', 0)->countAllResults();
         
         return [
             'total' => $totalAsignaciones,
@@ -141,7 +136,7 @@ class EmpleadoCapacitacionModel extends Model
         $builder->select('ec.*, c.nombre, c.tipo, c.fecha_inicio, c.fecha_fin, c.proveedor, c.costo, c.estado as capacitacion_estado');
         $builder->join('capacitaciones c', 'c.id_capacitacion = ec.id_capacitacion');
         $builder->where('ec.id_empleado', $idEmpleado);
-        $builder->orderBy('c.fecha_inicio', 'DESC');
+        $builder->orderBy('ec.created_at', 'DESC');
         return $builder->get()->getResultArray();
     }
 } 

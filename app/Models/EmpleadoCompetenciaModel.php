@@ -86,7 +86,7 @@ class EmpleadoCompetenciaModel extends Model
     public function getEvaluacionesCompletas()
     {
         return $this->db->table('empleados_competencias ec')
-            ->select('ec.*, e.nombres, e.apellidos, u.cedula, c.nombre as competencia_nombre, c.categoria as competencia_categoria')
+            ->select('ec.*, e.nombres, e.apellidos, u.cedula, c.nombre as competencia_nombre, c.descripcion as competencia_descripcion')
             ->join('empleados e', 'e.id_empleado = ec.id_empleado', 'left')
             ->join('usuarios u', 'u.id_usuario = e.id_usuario', 'left')
             ->join('competencias c', 'c.id_competencia = ec.id_competencia', 'left')
@@ -115,8 +115,9 @@ class EmpleadoCompetenciaModel extends Model
     public function getEvaluacionesPorCompetencia($competenciaId)
     {
         return $this->db->table('empleados_competencias ec')
-            ->select('ec.*, e.nombres, e.apellidos, e.cedula')
+            ->select('ec.*, e.nombres, e.apellidos, u.cedula')
             ->join('empleados e', 'e.id_empleado = ec.id_empleado', 'left')
+            ->join('usuarios u', 'u.id_usuario = e.id_usuario', 'left')
             ->where('ec.id_competencia', $competenciaId)
             ->orderBy('ec.fecha_evaluacion', 'DESC')
             ->get()

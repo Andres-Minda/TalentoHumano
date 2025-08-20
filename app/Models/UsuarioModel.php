@@ -145,10 +145,43 @@ class UsuarioModel extends Model
         $usuariosActivos = $db->table('usuarios')->where('activo', 1)->countAllResults();
         $usuariosInactivos = $db->table('usuarios')->where('activo', 0)->countAllResults();
         
-        return [
-            'total' => $totalUsuarios,
-            'activos' => $usuariosActivos,
-            'inactivos' => $usuariosInactivos
-        ];
+        // Crear objeto con propiedades para compatibilidad
+        $estadisticas = new \stdClass();
+        $estadisticas->total_usuarios = $totalUsuarios;
+        $estadisticas->usuarios_activos = $usuariosActivos;
+        $estadisticas->usuarios_inactivos = $usuariosInactivos;
+        $estadisticas->usuarios_con_acceso = $usuariosActivos; // Por defecto, usuarios activos tienen acceso
+        
+        return $estadisticas;
+    }
+
+    /**
+     * Obtiene usuarios con información de empleado
+     */
+    public function getUsuariosConEmpleado()
+    {
+        return $this->db->table('usuarios u')
+            ->select('u.*, r.nombre_rol, r.descripcion as rol_descripcion, 
+                     e.nombres as empleado_nombres, e.apellidos as empleado_apellidos,
+                     e.tipo_empleado, d.nombre as departamento_nombre')
+            ->join('roles r', 'r.id_rol = u.id_rol', 'left')
+            ->join('empleados e', 'e.id_usuario = u.id_usuario', 'left')
+            ->join('departamentos d', 'd.id_departamento = e.id_departamento', 'left')
+            ->orderBy('u.created_at', 'DESC')
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Obtiene todos los usuarios con información básica
+     */
+    public function getAllUsuarios()
+    {
+        return $this->db->table('usuarios u')
+            ->select('u.*, r.nombre_rol')
+            ->join('roles r', 'r.id_rol = u.id_rol', 'left')
+            ->orderBy('u.created_at', 'DESC')
+            ->get()
+            ->getResultArray();
     }
 } 

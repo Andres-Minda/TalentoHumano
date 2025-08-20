@@ -281,23 +281,7 @@ class AdminTHController extends Controller
         return view('Roles/AdminTalentoHumano/nominas', $data);
     }
 
-    public function beneficios()
-    {
-        $beneficioModel = new \App\Models\BeneficioModel();
-        $empleadoBeneficioModel = new \App\Models\EmpleadoBeneficioModel();
-        
-        $data = [
-            'title' => 'Beneficios',
-            'user' => [
-                'nombres' => session()->get('nombres'),
-                'apellidos' => session()->get('apellidos'),
-                'rol' => session()->get('nombre_rol')
-            ],
-            'beneficios' => $beneficioModel->findAll(),
-            'asignaciones' => $empleadoBeneficioModel->getAsignacionesCompletas()
-        ];
-        return view('Roles/AdminTalentoHumano/beneficios', $data);
-    }
+
 
     public function reportes()
     {
@@ -324,7 +308,7 @@ class AdminTHController extends Controller
             'empleados_por_departamento' => $empleadoModel->getEmpleadosPorDepartamentoChart(),
             'estado_vacantes' => $vacanteModel->getEstadoVacantes(),
             'capacitaciones_por_tipo' => $capacitacionModel->getCapacitacionesPorTipoParaGraficos(),
-            'asistencias_por_mes' => $asistenciaModel->getAsistenciasPorMes()
+            'asistencias_por_mes' => $asistenciaModel->getAsistenciasPorMes(date('n'), date('Y'))
         ];
         
         $data = [

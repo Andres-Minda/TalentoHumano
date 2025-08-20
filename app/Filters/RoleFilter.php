@@ -13,56 +13,86 @@ class RoleFilter implements FilterInterface
      */
     public function before(RequestInterface $request, $arguments = null)
     {
+        log_message('info', 'RoleFilter - INICIANDO FILTRO para URL: ' . $request->getUri()->getPath());
+        
         // Verificar si el usuario está logueado
         if (!session()->get('isLoggedIn')) {
+            log_message('warning', 'RoleFilter - Usuario no logueado, redirigiendo a login');
             return redirect()->to('/login');
         }
         
         // Si no se especifican roles, permitir acceso
         if (empty($arguments)) {
+            log_message('info', 'RoleFilter - No se especificaron roles, acceso permitido');
             return;
         }
         
         // Obtener el rol del usuario
-        $userRole = session()->get('id_rol');
+        $userRoleId = session()->get('id_rol');
         $userRoleName = session()->get('nombre_rol');
+        
+        // Debug: mostrar información del usuario
+        log_message('info', 'RoleFilter - User ID: ' . $userRoleId . ', Role Name: ' . $userRoleName);
+        log_message('info', 'RoleFilter - Required roles: ' . implode(', ', $arguments));
         
         // Verificar si el usuario tiene alguno de los roles requeridos
         foreach ($arguments as $requiredRole) {
-            if ($this->checkRole($userRole, $userRoleName, $requiredRole)) {
+            log_message('info', 'RoleFilter - Verificando rol requerido: ' . $requiredRole);
+            $roleCheck = $this->checkRole($userRoleId, $userRoleName, $requiredRole);
+            log_message('info', 'RoleFilter - Resultado de verificación: ' . $requiredRole . ' = ' . ($roleCheck ? 'PERMITIDO' : 'DENEGADO'));
+            
+            if ($roleCheck) {
+                log_message('info', 'RoleFilter - Access granted for role: ' . $requiredRole);
                 return; // Usuario tiene el rol requerido
             }
         }
         
-        // Usuario no tiene el rol requerido
-        return redirect()->to('/error/403')->with('error', 'No tiene permisos para acceder a esta página.');
+        log_message('warning', 'RoleFilter - Access denied for user ID: ' . $userRoleId . ', required: ' . implode(', ', $arguments));
+        
+        // Usuario no tiene el rol requerido - redirigir a página de acceso denegado
+        return redirect()->to('/index.php/error/403')->with('error', 'No tiene permisos para acceder a esta página.');
     }
 
     /**
      * Verifica si el usuario tiene el rol requerido
      */
-    private function checkRole($userRole, $userRoleName, $requiredRole)
+    private function checkRole($userRoleId, $userRoleName, $requiredRole)
     {
-        // Mapeo de roles por ID
+        log_message('info', 'RoleFilter - checkRole: userRoleId=' . $userRoleId . ', userRoleName=' . $userRoleName . ', requiredRole=' . $requiredRole);
+        
+        // Si se especifica un ID de rol
+        if (is_numeric($requiredRole)) {
+            $result = $userRoleId == $requiredRole;
+            log_message('info', 'RoleFilter - Comparando ID: ' . $userRoleId . ' == ' . $requiredRole . ' = ' . ($result ? 'true' : 'false'));
+            return $result;
+        }
+        
+        // Si se especifica el nombre exacto del rol del usuario
+        if (strtoupper($userRoleName) == strtoupper($requiredRole)) {
+            log_message('info', 'RoleFilter - Nombre exacto coincide: ' . $userRoleName . ' == ' . $requiredRole);
+            return true;
+        }
+        
+        // Mapeo de roles por nombre (para compatibilidad)
         $roleMap = [
-            1 => 'SUPER_ADMIN',
-            2 => 'ADMIN_TH',
-            3 => 'DOCENTE',
-            4 => 'ADMINISTRATIVO',
-            5 => 'DIRECTIVO',
-            6 => 'AUXILIAR'
+            'SUPER_ADMIN' => 'SuperAdministrador',
+            'ADMIN_TH' => 'AdministradorTalentoHumano',
+            'EMPLEADO' => 'Docente',
+            'DOCENTE' => 'Docente', // Agregar mapeo directo
+            'ADMINISTRATIVO' => 'ADMINISTRATIVO',
+            'DIRECTIVO' => 'DIRECTIVO',
+            'AUXILIAR' => 'AUXILIAR'
         ];
         
-        // Verificar por ID de rol
-        if (isset($roleMap[$userRole]) && $roleMap[$userRole] === $requiredRole) {
-            return true;
+        // Si se especifica un nombre de rol mapeado
+        if (isset($roleMap[strtoupper($requiredRole)])) {
+            $mappedRole = $roleMap[strtoupper($requiredRole)];
+            $result = strtoupper($userRoleName) == strtoupper($mappedRole);
+            log_message('info', 'RoleFilter - Mapeo: ' . $requiredRole . ' -> ' . $mappedRole . ' = ' . ($result ? 'true' : 'false'));
+            return $result;
         }
         
-        // Verificar por nombre de rol
-        if ($userRoleName === $requiredRole) {
-            return true;
-        }
-        
+        log_message('info', 'RoleFilter - No se encontró coincidencia para: ' . $requiredRole);
         return false;
     }
 

@@ -84,10 +84,9 @@ class PermisoModel extends Model
     public function getPermisosCompletos()
     {
         return $this->db->table('permisos p')
-            ->select('p.*, e.nombres, e.apellidos, u_emp.cedula, u.nombres as aprobador_nombres')
+            ->select('p.*, e.nombres as empleado_nombres, e.apellidos as empleado_apellidos, u_emp.cedula')
             ->join('empleados e', 'e.id_empleado = p.id_empleado', 'left')
             ->join('usuarios u_emp', 'u_emp.id_usuario = e.id_usuario', 'left')
-            ->join('usuarios u', 'u.id_usuario = p.aprobado_por', 'left')
             ->orderBy('p.fecha_inicio', 'DESC')
             ->get()
             ->getResultArray();
@@ -96,11 +95,11 @@ class PermisoModel extends Model
     /**
      * Obtiene permisos por empleado
      */
-    public function getPermisosPorEmpleado($empleadoId)
+    public function getPermisosPorEmpleado($idEmpleado)
     {
-        return $this->where('id_empleado', $empleadoId)
-            ->orderBy('fecha_inicio', 'DESC')
-            ->findAll();
+        return $this->where('id_empleado', $idEmpleado)
+                    ->orderBy('fecha_inicio', 'DESC')
+                    ->findAll();
     }
 
     /**
@@ -162,12 +161,5 @@ class PermisoModel extends Model
             'aprobados' => $permisosAprobados,
             'rechazados' => $permisosRechazados
         ];
-    }
-
-    public function getPermisosPorEmpleado($idEmpleado)
-    {
-        return $this->where('id_empleado', $idEmpleado)
-                    ->orderBy('fecha_inicio', 'DESC')
-                    ->findAll();
     }
 } 

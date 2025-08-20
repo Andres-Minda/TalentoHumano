@@ -13,8 +13,7 @@ class CandidatoModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'nombres', 'apellidos', 'cedula', 'email', 'telefono', 'fecha_nacimiento',
-        'genero', 'direccion', 'cv_url', 'estado', 'fecha_postulacion'
+        'nombres', 'apellidos', 'cedula', 'email', 'telefono', 'cv_url', 'estado'
     ];
 
     // Dates
@@ -28,12 +27,9 @@ class CandidatoModel extends Model
         'nombres' => 'required|min_length[2]|max_length[100]',
         'apellidos' => 'required|min_length[2]|max_length[100]',
         'cedula' => 'required|min_length[10]|max_length[20]|is_unique[candidatos.cedula,id_candidato,{id_candidato}]',
-        'email' => 'required|valid_email|max_length[255]',
+        'email' => 'required|valid_email|max_length[100]',
         'telefono' => 'permit_empty|max_length[20]',
-        'fecha_nacimiento' => 'permit_empty|valid_date',
-        'genero' => 'permit_empty|in_list[MASCULINO,FEMENINO,OTRO]',
-        'direccion' => 'permit_empty|max_length[500]',
-        'estado' => 'permit_empty|in_list[ACTIVO,INACTIVO,SELECCIONADO,RECHAZADO]'
+        'estado' => 'permit_empty|max_length[20]'
     ];
 
     protected $validationMessages = [
@@ -56,7 +52,7 @@ class CandidatoModel extends Model
         'email' => [
             'required' => 'El email es obligatorio',
             'valid_email' => 'El email debe tener un formato válido',
-            'max_length' => 'El email no puede exceder 255 caracteres'
+            'max_length' => 'El email no puede exceder 100 caracteres'
         ]
     ];
 
@@ -81,9 +77,9 @@ class CandidatoModel extends Model
     {
         return $this->db->table('candidatos c')
             ->select('c.*, 
-                     (SELECT COUNT(*) FROM aplicaciones_vacantes av WHERE av.id_candidato = c.id_candidato) as total_aplicaciones,
-                     (SELECT COUNT(*) FROM aplicaciones_vacantes av WHERE av.id_candidato = c.id_candidato AND av.estado = "APROBADA") as aplicaciones_aprobadas')
-            ->orderBy('c.fecha_postulacion', 'DESC')
+                     (SELECT COUNT(*) FROM postulaciones p WHERE p.id_candidato = c.id_candidato) as total_aplicaciones,
+                     (SELECT COUNT(*) FROM postulaciones p WHERE p.id_candidato = c.id_candidato AND p.puntaje_prueba >= 70) as aplicaciones_aprobadas')
+            ->orderBy('c.created_at', 'DESC')
             ->get()
             ->getResultArray();
     }
@@ -93,23 +89,38 @@ class CandidatoModel extends Model
      */
     public function getCandidatosPorEstado($estado)
     {
-        return $this->where('estado', $estado)
-            ->orderBy('fecha_postulacion', 'DESC')
-            ->findAll();
+        // Como no hay columna estado, filtramos por fecha de creación
+        if ($estado === 'ACTIVO') {
+            return $this->where('created_at >=', date('Y-m-d', strtotime('-1 year')))
+                ->orderBy('created_at', 'DESC')
+                ->findAll();
+        } elseif ($estado === 'INACTIVO') {
+            return $this->where('created_at <', date('Y-m-d', strtotime('-1 year')))
+                ->orderBy('created_at', 'DESC')
+                ->findAll();
+        }
+        
+        return $this->orderBy('created_at', 'DESC')->findAll();
     }
 
     /**
-     * Obtiene candidatos recientes
+     * Obtiene candidatos con estadísticas
      */
-    public function getCandidatosRecientes($limite = 10)
+    public function getCandidatosConEstadisticas()
     {
-        return $this->orderBy('fecha_postulacion', 'DESC')
-            ->limit($limite)
-            ->findAll();
+        return $this->db->table('candidatos c')
+            ->select('c.*, 
+                     (SELECT COUNT(*) FROM postulaciones p WHERE p.id_candidato = c.id_candidato) as total_postulaciones,
+                     (SELECT COUNT(*) FROM postulaciones p WHERE p.id_candidato = c.id_candidato AND p.puntaje_prueba IS NULL) as postulaciones_pendientes,
+                     (SELECT COUNT(*) FROM postulaciones p WHERE p.id_candidato = c.id_candidato AND p.puntaje_prueba >= 70) as postulaciones_aprobadas,
+                     (SELECT COUNT(*) FROM postulaciones p WHERE p.id_candidato = c.id_candidato AND p.puntaje_prueba < 70) as postulaciones_rechazadas')
+            ->orderBy('c.created_at', 'DESC')
+            ->get()
+            ->getResultArray();
     }
 
     /**
-     * Busca candidatos por nombre o cédula
+     * Busca candidatos por término
      */
     public function buscarCandidatos($termino)
     {
@@ -118,5 +129,23 @@ class CandidatoModel extends Model
             ->orLike('cedula', $termino)
             ->orLike('email', $termino)
             ->findAll();
+    }
+
+    /**
+     * Obtiene estadísticas de candidatos
+     */
+    public function getEstadisticasCandidatos()
+    {
+        $db = $this->db;
+        
+        $totalCandidatos = $db->table('candidatos')->countAllResults();
+        $candidatosActivos = $db->table('candidatos')->where('created_at >=', date('Y-m-d', strtotime('-1 year')))->countAllResults();
+        $candidatosInactivos = $db->table('candidatos')->where('created_at <', date('Y-m-d', strtotime('-1 year')))->countAllResults();
+        
+        return [
+            'total' => $totalCandidatos,
+            'activos' => $candidatosActivos,
+            'inactivos' => $candidatosInactivos
+        ];
     }
 } 

@@ -8,15 +8,6 @@ class SuperAdminController extends Controller
 {
     public function dashboard()
     {
-        // Verificar si el usuario está logueado y es super admin
-        if (!session()->get('isLoggedIn')) {
-            return redirect()->to('/login');
-        }
-        
-        if (session()->get('id_rol') != 1) { // 1 = SUPER_ADMIN
-            return redirect()->to('/error/403');
-        }
-
         $data = [
             'titulo' => 'Dashboard Super Administrador',
             'usuario' => [
@@ -31,10 +22,6 @@ class SuperAdminController extends Controller
 
     public function usuarios()
     {
-        if (!session()->get('isLoggedIn') || session()->get('id_rol') != 1) {
-            return redirect()->to('/login');
-        }
-
         $usuarioModel = new \App\Models\UsuarioModel();
         $rolModel = new \App\Models\RolModel();
         $estadisticas = $usuarioModel->getEstadisticasUsuarios();
@@ -164,10 +151,6 @@ class SuperAdminController extends Controller
 
     public function backup()
     {
-        if (!session()->get('isLoggedIn') || session()->get('id_rol') != 1) {
-            return redirect()->to('/login');
-        }
-        
         $data = [
             'title' => 'Respaldo y Restauración - Super Administrador',
             'user' => [
@@ -491,13 +474,106 @@ class SuperAdminController extends Controller
 
     public function logs()
     {
+        // Simular logs del sistema con todas las claves necesarias
+        $logs = [
+            [
+                'id' => 1,
+                'fecha' => '2025-08-19 21:00:36',
+                'nivel' => 'INFO',
+                'mensaje' => 'Usuario Super Admin accedió al sistema',
+                'usuario' => 'superadmin@universidad.edu',
+                'ip' => '192.168.1.100',
+                'accion' => 'LOGIN',
+                'archivo' => 'AuthController.php',
+                'linea' => 45
+            ],
+            [
+                'id' => 2,
+                'fecha' => '2025-08-19 20:57:45',
+                'nivel' => 'WARNING',
+                'mensaje' => 'Intento de acceso fallido desde IP 192.168.1.101',
+                'usuario' => 'usuario_desconocido',
+                'ip' => '192.168.1.101',
+                'accion' => 'LOGIN_FAILED',
+                'archivo' => 'AuthController.php',
+                'linea' => 52
+            ],
+            [
+                'id' => 3,
+                'fecha' => '2025-08-19 20:55:20',
+                'nivel' => 'INFO',
+                'mensaje' => 'Respaldo automático completado exitosamente',
+                'usuario' => 'sistema',
+                'ip' => 'localhost',
+                'accion' => 'BACKUP',
+                'archivo' => 'BackupService.php',
+                'linea' => 78
+            ],
+            [
+                'id' => 4,
+                'fecha' => '2025-08-19 20:50:15',
+                'nivel' => 'ERROR',
+                'mensaje' => 'Error al conectar con base de datos',
+                'usuario' => 'sistema',
+                'ip' => 'localhost',
+                'accion' => 'DB_ERROR',
+                'archivo' => 'DatabaseManager.php',
+                'linea' => 125
+            ],
+            [
+                'id' => 5,
+                'fecha' => '2025-08-19 20:45:30',
+                'nivel' => 'INFO',
+                'mensaje' => 'Usuario Admin TH creó nuevo empleado',
+                'usuario' => 'admin@universidad.edu',
+                'ip' => '192.168.1.102',
+                'accion' => 'CREATE_EMPLOYEE',
+                'archivo' => 'AdminTHController.php',
+                'linea' => 89
+            ],
+            [
+                'id' => 6,
+                'fecha' => '2025-08-19 20:40:15',
+                'nivel' => 'INFO',
+                'mensaje' => 'Sistema iniciado correctamente',
+                'usuario' => 'sistema',
+                'ip' => 'localhost',
+                'accion' => 'SYSTEM_START',
+                'archivo' => 'Bootstrap.php',
+                'linea' => 23
+            ],
+            [
+                'id' => 7,
+                'fecha' => '2025-08-19 20:35:22',
+                'nivel' => 'WARNING',
+                'mensaje' => 'Sesión de usuario expirada',
+                'usuario' => 'docente@universidad.edu',
+                'ip' => '192.168.1.103',
+                'accion' => 'SESSION_EXPIRED',
+                'archivo' => 'SessionManager.php',
+                'linea' => 156
+            ],
+            [
+                'id' => 8,
+                'fecha' => '2025-08-19 20:30:10',
+                'nivel' => 'INFO',
+                'mensaje' => 'Reporte de nómina generado',
+                'usuario' => 'admin@universidad.edu',
+                'ip' => '192.168.1.102',
+                'accion' => 'REPORT_GENERATED',
+                'archivo' => 'NominaController.php',
+                'linea' => 234
+            ]
+        ];
+
         $data = [
             'title' => 'Logs del Sistema - Super Administrador',
             'user' => [
                 'nombres' => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
                 'rol' => session()->get('nombre_rol')
-            ]
+            ],
+            'logs' => $logs
         ];
         return view('Roles/SuperAdministrador/logs', $data);
     }

@@ -4,7 +4,7 @@
         <div class="brand-logo d-flex align-items-center justify-content-between">
             <a href="<?= base_url('admin-th/dashboard') ?>" class="text-nowrap logo-img">
                 <img src="<?= base_url('sistema/assets/images/logos/Talento_humano.jpg') ?>" alt="Logo" />
-                <span class="ms-2 fw-bold" style="font-size: 1.3rem; color: #000;">Administrador<br> Talento Humano <br></span>
+                <span class="ms-2 fw-bold" style="font-size: 1.3rem; color: #000;">Panel del Administrador<br> Talento Humano</span>
             </a>
             <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
                 <i class="ti ti-x fs-8"></i>
@@ -100,12 +100,12 @@
                 </li>
                 <li class="nav-small-cap">
                     <i class="ti ti-dots nav-small-cap-icon fs-6"></i>
-                    <span class="hide-menu">ASISTENCIAS</span>
+                    <span class="hide-menu">INASISTENCIAS</span>
                 </li>
                 <li class="sidebar-item">
-                    <a class="sidebar-link" href="<?= base_url('admin-th/asistencias') ?>" aria-expanded="false">
-                        <span><i class="bi bi-calendar-check"></i></span>
-                        <span class="hide-menu">Control de Asistencias</span>
+                    <a class="sidebar-link" href="<?= base_url('admin-th/inasistencias') ?>" aria-expanded="false">
+                        <span><i class="bi bi-calendar-x"></i></span>
+                        <span class="hide-menu">Gestión de Inasistencias</span>
                     </a>
                 </li>
                 <li class="sidebar-item">
@@ -124,12 +124,7 @@
                         <span class="hide-menu">Gestión de Nóminas</span>
                     </a>
                 </li>
-                <li class="sidebar-item">
-                    <a class="sidebar-link" href="<?= base_url('admin-th/beneficios') ?>" aria-expanded="false">
-                        <span><i class="bi bi-gift"></i></span>
-                        <span class="hide-menu">Beneficios</span>
-                    </a>
-                </li>
+
                 <li class="nav-small-cap">
                     <i class="ti ti-dots nav-small-cap-icon fs-6"></i>
                     <span class="hide-menu">REPORTES</span>

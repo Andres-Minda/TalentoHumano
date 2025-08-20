@@ -54,13 +54,13 @@
                                     <i class="ti ti-settings fs-6"></i>
                                     <p class="mb-0 fs-3">Mi Cuenta</p>
                                 </a>
-                            <?php else: // Docente
+                            <?php else: // Empleado (antes Docente)
                             ?>
-                                <a href="<?= base_url('docente/perfil') ?>" class="d-flex align-items-center gap-2 dropdown-item">
+                                <a href="<?= base_url('empleado/perfil') ?>" class="d-flex align-items-center gap-2 dropdown-item">
                                     <i class="ti ti-user fs-6"></i>
                                     <p class="mb-0 fs-3">Mi Perfil</p>
                                 </a>
-                                <a href="<?= base_url('docente/cuenta') ?>" class="d-flex align-items-center gap-2 dropdown-item">
+                                <a href="<?= base_url('empleado/cuenta') ?>" class="d-flex align-items-center gap-2 dropdown-item">
                                     <i class="ti ti-settings fs-6"></i>
                                     <p class="mb-0 fs-3">Mi Cuenta</p>
                                 </a>

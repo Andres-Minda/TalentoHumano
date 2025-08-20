@@ -4,7 +4,7 @@
         <div class="brand-logo d-flex align-items-center justify-content-between">
             <a href="<?= base_url('docente/dashboard') ?>" class="text-nowrap logo-img">
                 <img src="<?= base_url('sistema/assets/images/logos/Talento_humano.jpg') ?>" alt="Logo" />
-                <span class="ms-2 fw-bold" style="font-size: 1.3rem; color: #000;">Docente</span>
+                <span class="ms-2 fw-bold" style="font-size: 1.3rem; color: #000;">Panel del Docente</span>
             </a>
             <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
                 <i class="ti ti-x fs-8"></i>
@@ -96,12 +96,7 @@
                         <span class="hide-menu">Mi Nómina</span>
                     </a>
                 </li>
-                <li class="sidebar-item">
-                    <a class="sidebar-link" href="<?= base_url('docente/beneficios') ?>" aria-expanded="false">
-                        <span><i class="bi bi-gift"></i></span>
-                        <span class="hide-menu">Mis Beneficios</span>
-                    </a>
-                </li>
+
                 <li class="nav-small-cap">
                     <i class="ti ti-dots nav-small-cap-icon fs-6"></i>
                     <span class="hide-menu">SOLICITUDES</span>

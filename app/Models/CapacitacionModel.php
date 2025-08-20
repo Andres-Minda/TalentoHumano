@@ -112,7 +112,7 @@ class CapacitacionModel extends Model
             
         $capacitacionesPorTipo = $db->table('capacitaciones')
             ->select('tipo, COUNT(*) as total')
-            ->where('estado', 'ACTIVA')
+            ->where('estado', 'Planificada')
             ->groupBy('tipo')
             ->get()
             ->getResultArray();
@@ -139,7 +139,7 @@ class CapacitacionModel extends Model
         return $this->db->table('capacitaciones c')
             ->select('c.*, 
                      (SELECT COUNT(*) FROM empleados_capacitaciones ec WHERE ec.id_capacitacion = c.id_capacitacion) as empleados_asignados,
-                     (SELECT COUNT(*) FROM empleados_capacitaciones ec WHERE ec.id_capacitacion = c.id_capacitacion AND ec.estado = "Completada") as empleados_completados')
+                     (SELECT COUNT(*) FROM empleados_capacitaciones ec WHERE ec.id_capacitacion = c.id_capacitacion AND ec.aprobo = 1) as empleados_completados')
             ->where('c.estado', 'Planificada')
             ->get()
             ->getResultArray();
@@ -196,7 +196,7 @@ class CapacitacionModel extends Model
      */
     public function getCapacitacionesRecientes($limite = 10)
     {
-        return $this->where('estado', 'ACTIVA')
+        return $this->where('estado', 'Planificada')
             ->orderBy('created_at', 'DESC')
             ->limit($limite)
             ->findAll();

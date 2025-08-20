@@ -168,7 +168,7 @@
                             <option value="">Seleccionar</option>
                             <option value="Permiso">Permiso</option>
                             <option value="Capacitación">Capacitación</option>
-                            <option value="Beneficio">Beneficio</option>
+    
                             <option value="Cambio de horario">Cambio de horario</option>
                             <option value="Otro">Otro</option>
                         </select>

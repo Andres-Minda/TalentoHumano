@@ -36,7 +36,7 @@
                                             <option value="">Seleccionar tipo</option>
                                             <option value="Permiso">Permiso</option>
                                             <option value="Capacitación">Capacitación</option>
-                                            <option value="Beneficio">Beneficio</option>
+                    
                                             <option value="Cambio de horario">Cambio de horario</option>
                                             <option value="Otro">Otro</option>
                                         </select>
@@ -119,7 +119,7 @@
                                 <ul>
                                     <li><strong>Permiso:</strong> Para solicitar días libres, permisos personales, etc.</li>
                                     <li><strong>Capacitación:</strong> Para solicitar participación en cursos o talleres.</li>
-                                    <li><strong>Beneficio:</strong> Para solicitar beneficios adicionales.</li>
+                
                                     <li><strong>Cambio de horario:</strong> Para solicitar modificaciones en el horario laboral.</li>
                                 </ul>
                             </div>

@@ -13,8 +13,8 @@ class ContratoModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'id_empleado', 'tipo_contrato', 'fecha_inicio', 'fecha_fin', 'salario',
-        'estado', 'descripcion', 'archivo_contrato'
+        'id_empleado', 'id_puesto', 'tipo_contrato', 'fecha_inicio', 'fecha_fin', 
+        'salario', 'horas_semanales', 'archivo_url'
     ];
 
     // Dates
@@ -26,12 +26,12 @@ class ContratoModel extends Model
     // Validation
     protected $validationRules      = [
         'id_empleado' => 'required|integer',
-        'tipo_contrato' => 'required|in_list[TEMPORAL,INDEFINIDO,OBRA_DETERMINADA,PRACTICAS]',
+        'id_puesto' => 'required|integer',
+        'tipo_contrato' => 'required|max_length[50]',
         'fecha_inicio' => 'required|valid_date',
         'fecha_fin' => 'permit_empty|valid_date',
         'salario' => 'required|decimal',
-        'estado' => 'required|in_list[ACTIVO,INACTIVO,TERMINADO,RENOVADO]',
-        'descripcion' => 'permit_empty|max_length[1000]'
+        'horas_semanales' => 'permit_empty|integer'
     ];
 
     protected $validationMessages = [
@@ -39,9 +39,13 @@ class ContratoModel extends Model
             'required' => 'El empleado es obligatorio',
             'integer' => 'El empleado debe ser un número entero'
         ],
+        'id_puesto' => [
+            'required' => 'El puesto es obligatorio',
+            'integer' => 'El puesto debe ser un número entero'
+        ],
         'tipo_contrato' => [
             'required' => 'El tipo de contrato es obligatorio',
-            'in_list' => 'El tipo debe ser TEMPORAL, INDEFINIDO, OBRA_DETERMINADA o PRACTICAS'
+            'max_length' => 'El tipo de contrato no puede exceder 50 caracteres'
         ],
         'fecha_inicio' => [
             'required' => 'La fecha de inicio es obligatoria',
@@ -50,10 +54,6 @@ class ContratoModel extends Model
         'salario' => [
             'required' => 'El salario es obligatorio',
             'decimal' => 'El salario debe ser un número decimal'
-        ],
-        'estado' => [
-            'required' => 'El estado es obligatorio',
-            'in_list' => 'El estado debe ser ACTIVO, INACTIVO, TERMINADO o RENOVADO'
         ]
     ];
 
@@ -77,22 +77,31 @@ class ContratoModel extends Model
     public function getContratosCompletos()
     {
         return $this->db->table('contratos c')
-            ->select('c.*, e.nombres, e.apellidos, u.cedula, p.nombre as puesto, d.nombre as departamento')
+            ->select('c.*, e.nombres as empleado_nombres, e.apellidos as empleado_apellidos, p.nombre as puesto_nombre, d.nombre as departamento_nombre')
             ->join('empleados e', 'e.id_empleado = c.id_empleado', 'left')
-            ->join('usuarios u', 'u.id_usuario = e.id_usuario', 'left')
-            ->join('puestos p', 'p.id_puesto = e.id_puesto', 'left')
-            ->join('departamentos d', 'd.id_departamento = e.id_departamento', 'left')
+            ->join('puestos p', 'p.id_puesto = c.id_puesto', 'left')
+            ->join('departamentos d', 'd.id_departamento = p.id_departamento', 'left')
             ->orderBy('c.fecha_inicio', 'DESC')
             ->get()
             ->getResultArray();
     }
 
     /**
-     * Obtiene contratos por estado
+     * Obtiene contratos por empleado
      */
-    public function getContratosPorEstado($estado)
+    public function getContratosPorEmpleado($idEmpleado)
     {
-        return $this->where('estado', $estado)
+        return $this->where('id_empleado', $idEmpleado)
+            ->orderBy('fecha_inicio', 'DESC')
+            ->findAll();
+    }
+
+    /**
+     * Obtiene contratos activos
+     */
+    public function getContratosActivos()
+    {
+        return $this->where('fecha_fin IS NULL OR fecha_fin >= CURDATE()')
             ->orderBy('fecha_inicio', 'DESC')
             ->findAll();
     }
@@ -108,35 +117,31 @@ class ContratoModel extends Model
     }
 
     /**
-     * Obtiene contratos activos
+     * Obtiene estadísticas de contratos
      */
-    public function getContratosActivos()
+    public function getEstadisticasContratos()
     {
-        return $this->where('estado', 'ACTIVO')
-            ->orderBy('fecha_inicio', 'DESC')
-            ->findAll();
+        $db = $this->db;
+        
+        $totalContratos = $db->table('contratos')->countAllResults();
+        $contratosActivos = $db->table('contratos')->where('fecha_fin IS NULL OR fecha_fin >= CURDATE()')->countAllResults();
+        $contratosVencidos = $db->table('contratos')->where('fecha_fin < CURDATE()')->countAllResults();
+        
+        return [
+            'total' => $totalContratos,
+            'activos' => $contratosActivos,
+            'vencidos' => $contratosVencidos
+        ];
     }
 
     /**
-     * Obtiene contratos por empleado
+     * Obtiene contratos por período
      */
-    public function getContratosPorEmpleado($empleadoId)
+    public function getContratosPorPeriodo($fechaInicio, $fechaFin)
     {
-        return $this->where('id_empleado', $empleadoId)
+        return $this->where('fecha_inicio >=', $fechaInicio)
+            ->where('fecha_inicio <=', $fechaFin)
             ->orderBy('fecha_inicio', 'DESC')
-            ->findAll();
-    }
-
-    /**
-     * Obtiene contratos próximos a vencer
-     */
-    public function getContratosProximosAVencer($dias = 30)
-    {
-        $fechaLimite = date('Y-m-d', strtotime("+$dias days"));
-        return $this->where('estado', 'ACTIVO')
-            ->where('fecha_fin <=', $fechaLimite)
-            ->where('fecha_fin >=', date('Y-m-d'))
-            ->orderBy('fecha_fin', 'ASC')
             ->findAll();
     }
 } 

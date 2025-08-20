@@ -1,11 +1,11 @@
 /* Estilos personalizados para el sidebar */
 .left-sidebar {
-    width: 300px !important; /* Aumentamos el ancho del sidebar de 270px a 300px */
+    width: 320px !important; /* Aumentamos el ancho del sidebar de 270px a 320px para mejor visualización */
 }
 
 /* Ajustamos el contenido principal para que no se superponga con el sidebar más ancho */
 .body-wrapper {
-    margin-left: 300px !important;
+    margin-left: 320px !important;
 }
 
 /* Mejoramos la visualización del texto en el menú */
@@ -13,6 +13,33 @@
     padding: 12px 15px;
     white-space: normal;
     line-height: 1.4;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+}
+
+/* Aseguramos que el texto del menú se ajuste correctamente */
+#sidebarnav .hide-menu {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* Mejoramos el espaciado para elementos con texto largo */
+#sidebarnav .nav-small-cap {
+    margin-top: 25px;
+    margin-bottom: 15px;
+}
+
+/* Ajustamos el padding para elementos del menú */
+#sidebarnav .sidebar-item {
+    margin-bottom: 2px;
+}
+
+/* Aseguramos que los íconos tengan el espacio correcto */
+#sidebarnav .sidebar-link span:first-child {
+    min-width: 20px;
+    text-align: center;
 }
 
 /* Ajustamos el espacio para los íconos */

@@ -73,12 +73,9 @@ class AsistenciaModel extends Model
     public function getAsistenciasCompletas()
     {
         return $this->db->table('asistencias a')
-            ->select('a.*, e.nombres, e.apellidos, u_emp.cedula, u.nombres as registrador_nombres')
+            ->select('a.*, e.nombres as empleado_nombre, e.apellidos as empleado_apellidos')
             ->join('empleados e', 'e.id_empleado = a.id_empleado', 'left')
-            ->join('usuarios u_emp', 'u_emp.id_usuario = e.id_usuario', 'left')
-            ->join('usuarios u', 'u.id_usuario = a.registrado_por', 'left')
-            ->orderBy('a.fecha_asistencia', 'DESC')
-            ->orderBy('a.hora_entrada', 'DESC')
+            ->orderBy('a.fecha', 'DESC')
             ->get()
             ->getResultArray();
     }
@@ -91,14 +88,14 @@ class AsistenciaModel extends Model
         $query = $this->where('id_empleado', $empleadoId);
         
         if ($fechaInicio) {
-            $query->where('fecha_asistencia >=', $fechaInicio);
+            $query->where('fecha >=', $fechaInicio);
         }
         
         if ($fechaFin) {
-            $query->where('fecha_asistencia <=', $fechaFin);
+            $query->where('fecha <=', $fechaFin);
         }
         
-        return $query->orderBy('fecha_asistencia', 'DESC')
+        return $query->orderBy('fecha', 'DESC')
             ->findAll();
     }
 
@@ -107,7 +104,7 @@ class AsistenciaModel extends Model
      */
     public function getAsistenciasPorFecha($fecha)
     {
-        return $this->where('fecha_asistencia', $fecha)
+        return $this->where('fecha', $fecha)
             ->orderBy('hora_entrada', 'ASC')
             ->findAll();
     }
@@ -118,7 +115,7 @@ class AsistenciaModel extends Model
     public function getAsistenciasPorEstado($estado)
     {
         return $this->where('estado', $estado)
-            ->orderBy('fecha_asistencia', 'DESC')
+            ->orderBy('fecha', 'DESC')
             ->findAll();
     }
 
@@ -127,9 +124,9 @@ class AsistenciaModel extends Model
      */
     public function getAsistenciasPorRango($fechaInicio, $fechaFin)
     {
-        return $this->where('fecha_asistencia >=', $fechaInicio)
-            ->where('fecha_asistencia <=', $fechaFin)
-            ->orderBy('fecha_asistencia', 'ASC')
+        return $this->where('fecha >=', $fechaInicio)
+            ->where('fecha <=', $fechaFin)
+            ->orderBy('fecha', 'ASC')
             ->findAll();
     }
 
@@ -141,11 +138,11 @@ class AsistenciaModel extends Model
         $query = $this->db->table('asistencias');
         
         if ($fechaInicio) {
-            $query->where('fecha_asistencia >=', $fechaInicio);
+            $query->where('fecha >=', $fechaInicio);
         }
         
         if ($fechaFin) {
-            $query->where('fecha_asistencia <=', $fechaFin);
+            $query->where('fecha <=', $fechaFin);
         }
         
         $totalAsistencias = $query->countAllResults();
@@ -159,5 +156,20 @@ class AsistenciaModel extends Model
             'ausente' => $asistenciasAusente,
             'tardanza' => $asistenciasTardanza
         ];
+    }
+
+    /**
+     * Obtiene asistencias por mes
+     */
+    public function getAsistenciasPorMes($mes, $anio)
+    {
+        return $this->db->table('asistencias a')
+            ->select('a.*, e.nombres as empleado_nombre, e.apellidos as empleado_apellidos')
+            ->join('empleados e', 'e.id_empleado = a.id_empleado', 'left')
+            ->where('MONTH(a.fecha)', $mes)
+            ->where('YEAR(a.fecha)', $anio)
+            ->orderBy('a.fecha', 'ASC')
+            ->get()
+            ->getResultArray();
     }
 } 

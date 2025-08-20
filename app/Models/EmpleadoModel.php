@@ -11,223 +11,236 @@ class EmpleadoModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
-    protected $protectFields    = true;
-    protected $allowedFields    = [
-        'id_usuario', 'tipo_empleado', 'nombres', 'apellidos', 'fecha_nacimiento',
-        'genero', 'estado_civil', 'direccion', 'telefono', 'fecha_ingreso',
-        'activo', 'foto_url', 'id_departamento', 'id_puesto', 'salario',
-        'estado', 'periodo_academico_id'
+
+    protected $allowedFields = [
+        'id_usuario',
+        'nombres',
+        'apellidos',
+        'tipo_empleado',
+        'departamento',
+        'fecha_ingreso',
+        'fecha_contratacion',
+        'estado',
+        'observaciones'
     ];
 
-    // Dates
     protected $useTimestamps = true;
-    protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
 
-    // Validation
-    protected $validationRules      = [
+    // Validaciones
+    protected $validationRules = [
         'id_usuario'      => 'required|integer',
-        'tipo_empleado'   => 'required|in_list[DOCENTE,ADMINISTRATIVO,DIRECTIVO,AUXILIAR]',
         'nombres'         => 'required|min_length[2]|max_length[100]',
         'apellidos'       => 'required|min_length[2]|max_length[100]',
-        'fecha_nacimiento' => 'required|valid_date',
-        'genero'          => 'permit_empty|in_list[MASCULINO,FEMENINO,OTRO]',
-        'estado_civil'    => 'permit_empty|in_list[SOLTERO,CASADO,DIVORCIADO,VIUDO,UNION_LIBRE]',
-        'direccion'       => 'permit_empty|max_length[500]',
-        'telefono'        => 'permit_empty|max_length[20]',
-        'fecha_ingreso'   => 'required|valid_date',
-        'activo'          => 'permit_empty|in_list[0,1]',
-        'id_departamento' => 'permit_empty|integer',
-        'id_puesto'       => 'permit_empty|integer',
-        'salario'         => 'permit_empty|decimal',
-        'estado'          => 'permit_empty|in_list[Activo,Inactivo,Vacaciones,Licencia]'
+        'tipo_empleado'   => 'required|in_list[DOCENTE,ADMINISTRATIVO,DIRECTIVO,AUXILIAR]',
+        'departamento'    => 'permit_empty|max_length[100]',
+        'fecha_ingreso'   => 'permit_empty|valid_date',
+        'fecha_contratacion' => 'permit_empty|valid_date',
+        'estado'          => 'permit_empty|in_list[ACTIVO,INACTIVO,SUSPENDIDO]'
     ];
 
     protected $validationMessages = [
         'id_usuario' => [
-            'required' => 'El ID de usuario es obligatorio',
-            'integer' => 'El ID de usuario debe ser un número entero'
-        ],
-        'tipo_empleado' => [
-            'required' => 'El tipo de empleado es obligatorio',
-            'in_list' => 'El tipo de empleado debe ser DOCENTE, ADMINISTRATIVO, DIRECTIVO o AUXILIAR'
+            'required' => 'El usuario es obligatorio',
+            'integer' => 'El ID del usuario debe ser un número'
         ],
         'nombres' => [
-            'required' => 'Los nombres son obligatorios',
+            'required'   => 'Los nombres son obligatorios',
             'min_length' => 'Los nombres deben tener al menos 2 caracteres',
             'max_length' => 'Los nombres no pueden exceder 100 caracteres'
         ],
         'apellidos' => [
-            'required' => 'Los apellidos son obligatorios',
+            'required'   => 'Los apellidos son obligatorios',
             'min_length' => 'Los apellidos deben tener al menos 2 caracteres',
             'max_length' => 'Los apellidos no pueden exceder 100 caracteres'
+        ],
+        'tipo_empleado' => [
+            'required' => 'El tipo de empleado es obligatorio',
+            'in_list' => 'El tipo debe ser DOCENTE, ADMINISTRATIVO, DIRECTIVO o AUXILIAR'
+        ],
+        'departamento' => [
+            'max_length' => 'El departamento no puede exceder 100 caracteres'
+        ],
+        'fecha_ingreso' => [
+            'valid_date' => 'La fecha de ingreso debe ser válida'
+        ],
+        'fecha_contratacion' => [
+            'valid_date' => 'La fecha de contratación debe ser válida'
+        ],
+        'estado' => [
+            'in_list' => 'El estado debe ser ACTIVO, INACTIVO o SUSPENDIDO'
         ]
     ];
 
-    protected $skipValidation       = false;
+    protected $skipValidation = false;
     protected $cleanValidationRules = true;
 
-    // Callbacks
-    protected $allowCallbacks = true;
-    protected $beforeInsert   = [];
-    protected $afterInsert    = [];
-    protected $beforeUpdate   = [];
-    protected $afterUpdate    = [];
-    protected $beforeFind     = [];
-    protected $afterFind      = [];
-    protected $beforeDelete   = [];
-    protected $afterDelete    = [];
-
     /**
-     * Obtiene estadísticas básicas de empleados
+     * Obtener empleado por ID de usuario
      */
-    public function getEstadisticasEmpleados()
+    public function getEmpleadoByUsuarioId($idUsuario)
     {
-        $db = $this->db;
-        
-        $totalEmpleados = $db->table('empleados')
-            ->where('activo', 1)
-            ->countAllResults();
-            
-        $empleadosPorTipo = $db->table('empleados')
-            ->select('tipo_empleado, COUNT(*) as total')
-            ->where('activo', 1)
-            ->groupBy('tipo_empleado')
-            ->get()
-            ->getResultArray();
-            
-        $empleadosPorDepartamento = $db->table('empleados e')
-            ->select('d.nombre as departamento, COUNT(*) as total')
-            ->join('departamentos d', 'd.id_departamento = e.id_departamento', 'left')
-            ->where('e.activo', 1)
-            ->groupBy('e.id_departamento')
-            ->get()
-            ->getResultArray();
-            
-        return (object) [
-            'total_empleados' => $totalEmpleados,
-            'empleados_por_tipo' => $empleadosPorTipo,
-            'empleados_por_departamento' => $empleadosPorDepartamento
-        ];
+        return $this->where('id_usuario', $idUsuario)->first();
     }
 
     /**
-     * Obtiene todos los empleados con información completa
+     * Obtener empleados por tipo
      */
-    public function getAllEmpleadosCompletos()
+    public function getEmpleadosPorTipo($tipoEmpleado)
     {
-        return $this->db->table('empleados e')
-            ->select('e.*, d.nombre as departamento, p.nombre as puesto, u.email, u.cedula')
-            ->join('usuarios u', 'u.id_usuario = e.id_usuario', 'left')
-            ->join('departamentos d', 'd.id_departamento = e.id_departamento', 'left')
-            ->join('puestos p', 'p.id_puesto = e.id_puesto', 'left')
-            ->where('e.activo', 1)
-            ->get()
-            ->getResultArray();
+        return $this->where('tipo_empleado', $tipoEmpleado)
+                    ->where('estado', 'ACTIVO')
+                    ->findAll();
     }
 
     /**
-     * Obtiene empleados activos
+     * Obtener empleados por departamento
+     */
+    public function getEmpleadosPorDepartamento($departamento)
+    {
+        return $this->where('departamento', $departamento)
+                    ->where('estado', 'ACTIVO')
+                    ->findAll();
+    }
+
+    /**
+     * Obtener empleados activos
      */
     public function getEmpleadosActivos()
     {
-        return $this->db->table('empleados e')
-            ->select('e.id_empleado, e.nombres, e.apellidos, e.tipo_empleado, d.nombre as departamento')
-            ->join('departamentos d', 'd.id_departamento = e.id_departamento', 'left')
-            ->where('e.activo', 1)
-            ->get()
-            ->getResultArray();
+        return $this->where('estado', 'ACTIVO')->findAll();
     }
 
     /**
-     * Obtiene empleados por departamento para gráficos
+     * Obtener empleados con información de usuario
      */
-    public function getEmpleadosPorDepartamentoChart()
+    public function getEmpleadosConUsuario($filtros = [])
     {
-        return $this->db->table('empleados e')
-            ->select('d.nombre as departamento, COUNT(*) as total')
-            ->join('departamentos d', 'd.id_departamento = e.id_departamento', 'left')
-            ->where('e.activo', 1)
-            ->groupBy('e.id_departamento')
-            ->get()
-            ->getResultArray();
-    }
-
-    /**
-     * Obtiene empleados por tipo
-     */
-    public function getEmpleadosPorTipo($tipo = null)
-    {
-        $builder = $this->db->table('empleados e')
-            ->select('e.*, d.nombre as departamento, p.nombre as puesto')
-            ->join('departamentos d', 'd.id_departamento = e.id_departamento', 'left')
-            ->join('puestos p', 'p.id_puesto = e.id_puesto', 'left')
-            ->where('e.activo', 1);
-            
-        if ($tipo) {
-            $builder->where('e.tipo_empleado', $tipo);
+        $builder = $this->db->table('empleados e');
+        $builder->select('
+            e.*,
+            u.cedula,
+            u.email,
+            u.telefono,
+            u.direccion
+        ');
+        $builder->join('usuarios u', 'u.id = e.id_usuario');
+        $builder->where('e.estado', 'ACTIVO');
+        
+        // Aplicar filtros
+        if (isset($filtros['tipo_empleado'])) {
+            $builder->where('e.tipo_empleado', $filtros['tipo_empleado']);
         }
+        
+        if (isset($filtros['departamento'])) {
+            $builder->where('e.departamento', $filtros['departamento']);
+        }
+        
+        if (isset($filtros['busqueda'])) {
+            $builder->groupStart();
+            $builder->like('e.nombres', $filtros['busqueda']);
+            $builder->orLike('e.apellidos', $filtros['busqueda']);
+            $builder->orLike('u.cedula', $filtros['busqueda']);
+            $builder->orLike('u.email', $filtros['busqueda']);
+            $builder->groupEnd();
+        }
+        
+        $builder->orderBy('e.apellidos', 'ASC');
+        $builder->orderBy('e.nombres', 'ASC');
         
         return $builder->get()->getResultArray();
     }
 
     /**
-     * Obtiene empleados por departamento
+     * Obtener estadísticas de empleados
      */
-    public function getEmpleadosPorDepartamento($departamentoId = null)
+    public function getEstadisticasEmpleados()
     {
-        $builder = $this->db->table('empleados e')
-            ->select('e.*, d.nombre as departamento, p.nombre as puesto')
-            ->join('departamentos d', 'd.id_departamento = e.id_departamento', 'left')
-            ->join('puestos p', 'p.id_puesto = e.id_puesto', 'left')
-            ->where('e.activo', 1);
-            
-        if ($departamentoId) {
-            $builder->where('e.id_departamento', $departamentoId);
+        $builder = $this->builder();
+        $builder->select('
+            COUNT(*) as total,
+            SUM(CASE WHEN tipo_empleado = "DOCENTE" THEN 1 ELSE 0 END) as docentes,
+            SUM(CASE WHEN tipo_empleado = "ADMINISTRATIVO" THEN 1 ELSE 0 END) as administrativos,
+            SUM(CASE WHEN tipo_empleado = "DIRECTIVO" THEN 1 ELSE 0 END) as directivos,
+            SUM(CASE WHEN tipo_empleado = "AUXILIAR" THEN 1 ELSE 0 END) as auxiliares,
+            COUNT(DISTINCT departamento) as total_departamentos
+        ');
+        $builder->where('estado', 'ACTIVO');
+        
+        return $builder->get()->getRowArray();
+    }
+
+    /**
+     * Obtener departamentos disponibles
+     */
+    public function getDepartamentos()
+    {
+        $builder = $this->builder();
+        $builder->select('DISTINCT departamento');
+        $builder->where('departamento IS NOT NULL');
+        $builder->where('departamento !=', '');
+        $builder->where('estado', 'ACTIVO');
+        $builder->orderBy('departamento', 'ASC');
+        
+        $result = $builder->get()->getResultArray();
+        
+        $departamentos = [];
+        foreach ($result as $row) {
+            $departamentos[] = $row['departamento'];
         }
+        
+        return $departamentos;
+    }
+
+    /**
+     * Cambiar estado del empleado
+     */
+    public function cambiarEstado($idEmpleado, $nuevoEstado, $observaciones = null)
+    {
+        $data = ['estado' => $nuevoEstado];
+        
+        if ($observaciones) {
+            $data['observaciones'] = $observaciones;
+        }
+        
+        return $this->update($idEmpleado, $data);
+    }
+
+    /**
+     * Buscar empleados
+     */
+    public function buscarEmpleados($termino)
+    {
+        $builder = $this->builder();
+        $builder->groupStart();
+        $builder->like('nombres', $termino);
+        $builder->orLike('apellidos', $termino);
+        $builder->groupEnd();
+        $builder->where('estado', 'ACTIVO');
+        $builder->orderBy('apellidos', 'ASC');
         
         return $builder->get()->getResultArray();
     }
 
     /**
-     * Obtiene empleados con información de usuario
+     * Obtener empleado para dashboard
      */
-    public function getEmpleadosConUsuario()
+    public function getEmpleadoParaDashboard($idUsuario)
     {
-        return $this->db->table('empleados e')
-            ->select('e.*, u.cedula, u.email, u.activo as usuario_activo')
-            ->join('usuarios u', 'u.id_usuario = e.id_usuario', 'left')
-            ->where('e.activo', 1)
-            ->get()
-            ->getResultArray();
-    }
-
-    /**
-     * Valida el tipo de docente
-     */
-    public function validarTipoDocente($tipoDocente)
-    {
-        $tiposValidos = ['PROFESOR_TITULAR', 'PROFESOR_ASOCIADO', 'PROFESOR_AUXILIAR', 'INSTRUCTOR'];
-        return in_array($tipoDocente, $tiposValidos);
-    }
-
-    /**
-     * Asigna departamento automáticamente según tipo de empleado
-     */
-    public function asignarDepartamentoAutomatico($tipoEmpleado)
-    {
-        if (in_array($tipoEmpleado, ['DIRECTIVO', 'AUXILIAR'])) {
-            // Buscar el departamento ITSI
-            $departamento = $this->db->table('departamentos')
-                ->where('nombre', 'LIKE', '%ITSI%')
-                ->get()
-                ->getRowArray();
-                
-            return $departamento ? $departamento['id_departamento'] : null;
-        }
+        $builder = $this->db->table('empleados e');
+        $builder->select('
+            e.*,
+            u.cedula,
+            u.email,
+            u.telefono,
+            u.direccion,
+            u.foto_perfil
+        ');
+        $builder->join('usuarios u', 'u.id = e.id_usuario');
+        $builder->where('e.id_usuario', $idUsuario);
+        $builder->where('e.estado', 'ACTIVO');
         
-        return null;
+        return $builder->get()->getRowArray();
     }
-
 } 

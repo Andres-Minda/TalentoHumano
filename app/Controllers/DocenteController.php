@@ -356,40 +356,7 @@ class DocenteController extends Controller
         return view('Roles/Docente/nomina', $data);
     }
 
-    public function beneficios()
-    {
-        $empleadoBeneficioModel = new \App\Models\EmpleadoBeneficioModel();
-        $idEmpleado = session()->get('id_empleado');
-        
-        // Obtener beneficios del empleado
-        $beneficios = $empleadoBeneficioModel->getBeneficiosPorEmpleado($idEmpleado);
-        
-        // Calcular estadísticas
-        $totalBeneficios = count($beneficios);
-        $beneficiosActivos = count(array_filter($beneficios, function($b) { return $b['estado'] == 'Activo'; }));
-        $beneficiosVencidos = count(array_filter($beneficios, function($b) { return $b['estado'] == 'Vencido'; }));
-        $tiposBeneficios = count(array_unique(array_column($beneficios, 'tipo_beneficio')));
-        
-        $estadisticas = [
-            'total_beneficios' => $totalBeneficios,
-            'beneficios_activos' => $beneficiosActivos,
-            'beneficios_vencidos' => $beneficiosVencidos,
-            'tipos_beneficios' => $tiposBeneficios
-        ];
-        
-        $data = [
-            'title' => 'Mis Beneficios - Docente',
-            'user' => [
-                'nombres' => session()->get('nombres'),
-                'apellidos' => session()->get('apellidos'),
-                'rol' => session()->get('nombre_rol')
-            ],
-            'beneficios' => $beneficios,
-            'estadisticas' => $estadisticas
-        ];
-        
-        return view('Roles/Docente/beneficios', $data);
-    }
+
 
     public function solicitudes()
     {

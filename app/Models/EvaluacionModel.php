@@ -81,12 +81,14 @@ class EvaluacionModel extends Model
      */
     public function getEvaluacionesCompletas()
     {
-        return $this->db->table('evaluaciones e')
-            ->select('e.*, emp.nombres, emp.apellidos, u.cedula, pa.nombre as periodo_nombre')
-            ->join('empleados emp', 'emp.id_empleado = e.id_empleado', 'left')
+        return $this->db->table('evaluaciones_empleados ee')
+            ->select('ee.*, e.nombre as evaluacion_nombre, e.descripcion as evaluacion_descripcion, emp.nombres as empleado_nombres, emp.apellidos as empleado_apellidos, u.cedula, 
+                     CONCAT(evaluador.nombres, " ", evaluador.apellidos) as evaluador_nombres, evaluador.apellidos as evaluador_apellidos')
+            ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
+            ->join('empleados emp', 'emp.id_empleado = ee.id_empleado', 'left')
             ->join('usuarios u', 'u.id_usuario = emp.id_usuario', 'left')
-            ->join('periodos_academicos pa', 'pa.id_periodo_academico = e.id_periodo_academico', 'left')
-            ->orderBy('e.fecha_inicio', 'DESC')
+            ->join('empleados evaluador', 'evaluador.id_empleado = ee.id_evaluador', 'left')
+            ->orderBy('ee.fecha_evaluacion', 'DESC')
             ->get()
             ->getResultArray();
     }
@@ -94,11 +96,17 @@ class EvaluacionModel extends Model
     /**
      * Obtiene evaluaciones por empleado
      */
-    public function getEvaluacionesPorEmpleado($empleadoId)
+    public function getEvaluacionesPorEmpleado($idEmpleado)
     {
-        return $this->where('id_empleado', $empleadoId)
-            ->orderBy('fecha_inicio', 'DESC')
-            ->findAll();
+        $db = \Config\Database::connect();
+        $builder = $db->table('evaluaciones_empleados ee');
+        $builder->select('ee.*, e.nombre as nombre_evaluacion, 
+                         CONCAT(evaluador.nombres, " ", evaluador.apellidos) as evaluador_nombre');
+        $builder->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion');
+        $builder->join('empleados evaluador', 'evaluador.id_empleado = ee.id_evaluador');
+        $builder->where('ee.id_empleado', $idEmpleado);
+        $builder->orderBy('ee.fecha_evaluacion', 'DESC');
+        return $builder->get()->getResultArray();
     }
 
     /**
@@ -116,9 +124,13 @@ class EvaluacionModel extends Model
      */
     public function getEvaluacionesPorEstado($estado)
     {
-        return $this->where('estado', $estado)
-            ->orderBy('fecha_inicio', 'DESC')
-            ->findAll();
+        return $this->db->table('evaluaciones_empleados ee')
+            ->select('ee.*, e.nombre as evaluacion_nombre, e.descripcion as evaluacion_descripcion')
+            ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
+            ->where('e.estado', $estado)
+            ->orderBy('ee.fecha_evaluacion', 'DESC')
+            ->get()
+            ->getResultArray();
     }
 
     /**
@@ -126,10 +138,14 @@ class EvaluacionModel extends Model
      */
     public function getEvaluacionesPendientes()
     {
-        return $this->where('estado', 'PENDIENTE')
-            ->where('fecha_fin >=', date('Y-m-d'))
-            ->orderBy('fecha_fin', 'ASC')
-            ->findAll();
+        return $this->db->table('evaluaciones_empleados ee')
+            ->select('ee.*, e.nombre as evaluacion_nombre, e.descripcion as evaluacion_descripcion')
+            ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
+            ->where('e.estado', 'En curso')
+            ->where('e.fecha_fin >=', date('Y-m-d'))
+            ->orderBy('e.fecha_fin', 'ASC')
+            ->get()
+            ->getResultArray();
     }
 
     /**
@@ -137,9 +153,13 @@ class EvaluacionModel extends Model
      */
     public function getEvaluacionesPorPeriodo($periodoId)
     {
-        return $this->where('id_periodo_academico', $periodoId)
-            ->orderBy('fecha_inicio', 'DESC')
-            ->findAll();
+        return $this->db->table('evaluaciones_empleados ee')
+            ->select('ee.*, e.nombre as evaluacion_nombre, e.descripcion as evaluacion_descripcion')
+            ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
+            ->where('e.periodo_academico_id', $periodoId)
+            ->orderBy('e.fecha_inicio', 'DESC')
+            ->get()
+            ->getResultArray();
     }
 
     /**
@@ -150,26 +170,13 @@ class EvaluacionModel extends Model
         $db = $this->db;
         
         $totalEvaluaciones = $db->table('evaluaciones')->countAllResults();
-        $evaluacionesPendientes = $db->table('evaluaciones')->where('estado', 'PENDIENTE')->countAllResults();
-        $evaluacionesCompletadas = $db->table('evaluaciones')->where('estado', 'COMPLETADA')->countAllResults();
+        $evaluacionesPendientes = $db->table('evaluaciones')->where('estado', 'Planificada')->countAllResults();
+        $evaluacionesCompletadas = $db->table('evaluaciones')->where('estado', 'En curso')->countAllResults();
         
         return [
             'total' => $totalEvaluaciones,
             'pendientes' => $evaluacionesPendientes,
             'completadas' => $evaluacionesCompletadas
         ];
-    }
-
-    public function getEvaluacionesPorEmpleado($idEmpleado)
-    {
-        $db = \Config\Database::connect();
-        $builder = $db->table('evaluaciones_empleados ee');
-        $builder->select('ee.*, e.nombre as nombre_evaluacion, 
-                         CONCAT(evaluador.nombres, " ", evaluador.apellidos) as evaluador_nombre');
-        $builder->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion');
-        $builder->join('empleados evaluador', 'evaluador.id_empleado = ee.id_evaluador');
-        $builder->where('ee.id_empleado', $idEmpleado);
-        $builder->orderBy('ee.fecha_evaluacion', 'DESC');
-        return $builder->get()->getResultArray();
     }
 } 

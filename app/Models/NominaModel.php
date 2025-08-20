@@ -13,8 +13,7 @@ class NominaModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'id_empleado', 'periodo', 'salario_base', 'bonificaciones', 'deducciones',
-        'salario_neto', 'estado', 'fecha_pago', 'observaciones'
+        'periodo', 'fecha_generacion', 'fecha_pago', 'estado'
     ];
 
     // Dates
@@ -25,37 +24,28 @@ class NominaModel extends Model
 
     // Validation
     protected $validationRules      = [
-        'id_empleado' => 'required|integer',
         'periodo' => 'required|max_length[20]',
-        'salario_base' => 'required|decimal',
-        'bonificaciones' => 'permit_empty|decimal',
-        'deducciones' => 'permit_empty|decimal',
-        'salario_neto' => 'required|decimal',
-        'estado' => 'required|in_list[PENDIENTE,PAGADA,CANCELADA]',
-        'fecha_pago' => 'permit_empty|valid_date',
-        'observaciones' => 'permit_empty|max_length[1000]'
+        'fecha_generacion' => 'required|valid_date',
+        'fecha_pago' => 'required|valid_date',
+        'estado' => 'required|max_length[20]'
     ];
 
     protected $validationMessages = [
-        'id_empleado' => [
-            'required' => 'El empleado es obligatorio',
-            'integer' => 'El empleado debe ser un número entero'
-        ],
         'periodo' => [
             'required' => 'El periodo es obligatorio',
             'max_length' => 'El periodo no puede exceder 20 caracteres'
         ],
-        'salario_base' => [
-            'required' => 'El salario base es obligatorio',
-            'decimal' => 'El salario base debe ser un número decimal'
+        'fecha_generacion' => [
+            'required' => 'La fecha de generación es obligatoria',
+            'valid_date' => 'La fecha de generación debe ser una fecha válida'
         ],
-        'salario_neto' => [
-            'required' => 'El salario neto es obligatorio',
-            'decimal' => 'El salario neto debe ser un número decimal'
+        'fecha_pago' => [
+            'required' => 'La fecha de pago es obligatoria',
+            'valid_date' => 'La fecha de pago debe ser una fecha válida'
         ],
         'estado' => [
             'required' => 'El estado es obligatorio',
-            'in_list' => 'El estado debe ser PENDIENTE, PAGADA o CANCELADA'
+            'max_length' => 'El estado no puede exceder 20 caracteres'
         ]
     ];
 
@@ -74,18 +64,14 @@ class NominaModel extends Model
     protected $afterDelete    = [];
 
     /**
-     * Obtiene nóminas completas con información de empleado
+     * Obtiene nóminas completas
      */
     public function getNominasCompletas()
     {
         return $this->db->table('nominas n')
-            ->select('n.*, e.nombres, e.apellidos, u.cedula, p.nombre as puesto, d.nombre as departamento')
-            ->join('empleados e', 'e.id_empleado = n.id_empleado', 'left')
-            ->join('usuarios u', 'u.id_usuario = e.id_usuario', 'left')
-            ->join('puestos p', 'p.id_puesto = e.id_puesto', 'left')
-            ->join('departamentos d', 'd.id_departamento = e.id_departamento', 'left')
+            ->select('n.*')
             ->orderBy('n.periodo', 'DESC')
-            ->orderBy('e.apellidos', 'ASC')
+            ->orderBy('n.fecha_generacion', 'DESC')
             ->get()
             ->getResultArray();
     }
@@ -106,7 +92,7 @@ class NominaModel extends Model
     public function getNominasPorPeriodo($periodo)
     {
         return $this->where('periodo', $periodo)
-            ->orderBy('e.apellidos', 'ASC')
+            ->orderBy('fecha_generacion', 'DESC')
             ->findAll();
     }
 
@@ -145,12 +131,12 @@ class NominaModel extends Model
         $db = $this->db;
         
         $totalNominas = $db->table('nominas')->countAllResults();
-        $nominasPendientes = $db->table('nominas')->where('estado', 'PENDIENTE')->countAllResults();
-        $nominasPagadas = $db->table('nominas')->where('estado', 'PAGADA')->countAllResults();
+        $nominasPendientes = $db->table('nominas')->where('estado', 'Pendiente')->countAllResults();
+        $nominasPagadas = $db->table('nominas')->where('estado', 'Pagada')->countAllResults();
         
         // Calcular totales
-        $totalSalarios = $db->table('nominas')->selectSum('salario_neto')->where('estado', 'PAGADA')->get()->getRow();
-        $totalBonificaciones = $db->table('nominas')->selectSum('bonificaciones')->where('estado', 'PAGADA')->get()->getRow();
+        $totalSalarios = $db->table('detalles_nomina')->selectSum('neto_pagar')->where('id_nomina IN (SELECT id_nomina FROM nominas WHERE estado = "Pagada")')->get()->getRow();
+        $totalBonificaciones = $db->table('detalles_nomina')->selectSum('bonos')->where('id_nomina IN (SELECT id_nomina FROM nominas WHERE estado = "Pagada")')->get()->getRow();
         
         return [
             'total_nominas' => $totalNominas,

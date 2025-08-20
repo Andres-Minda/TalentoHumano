@@ -13,7 +13,7 @@ class CompetenciaModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'nombre', 'descripcion', 'categoria', 'nivel_requerido', 'estado'
+        'nombre', 'descripcion'
     ];
 
     // Dates
@@ -24,30 +24,15 @@ class CompetenciaModel extends Model
 
     // Validation
     protected $validationRules      = [
-        'nombre' => 'required|min_length[3]|max_length[200]',
-        'descripcion' => 'permit_empty|max_length[1000]',
-        'categoria' => 'required|in_list[TECNICA,BLANDA,ADMINISTRATIVA,LIDERAZGO]',
-        'nivel_requerido' => 'required|in_list[BASICO,INTERMEDIO,AVANZADO,EXPERTE]',
-        'estado' => 'required|in_list[ACTIVA,INACTIVA]'
+        'nombre' => 'required|min_length[3]|max_length[100]',
+        'descripcion' => 'permit_empty|max_length[1000]'
     ];
 
     protected $validationMessages = [
         'nombre' => [
             'required' => 'El nombre es obligatorio',
             'min_length' => 'El nombre debe tener al menos 3 caracteres',
-            'max_length' => 'El nombre no puede exceder 200 caracteres'
-        ],
-        'categoria' => [
-            'required' => 'La categoría es obligatoria',
-            'in_list' => 'La categoría debe ser TECNICA, BLANDA, ADMINISTRATIVA o LIDERAZGO'
-        ],
-        'nivel_requerido' => [
-            'required' => 'El nivel requerido es obligatorio',
-            'in_list' => 'El nivel debe ser BASICO, INTERMEDIO, AVANZADO o EXPERTE'
-        ],
-        'estado' => [
-            'required' => 'El estado es obligatorio',
-            'in_list' => 'El estado debe ser ACTIVA o INACTIVA'
+            'max_length' => 'El nombre no puede exceder 100 caracteres'
         ]
     ];
 
@@ -70,31 +55,30 @@ class CompetenciaModel extends Model
      */
     public function getCompetenciasActivas()
     {
-        return $this->where('estado', 'ACTIVA')
+        return $this->orderBy('nombre', 'ASC')->findAll();
+    }
+
+    /**
+     * Obtiene competencias por nombre
+     */
+    public function getCompetenciasPorNombre($nombre)
+    {
+        return $this->like('nombre', $nombre)
             ->orderBy('nombre', 'ASC')
             ->findAll();
     }
 
     /**
-     * Obtiene competencias por categoría
+     * Obtiene competencias con estadísticas de empleados
      */
-    public function getCompetenciasPorCategoria($categoria)
+    public function getCompetenciasConEstadisticas()
     {
-        return $this->where('categoria', $categoria)
-            ->where('estado', 'ACTIVA')
-            ->orderBy('nombre', 'ASC')
-            ->findAll();
-    }
-
-    /**
-     * Obtiene competencias por nivel
-     */
-    public function getCompetenciasPorNivel($nivel)
-    {
-        return $this->where('nivel_requerido', $nivel)
-            ->where('estado', 'ACTIVA')
-            ->orderBy('nombre', 'ASC')
-            ->findAll();
+        return $this->db->table('competencias c')
+            ->select('c.*, 
+                     (SELECT COUNT(*) FROM empleados_competencias ec WHERE ec.id_competencia = c.id_competencia) as total_empleados')
+            ->orderBy('c.nombre', 'ASC')
+            ->get()
+            ->getResultArray();
     }
 
     /**
@@ -105,27 +89,15 @@ class CompetenciaModel extends Model
         $db = $this->db;
         
         $totalCompetencias = $db->table('competencias')->countAllResults();
-        $competenciasActivas = $db->table('competencias')->where('estado', 'ACTIVA')->countAllResults();
-        $competenciasTecnicas = $db->table('competencias')->where('categoria', 'TECNICA')->where('estado', 'ACTIVA')->countAllResults();
-        $competenciasBlandas = $db->table('competencias')->where('categoria', 'BLANDA')->where('estado', 'ACTIVA')->countAllResults();
+        $competenciasConEmpleados = $db->table('competencias c')
+            ->join('empleados_competencias ec', 'ec.id_competencia = c.id_competencia', 'left')
+            ->where('ec.id_competencia IS NOT NULL')
+            ->countAllResults();
         
         return [
             'total' => $totalCompetencias,
-            'activas' => $competenciasActivas,
-            'tecnicas' => $competenciasTecnicas,
-            'blandas' => $competenciasBlandas
+            'con_empleados' => $competenciasConEmpleados,
+            'sin_empleados' => $totalCompetencias - $competenciasConEmpleados
         ];
-    }
-
-    /**
-     * Busca competencias por nombre
-     */
-    public function buscarCompetencias($termino)
-    {
-        return $this->like('nombre', $termino)
-            ->orLike('descripcion', $termino)
-            ->where('estado', 'ACTIVA')
-            ->orderBy('nombre', 'ASC')
-            ->findAll();
     }
 } 

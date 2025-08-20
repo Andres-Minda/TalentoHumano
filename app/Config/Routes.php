@@ -138,10 +138,9 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->get('perfil-empleado/evaluaciones', 'PerfilEmpleadoController::evaluaciones');
     $routes->get('perfil-empleado/inasistencias', 'PerfilEmpleadoController::inasistencias');
     $routes->get('perfil-empleado/permisos', 'PerfilEmpleadoController::permisos');
-    $routes->get('perfil-empleado/beneficios', 'PerfilEmpleadoController::beneficios');
     
     // Rutas por rol específico
-    $routes->group('admin-th', ['filter' => 'role:ADMIN_TH'], function($routes) {
+    $routes->group('admin-th', ['filter' => 'role:AdministradorTalentoHumano'], function($routes) {
         $routes->get('dashboard', 'AdminTHController::dashboard');
         
         // Gestión de empleados
@@ -166,9 +165,31 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
         $routes->get('asistencias', 'AdminTHController::asistencias');
         $routes->get('permisos', 'AdminTHController::permisos');
         
-        // Nómina y beneficios
+        // Sistema de Inasistencias
+        $routes->group('inasistencias', function($routes) {
+            $routes->get('/', 'AdminInasistenciaController::dashboard');
+            $routes->get('listar', 'AdminInasistenciaController::listarInasistencias');
+            $routes->get('registrar', 'AdminInasistenciaController::registrarInasistencia');
+            $routes->post('guardar', 'AdminInasistenciaController::guardarInasistencia');
+            $routes->get('editar/(:num)', 'AdminInasistenciaController::editarInasistencia/$1');
+            $routes->post('actualizar/(:num)', 'AdminInasistenciaController::actualizarInasistencia/$1');
+            $routes->get('ver/(:num)', 'AdminInasistenciaController::verInasistencia/$1');
+            $routes->get('revisar-justificacion/(:num)', 'AdminInasistenciaController::revisarJustificacion/$1');
+            $routes->post('aprobar-justificacion/(:num)', 'AdminInasistenciaController::aprobarJustificacion/$1');
+            $routes->post('rechazar-justificacion/(:num)', 'AdminInasistenciaController::rechazarJustificacion/$1');
+            $routes->get('reportes', 'AdminInasistenciaController::generarReporte');
+            $routes->get('politicas', 'AdminInasistenciaController::gestionarPoliticas');
+            $routes->get('reporte-empleado/(:num)', 'AdminInasistenciaController::reporteEmpleado/$1');
+            
+            // API endpoints
+            $routes->get('api/estadisticas', 'AdminInasistenciaController::getEstadisticas');
+            $routes->get('api/por-departamento', 'AdminInasistenciaController::getPorDepartamento');
+            $routes->get('api/tendencia', 'AdminInasistenciaController::getTendencia');
+            $routes->get('api/empleados-criticos', 'AdminInasistenciaController::getEmpleadosCriticos');
+        });
+        
+        // Nómina
         $routes->get('nominas', 'AdminTHController::nominas');
-        $routes->get('beneficios', 'AdminTHController::beneficios');
         
         // Reportes y configuración
         $routes->get('reportes', 'AdminTHController::reportes');
@@ -183,38 +204,68 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
         $routes->post('cerrar-sesiones', 'AdminTHController::cerrarSesiones');
     });
     
-    $routes->group('docente', ['filter' => 'role:DOCENTE'], function($routes) {
-        $routes->get('dashboard', 'DocenteController::dashboard');
-        $routes->get('mi-perfil', 'DocenteController::miPerfil');
-        $routes->get('mis-evaluaciones', 'DocenteController::misEvaluaciones');
+    $routes->group('empleado', ['filter' => 'role:Docente'], function($routes) {
+        $routes->get('dashboard', 'EmpleadoController::dashboard');
+        $routes->get('mi-perfil', 'EmpleadoController::miPerfil');
+        $routes->get('mis-evaluaciones', 'EmpleadoController::misEvaluaciones');
+        $routes->get('perfil', 'EmpleadoController::perfil');
+        $routes->get('documentos', 'EmpleadoController::documentos');
+        $routes->get('documentos/ver/(:num)', 'EmpleadoController::verDocumento/$1');
+        $routes->get('documentos/descargar/(:num)', 'EmpleadoController::descargarDocumento/$1');
+        $routes->get('capacitaciones', 'EmpleadoController::capacitaciones');
+        $routes->get('certificados', 'EmpleadoController::certificados');
+        $routes->get('evaluaciones', 'EmpleadoController::evaluaciones');
+        $routes->get('competencias', 'EmpleadoController::competencias');
+        $routes->get('asistencias', 'EmpleadoController::asistencias');
+        $routes->get('permisos', 'EmpleadoController::permisos');
         
-        // Funcionalidades adicionales del docente
-        $routes->get('perfil', 'DocenteController::perfil');
-        $routes->post('perfil/actualizar', 'DocenteController::actualizarPerfil');
-        $routes->get('documentos', 'DocenteController::documentos');
-        $routes->post('documentos/subir', 'DocenteController::subirDocumento');
-        $routes->get('documentos/ver/(:num)', 'DocenteController::verDocumento/$1');
-        $routes->get('documentos/descargar/(:num)', 'DocenteController::descargarDocumento/$1');
-        $routes->post('documentos/eliminar/(:num)', 'DocenteController::eliminarDocumento/$1');
-        $routes->get('capacitaciones', 'DocenteController::capacitaciones');
-        $routes->get('certificados', 'DocenteController::certificados');
-        $routes->get('evaluaciones', 'DocenteController::evaluaciones');
-        $routes->get('competencias', 'DocenteController::competencias');
-        $routes->get('asistencias', 'DocenteController::asistencias');
-        $routes->post('asistencias/guardar', 'DocenteController::guardarAsistencia');
-        $routes->get('permisos', 'DocenteController::permisos');
-        $routes->get('nomina', 'DocenteController::nomina');
-        $routes->get('beneficios', 'DocenteController::beneficios');
-        $routes->get('solicitudes', 'DocenteController::solicitudes');
-        $routes->get('nueva-solicitud', 'DocenteController::nuevaSolicitud');
-        $routes->get('cuenta', 'DocenteController::cuenta');
-        $routes->post('cuenta/cambiar-password', 'DocenteController::cambiarPassword');
-        $routes->post('cuenta/configurar-notificaciones', 'DocenteController::configurarNotificaciones');
-        $routes->post('cuenta/configurar-privacidad', 'DocenteController::configurarPrivacidad');
-        $routes->post('cuenta/cerrar-sesiones', 'DocenteController::cerrarSesiones');
+        // Sistema de Inasistencias para Empleados
+        $routes->group('inasistencias', function($routes) {
+            $routes->get('/', 'InasistenciaController::dashboard');
+            $routes->get('mis-inasistencias', 'InasistenciaController::misInasistencias');
+            $routes->get('ver/(:num)', 'InasistenciaController::verInasistencia/$1');
+            $routes->post('subir-justificacion', 'InasistenciaController::subirJustificacion');
+            $routes->get('reporte', 'InasistenciaController::reporteInasistencias');
+            
+            // API endpoints
+            $routes->get('api/estadisticas', 'InasistenciaController::getEstadisticas');
+            $routes->get('api/por-periodo', 'InasistenciaController::getPorPeriodo');
+        });
+        $routes->get('nomina', 'EmpleadoController::nomina');
+
+        $routes->get('solicitudes', 'EmpleadoController::solicitudes');
+        $routes->get('nueva-solicitud', 'EmpleadoController::nuevaSolicitud');
+        $routes->get('cuenta', 'EmpleadoController::cuenta');
+        
+        // Funcionalidades específicas por tipo de empleado
+        $routes->get('evaluaciones-estudiantiles', 'EmpleadoController::evaluacionesEstudiantiles');
+        $routes->get('metodologia-ensenanza', 'EmpleadoController::metodologiaEnsenanza');
+        $routes->get('investigacion', 'EmpleadoController::investigacion');
+        $routes->get('gestion-procesos', 'EmpleadoController::gestionProcesos');
+        $routes->get('reportes-administrativos', 'EmpleadoController::reportesAdministrativos');
+        $routes->get('gestion-equipo', 'EmpleadoController::gestionEquipo');
+        $routes->get('indicadores-gestion', 'EmpleadoController::indicadoresGestion');
+        
+        // Nuevas funcionalidades para empleados
+        $routes->get('titulos-academicos', 'EmpleadoController::titulosAcademicos');
+        $routes->get('capacitaciones-individuales', 'EmpleadoController::capacitacionesIndividuales');
+        $routes->get('evaluaciones-empleado', 'EmpleadoController::evaluacionesEmpleado');
+        $routes->get('control-inasistencias', 'EmpleadoController::controlInasistencias');
+        $routes->get('solicitudes-generales', 'EmpleadoController::solicitudesGenerales');
+        $routes->get('permisos-vacaciones', 'EmpleadoController::permisosVacaciones');
+        
+        // POST routes para empleado
+        $routes->post('perfil/actualizar', 'EmpleadoController::actualizarPerfil');
+        $routes->post('documentos/subir', 'EmpleadoController::subirDocumento');
+        $routes->post('documentos/eliminar/(:num)', 'EmpleadoController::eliminarDocumento/$1');
+        $routes->post('asistencias/guardar', 'EmpleadoController::guardarAsistencia');
+        $routes->post('cuenta/cambiar-password', 'EmpleadoController::cambiarPassword');
+        $routes->post('cuenta/configurar-notificaciones', 'EmpleadoController::configurarNotificaciones');
+        $routes->post('cuenta/configurar-privacidad', 'EmpleadoController::configurarPrivacidad');
+        $routes->post('cuenta/cerrar-sesiones', 'EmpleadoController::cerrarSesiones');
     });
     
-    $routes->group('super-admin', ['filter' => 'role:SUPER_ADMIN'], function($routes) {
+    $routes->group('super-admin', ['filter' => 'role:SuperAdministrador'], function($routes) {
         $routes->get('dashboard', 'SuperAdminController::dashboard');
         $routes->get('usuarios', 'SuperAdminController::usuarios');
         $routes->post('usuarios/crear', 'SuperAdminController::crearUsuario');
@@ -244,6 +295,16 @@ $routes->group('postulantes', function($routes) {
     $routes->post('login', 'PostulanteController::autenticar');
     $routes->get('vacantes-disponibles', 'PostulanteController::vacantesDisponibles');
     $routes->post('aplicar-vacante', 'PostulanteController::aplicarVacante');
+    
+    // Rutas protegidas para postulantes logueados
+    $routes->group('', ['filter' => 'auth'], function($routes) {
+        $routes->get('dashboard', 'PostulanteController::dashboard');
+        $routes->get('estado-aplicaciones', 'PostulanteController::estadoAplicaciones');
+        $routes->get('perfil', 'PostulanteController::perfil');
+        $routes->post('perfil/actualizar', 'PostulanteController::actualizarPerfil');
+        $routes->get('logout', 'PostulanteController::logout');
+        $routes->get('descargar-archivo/(:any)/(:num)', 'PostulanteController::descargarArchivo/$1/$2');
+    });
 });
 
 // Rutas de error
