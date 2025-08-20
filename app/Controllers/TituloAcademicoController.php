@@ -2,10 +2,11 @@
 
 namespace App\Controllers;
 
+use CodeIgniter\Controller;
 use App\Models\TituloAcademicoModel;
 use App\Models\EmpleadoModel;
 
-class TituloAcademicoController extends BaseController
+class TituloAcademicoController extends Controller
 {
     protected $tituloAcademicoModel;
     protected $empleadoModel;
@@ -17,13 +18,15 @@ class TituloAcademicoController extends BaseController
     }
 
     /**
-     * Vista principal de títulos académicos
+     * Vista principal de títulos académicos (para administradores)
      */
     public function index()
     {
         $data = [
-            'titulo' => 'Gestión de Títulos Académicos',
-            'titulos' => $this->tituloAcademicoModel->getTitulosConEmpleado()
+            'title' => 'Gestión de Títulos Académicos',
+            'titulos' => $this->tituloAcademicoModel->getTitulosCompletos(),
+            'empleados' => $this->empleadoModel->getEmpleadosActivos(),
+            'estadisticas' => $this->tituloAcademicoModel->getEstadisticas()
         ];
 
         return view('titulos_academicos/index', $data);
@@ -35,8 +38,10 @@ class TituloAcademicoController extends BaseController
     public function crear()
     {
         $data = [
-            'titulo' => 'Agregar Nuevo Título Académico',
-            'empleados' => $this->empleadoModel->where('activo', 1)->findAll()
+            'title' => 'Nuevo Título Académico',
+            'empleados' => $this->empleadoModel->getEmpleadosActivos(),
+            'tipos' => ['Tercer Nivel', 'Cuarto Nivel', 'Ph.D.', 'Doctorado', 'Maestría', 'Especialización', 'Otro'],
+            'paises' => $this->getPaises()
         ];
 
         return view('titulos_academicos/crear', $data);
@@ -47,51 +52,49 @@ class TituloAcademicoController extends BaseController
      */
     public function guardar()
     {
-        // Validar datos del formulario
+        // Validar datos
         $rules = [
-            'empleado_id'      => 'required|integer',
-            'universidad'      => 'required|min_length[2]|max_length[255]',
-            'tipo_titulo'      => 'required|in_list[Tercer nivel,Cuarto nivel,Doctorado/PhD]',
-            'nombre_titulo'    => 'required|min_length[5]|max_length[255]',
-            'fecha_obtencion'  => 'required|valid_date',
-            'pais'             => 'permit_empty|min_length[2]|max_length[100]'
+            'empleado_id' => 'required|integer|greater_than[0]',
+            'universidad' => 'required|min_length[2]|max_length[255]',
+            'tipo_titulo' => 'required|in_list[Tercer Nivel,Cuarto Nivel,Ph.D.,Doctorado,Maestría,Especialización,Otro]',
+            'nombre_titulo' => 'required|min_length[5]|max_length[255]',
+            'fecha_obtencion' => 'required|valid_date',
+            'pais' => 'permit_empty|min_length[2]|max_length[100]'
         ];
 
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        // Validar que la fecha de obtención no sea futura
-        if (!$this->tituloAcademicoModel->validarFechaObtencion($this->request->getPost('fecha_obtencion'))) {
-            return redirect()->back()->withInput()->with('error', 'La fecha de obtención no puede ser futura');
-        }
-
         // Procesar archivo si se subió
-        $archivoCertificado = '';
-        $file = $this->request->getFile('archivo_certificado');
+        $archivoTitulo = '';
+        $file = $this->request->getFile('archivo_titulo');
         
         if ($file && $file->isValid() && !$file->hasMoved()) {
             $newName = $file->getRandomName();
-            $file->move(WRITEPATH . 'uploads/titulos/', $newName);
-            $archivoCertificado = $newName;
+            $file->move(WRITEPATH . 'uploads/titulos_academicos/', $newName);
+            $archivoTitulo = $newName;
         }
 
-        // Preparar datos
-        $datos = [
-            'empleado_id'      => $this->request->getPost('empleado_id'),
-            'universidad'      => $this->request->getPost('universidad'),
-            'tipo_titulo'      => $this->request->getPost('tipo_titulo'),
-            'nombre_titulo'    => $this->request->getPost('nombre_titulo'),
-            'fecha_obtencion'  => $this->request->getPost('fecha_obtencion'),
-            'pais'             => $this->request->getPost('pais'),
-            'archivo_certificado' => $archivoCertificado
+        // Guardar título académico
+        $datosTitulo = [
+            'id_empleado' => $this->request->getPost('empleado_id'),
+            'universidad' => $this->request->getPost('universidad'),
+            'tipo_titulo' => $this->request->getPost('tipo_titulo'),
+            'nombre_titulo' => $this->request->getPost('nombre_titulo'),
+            'fecha_obtencion' => $this->request->getPost('fecha_obtencion'),
+            'pais' => $this->request->getPost('pais'),
+            'archivo_titulo' => $archivoTitulo,
+            'observaciones' => $this->request->getPost('observaciones'),
+            'creado_por' => session()->get('id_usuario')
         ];
 
-        // Guardar título académico
-        if ($this->tituloAcademicoModel->insert($datos)) {
-            return redirect()->to('/titulos-academicos')->with('mensaje', 'Título académico agregado exitosamente');
+        $idTitulo = $this->tituloAcademicoModel->insert($datosTitulo);
+
+        if ($idTitulo) {
+            return redirect()->to('/titulos-academicos')->with('mensaje', 'Título académico registrado exitosamente');
         } else {
-            return redirect()->back()->withInput()->with('error', 'Error al agregar el título académico');
+            return redirect()->back()->withInput()->with('error', 'Error al registrar el título académico');
         }
     }
 
@@ -107,9 +110,11 @@ class TituloAcademicoController extends BaseController
         }
 
         $data = [
-            'titulo' => 'Editar Título Académico',
-            'titulo_academico' => $titulo,
-            'empleados' => $this->empleadoModel->where('activo', 1)->findAll()
+            'title' => 'Editar Título Académico',
+            'titulo' => $titulo,
+            'empleados' => $this->empleadoModel->getEmpleadosActivos(),
+            'tipos' => ['Tercer Nivel', 'Cuarto Nivel', 'Ph.D.', 'Doctorado', 'Maestría', 'Especialización', 'Otro'],
+            'paises' => $this->getPaises()
         ];
 
         return view('titulos_academicos/editar', $data);
@@ -120,56 +125,44 @@ class TituloAcademicoController extends BaseController
      */
     public function actualizar($id)
     {
-        $titulo = $this->tituloAcademicoModel->find($id);
-        
-        if (!$titulo) {
-            return redirect()->to('/titulos-academicos')->with('error', 'Título académico no encontrado');
-        }
-
-        // Validar datos del formulario
+        // Validar datos
         $rules = [
-            'empleado_id'      => 'required|integer',
-            'universidad'      => 'required|min_length[2]|max_length[255]',
-            'tipo_titulo'      => 'required|in_list[Tercer nivel,Cuarto nivel,Doctorado/PhD]',
-            'nombre_titulo'    => 'required|min_length[5]|max_length[255]',
-            'fecha_obtencion'  => 'required|valid_date',
-            'pais'             => 'permit_empty|min_length[2]|max_length[100]'
+            'empleado_id' => 'required|integer|greater_than[0]',
+            'universidad' => 'required|min_length[2]|max_length[255]',
+            'tipo_titulo' => 'required|in_list[Tercer Nivel,Cuarto Nivel,Ph.D.,Doctorado,Maestría,Especialización,Otro]',
+            'nombre_titulo' => 'required|min_length[5]|max_length[255]',
+            'fecha_obtencion' => 'required|valid_date',
+            'pais' => 'permit_empty|min_length[2]|max_length[100]'
         ];
 
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        // Validar que la fecha de obtención no sea futura
-        if (!$this->tituloAcademicoModel->validarFechaObtencion($this->request->getPost('fecha_obtencion'))) {
-            return redirect()->back()->withInput()->with('error', 'La fecha de obtención no puede ser futura');
-        }
-
-        // Procesar archivo si se subió uno nuevo
-        $archivoCertificado = $titulo['archivo_certificado']; // Mantener archivo existente
-        $file = $this->request->getFile('archivo_certificado');
+        // Procesar archivo si se subió
+        $archivoTitulo = '';
+        $file = $this->request->getFile('archivo_titulo');
         
         if ($file && $file->isValid() && !$file->hasMoved()) {
-            // Eliminar archivo anterior si existe
-            if ($archivoCertificado && file_exists(WRITEPATH . 'uploads/titulos/' . $archivoCertificado)) {
-                unlink(WRITEPATH . 'uploads/titulos/' . $archivoCertificado);
-            }
-            
             $newName = $file->getRandomName();
-            $file->move(WRITEPATH . 'uploads/titulos/', $newName);
-            $archivoCertificado = $newName;
+            $file->move(WRITEPATH . 'uploads/titulos_academicos/', $newName);
+            $archivoTitulo = $newName;
         }
 
         // Preparar datos
         $datos = [
-            'empleado_id'      => $this->request->getPost('empleado_id'),
-            'universidad'      => $this->request->getPost('universidad'),
-            'tipo_titulo'      => $this->request->getPost('tipo_titulo'),
-            'nombre_titulo'    => $this->request->getPost('nombre_titulo'),
-            'fecha_obtencion'  => $this->request->getPost('fecha_obtencion'),
-            'pais'             => $this->request->getPost('pais'),
-            'archivo_certificado' => $archivoCertificado
+            'id_empleado' => $this->request->getPost('empleado_id'),
+            'universidad' => $this->request->getPost('universidad'),
+            'tipo_titulo' => $this->request->getPost('tipo_titulo'),
+            'nombre_titulo' => $this->request->getPost('nombre_titulo'),
+            'fecha_obtencion' => $this->request->getPost('fecha_obtencion'),
+            'pais' => $this->request->getPost('pais'),
+            'observaciones' => $this->request->getPost('observaciones')
         ];
+
+        if ($archivoTitulo) {
+            $datos['archivo_titulo'] = $archivoTitulo;
+        }
 
         // Actualizar título académico
         if ($this->tituloAcademicoModel->update($id, $datos)) {
@@ -184,17 +177,6 @@ class TituloAcademicoController extends BaseController
      */
     public function eliminar($id)
     {
-        $titulo = $this->tituloAcademicoModel->find($id);
-        
-        if (!$titulo) {
-            return redirect()->to('/titulos-academicos')->with('error', 'Título académico no encontrado');
-        }
-
-        // Eliminar archivo si existe
-        if ($titulo['archivo_certificado'] && file_exists(WRITEPATH . 'uploads/titulos/' . $titulo['archivo_certificado'])) {
-            unlink(WRITEPATH . 'uploads/titulos/' . $titulo['archivo_certificado']);
-        }
-
         if ($this->tituloAcademicoModel->delete($id)) {
             return redirect()->to('/titulos-academicos')->with('mensaje', 'Título académico eliminado exitosamente');
         } else {
@@ -203,70 +185,88 @@ class TituloAcademicoController extends BaseController
     }
 
     /**
-     * Vista de títulos de un empleado específico
+     * Ver títulos académicos de un empleado específico
      */
-    public function porEmpleado($empleadoId)
+    public function empleado($idEmpleado)
     {
-        $empleado = $this->empleadoModel->find($empleadoId);
+        $empleado = $this->empleadoModel->find($idEmpleado);
         
         if (!$empleado) {
-            return redirect()->to('/empleados')->with('error', 'Empleado no encontrado');
+            return redirect()->to('/titulos-academicos')->with('error', 'Empleado no encontrado');
         }
 
         $data = [
-            'titulo' => 'Títulos Académicos de ' . $empleado['nombres'] . ' ' . $empleado['apellidos'],
+            'title' => 'Títulos Académicos de ' . $empleado['nombres'] . ' ' . $empleado['apellidos'],
             'empleado' => $empleado,
-            'titulos' => $this->tituloAcademicoModel->getTitulosPorEmpleado($empleadoId)
+            'titulos' => $this->tituloAcademicoModel->getTitulosPorEmpleado($idEmpleado),
+            'estadisticas' => $this->tituloAcademicoModel->getEstadisticasPorEmpleado($idEmpleado)
         ];
 
-        return view('titulos_academicos/por_empleado', $data);
+        return view('titulos_academicos/empleado', $data);
     }
 
     /**
-     * Descargar certificado
-     */
-    public function descargarCertificado($id)
-    {
-        $titulo = $this->tituloAcademicoModel->find($id);
-        
-        if (!$titulo || !$titulo['archivo_certificado']) {
-            return redirect()->to('/titulos-academicos')->with('error', 'Archivo no encontrado');
-        }
-
-        $rutaArchivo = WRITEPATH . 'uploads/titulos/' . $titulo['archivo_certificado'];
-        
-        if (!file_exists($rutaArchivo)) {
-            return redirect()->to('/titulos-academicos')->with('error', 'Archivo no encontrado en el servidor');
-        }
-
-        return $this->response->download($rutaArchivo, null);
-    }
-
-    /**
-     * Obtener estadísticas de títulos académicos (AJAX)
+     * Obtener estadísticas de títulos académicos
      */
     public function getEstadisticas()
     {
-        $estadisticas = $this->tituloAcademicoModel->getEstadisticasTitulos();
+        $estadisticas = $this->tituloAcademicoModel->getEstadisticas();
         return $this->response->setJSON($estadisticas);
     }
 
     /**
-     * Buscar títulos por universidad (AJAX)
+     * Buscar títulos académicos
      */
-    public function buscarPorUniversidad()
+    public function buscar()
     {
+        $termino = $this->request->getGet('termino');
+        $tipo = $this->request->getGet('tipo');
         $universidad = $this->request->getGet('universidad');
-        $titulos = $this->tituloAcademicoModel->buscarPorUniversidad($universidad);
-        return $this->response->setJSON($titulos);
+
+        $resultados = $this->tituloAcademicoModel->buscarTitulos($termino, $tipo, $universidad);
+
+        $data = [
+            'title' => 'Resultados de Búsqueda',
+            'resultados' => $resultados,
+            'termino' => $termino,
+            'tipo' => $tipo,
+            'universidad' => $universidad,
+            'tipos' => ['Tercer Nivel', 'Cuarto Nivel', 'Ph.D.', 'Doctorado', 'Maestría', 'Especialización', 'Otro']
+        ];
+
+        return view('titulos_academicos/buscar', $data);
     }
 
     /**
-     * Obtener títulos recientes (AJAX)
+     * Reporte de títulos académicos por período
      */
-    public function getTitulosRecientes()
+    public function reporte()
     {
-        $titulos = $this->tituloAcademicoModel->getTitulosRecientes();
-        return $this->response->setJSON($titulos);
+        $fechaInicio = $this->request->getGet('fecha_inicio') ?? date('Y-01-01');
+        $fechaFin = $this->request->getGet('fecha_fin') ?? date('Y-12-31');
+
+        $data = [
+            'title' => 'Reporte de Títulos Académicos',
+            'fecha_inicio' => $fechaInicio,
+            'fecha_fin' => $fechaFin,
+            'titulos' => $this->tituloAcademicoModel->getTitulosPorPeriodo($fechaInicio, $fechaFin),
+            'estadisticas' => $this->tituloAcademicoModel->getEstadisticasPorPeriodo($fechaInicio, $fechaFin)
+        ];
+
+        return view('titulos_academicos/reporte', $data);
+    }
+
+    /**
+     * Lista de países para el formulario
+     */
+    private function getPaises()
+    {
+        return [
+            'Ecuador', 'Colombia', 'Perú', 'Chile', 'Argentina', 'Brasil', 'México', 'España', 'Estados Unidos',
+            'Canadá', 'Reino Unido', 'Francia', 'Alemania', 'Italia', 'Países Bajos', 'Bélgica', 'Suiza',
+            'Austria', 'Suecia', 'Noruega', 'Dinamarca', 'Finlandia', 'Polonia', 'República Checa', 'Hungría',
+            'Rumania', 'Bulgaria', 'Grecia', 'Portugal', 'Irlanda', 'Islandia', 'Luxemburgo', 'Malta',
+            'Chipre', 'Eslovenia', 'Eslovaquia', 'Croacia', 'Letonia', 'Lituania', 'Estonia', 'Otro'
+        ];
     }
 }

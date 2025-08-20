@@ -93,7 +93,7 @@ class App extends BaseConfig
      * strings (like currency markers, numbers, etc), that your program
      * should run under for this request.
      */
-    public string $defaultLocale = 'en';
+    public string $defaultLocale = 'es';
 
     /**
      * --------------------------------------------------------------------------
@@ -113,14 +113,14 @@ class App extends BaseConfig
      * --------------------------------------------------------------------------
      *
      * If $negotiateLocale is true, this array lists the locales supported
-     * by the application in descending order of priority. If no match is
-     * found, the first locale will be used.
+     * by the application in descending order of priority. If no match
+     * is found, the first locale will be used.
      *
      * IncomingRequest::setLocale() also uses this list.
      *
      * @var list<string>
      */
-    public array $supportedLocales = ['en'];
+    public array $supportedLocales = ['es', 'en'];
 
     /**
      * --------------------------------------------------------------------------
@@ -133,7 +133,7 @@ class App extends BaseConfig
      * @see https://www.php.net/manual/en/timezones.php for list of timezones
      *      supported by PHP.
      */
-    public string $appTimezone = 'UTC';
+    public string $appTimezone = 'America/Guayaquil';
 
     /**
      * --------------------------------------------------------------------------
@@ -143,7 +143,7 @@ class App extends BaseConfig
      * This determines which character set is used by default in various methods
      * that require a character set to be provided.
      *
-     * @see http://php.net/htmlspecialchars for a list of supported charsets.
+     * @see http://php.net/htmlspecialchars for a list of supported charsets
      */
     public string $charset = 'UTF-8';
 

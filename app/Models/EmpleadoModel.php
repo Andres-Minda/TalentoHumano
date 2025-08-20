@@ -121,11 +121,9 @@ class EmpleadoModel extends Model
         $builder->select('
             e.*,
             u.cedula,
-            u.email,
-            u.telefono,
-            u.direccion
+            u.email
         ');
-        $builder->join('usuarios u', 'u.id = e.id_usuario');
+        $builder->join('usuarios u', 'u.id_usuario = e.id_usuario');
         $builder->where('e.estado', 'ACTIVO');
         
         // Aplicar filtros
@@ -232,12 +230,9 @@ class EmpleadoModel extends Model
         $builder->select('
             e.*,
             u.cedula,
-            u.email,
-            u.telefono,
-            u.direccion,
-            u.foto_perfil
+            u.email
         ');
-        $builder->join('usuarios u', 'u.id = e.id_usuario');
+        $builder->join('usuarios u', 'u.id_usuario = e.id_usuario');
         $builder->where('e.id_usuario', $idUsuario);
         $builder->where('e.estado', 'ACTIVO');
         

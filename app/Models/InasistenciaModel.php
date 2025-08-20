@@ -13,16 +13,14 @@ class InasistenciaModel extends Model
     protected $useSoftDeletes   = false;
 
     protected $allowedFields = [
-        'id_empleado',
+        'empleado_id',
         'fecha_inasistencia',
+        'hora_inasistencia',
+        'motivo',
+        'justificada',
         'tipo_inasistencia',
-        'motivo_inasistencia',
-        'justificacion',
-        'documento_justificacion',
-        'fecha_justificacion',
-        'registrado_por',
-        'estado',
-        'observaciones'
+        'archivo_justificacion',
+        'registrado_por'
     ];
 
     protected $useTimestamps = true;
@@ -31,16 +29,18 @@ class InasistenciaModel extends Model
 
     // Validaciones
     protected $validationRules = [
-        'id_empleado'         => 'required|integer',
+        'empleado_id'        => 'required|integer',
         'fecha_inasistencia' => 'required|valid_date',
-        'tipo_inasistencia'  => 'required|in_list[JUSTIFICADA,NO_JUSTIFICADA,PENDIENTE_JUSTIFICACION]',
-        'motivo_inasistencia'=> 'required|min_length[5]|max_length[500]',
-        'registrado_por'     => 'required|integer',
-        'estado'             => 'permit_empty|in_list[ACTIVA,ANULADA]'
+        'hora_inasistencia'  => 'permit_empty|valid_date',
+        'motivo'             => 'required|min_length[5]|max_length[500]',
+        'justificada'        => 'permit_empty|in_list[0,1]',
+        'tipo_inasistencia'  => 'permit_empty|in_list[Justificada,Injustificada,Permiso,Vacaciones,Licencia Médica]',
+        'archivo_justificacion' => 'permit_empty|max_length[255]',
+        'registrado_por'     => 'required|integer'
     ];
 
     protected $validationMessages = [
-        'id_empleado' => [
+        'empleado_id' => [
             'required' => 'El empleado es obligatorio',
             'integer' => 'El ID del empleado debe ser un número'
         ],
@@ -48,21 +48,26 @@ class InasistenciaModel extends Model
             'required'   => 'La fecha de inasistencia es obligatoria',
             'valid_date' => 'La fecha debe ser válida'
         ],
-        'tipo_inasistencia' => [
-            'required' => 'El tipo de inasistencia es obligatorio',
-            'in_list' => 'El tipo debe ser JUSTIFICADA, NO_JUSTIFICADA o PENDIENTE_JUSTIFICACION'
+        'hora_inasistencia' => [
+            'valid_date' => 'La hora debe ser válida'
         ],
-        'motivo_inasistencia' => [
+        'motivo' => [
             'required'   => 'El motivo es obligatorio',
             'min_length' => 'El motivo debe tener al menos 5 caracteres',
             'max_length' => 'El motivo no puede exceder 500 caracteres'
         ],
+        'justificada' => [
+            'in_list' => 'El campo justificada debe ser 0 o 1'
+        ],
+        'tipo_inasistencia' => [
+            'in_list' => 'El tipo debe ser Justificada, Injustificada, Permiso, Vacaciones o Licencia Médica'
+        ],
+        'archivo_justificacion' => [
+            'max_length' => 'El nombre del archivo no puede exceder 255 caracteres'
+        ],
         'registrado_por' => [
             'required' => 'El usuario que registra es obligatorio',
             'integer' => 'El ID del usuario debe ser un número'
-        ],
-        'estado' => [
-            'in_list' => 'El estado debe ser ACTIVA o ANULADA'
         ]
     ];
 
@@ -75,8 +80,7 @@ class InasistenciaModel extends Model
     public function getInasistenciasEmpleado($idEmpleado, $fechaInicio = null, $fechaFin = null)
     {
         $builder = $this->builder();
-        $builder->where('id_empleado', $idEmpleado);
-        $builder->where('estado', 'ACTIVA');
+        $builder->where('empleado_id', $idEmpleado);
         
         if ($fechaInicio) {
             $builder->where('fecha_inasistencia >=', $fechaInicio);
@@ -99,7 +103,7 @@ class InasistenciaModel extends Model
         $builder = $this->builder();
         $builder->where('fecha_inasistencia >=', $fechaInicio);
         $builder->where('fecha_inasistencia <=', $fechaFin);
-        $builder->where('estado', 'ACTIVA');
+
         
         if ($idEmpleado) {
             $builder->where('id_empleado', $idEmpleado);
@@ -123,10 +127,10 @@ class InasistenciaModel extends Model
             SUM(CASE WHEN tipo_inasistencia = "PENDIENTE_JUSTIFICACION" THEN 1 ELSE 0 END) as pendientes
         ');
         
-        $builder->where('estado', 'ACTIVA');
+
         
         if ($idEmpleado) {
-            $builder->where('id_empleado', $idEmpleado);
+            $builder->where('empleado_id', $idEmpleado);
         }
         
         if ($fechaInicio) {
@@ -152,16 +156,16 @@ class InasistenciaModel extends Model
             e.apellidos,
             e.tipo_empleado,
             e.departamento,
-            u.nombre as registrado_por_nombre,
-            u.apellido as registrado_por_apellido
+            u.cedula as registrado_por_cedula,
+            u.email as registrado_por_email
         ');
-        $builder->join('empleados e', 'e.id_empleado = i.id_empleado');
-        $builder->join('usuarios u', 'u.id = i.registrado_por');
-        $builder->where('i.estado', 'ACTIVA');
+        $builder->join('empleados e', 'e.id_empleado = i.empleado_id');
+        $builder->join('usuarios u', 'u.id_usuario = i.registrado_por');
+
         
         // Aplicar filtros
-        if (isset($filtros['id_empleado'])) {
-            $builder->where('i.id_empleado', $filtros['id_empleado']);
+        if (isset($filtros['empleado_id'])) {
+            $builder->where('i.empleado_id', $filtros['empleado_id']);
         }
         
         if (isset($filtros['tipo_inasistencia'])) {
@@ -185,19 +189,7 @@ class InasistenciaModel extends Model
         return $builder->get()->getResultArray();
     }
 
-    /**
-     * Cambiar estado de inasistencia
-     */
-    public function cambiarEstado($idInasistencia, $nuevoEstado, $observaciones = null)
-    {
-        $data = ['estado' => $nuevoEstado];
-        
-        if ($observaciones) {
-            $data['observaciones'] = $observaciones;
-        }
-        
-        return $this->update($idInasistencia, $data);
-    }
+
 
     /**
      * Justificar inasistencia
@@ -205,13 +197,12 @@ class InasistenciaModel extends Model
     public function justificarInasistencia($idInasistencia, $justificacion, $documento = null)
     {
         $data = [
-            'tipo_inasistencia' => 'JUSTIFICADA',
-            'justificacion'     => $justificacion,
-            'fecha_justificacion' => date('Y-m-d')
+            'tipo_inasistencia' => 'Justificada',
+            'justificada'       => 1
         ];
         
         if ($documento) {
-            $data['documento_justificacion'] = $documento;
+            $data['archivo_justificacion'] = $justificacion;
         }
         
         return $this->update($idInasistencia, $data);

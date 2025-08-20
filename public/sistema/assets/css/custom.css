@@ -1,11 +1,11 @@
 /* Estilos personalizados para el sidebar */
 .left-sidebar {
-    width: 320px !important; /* Aumentamos el ancho del sidebar de 270px a 320px para mejor visualización */
+    width: 300px !important; /* Aumentamos el ancho del sidebar de 270px a 300px */
 }
 
 /* Ajustamos el contenido principal para que no se superponga con el sidebar más ancho */
 .body-wrapper {
-    margin-left: 320px !important;
+    margin-left: 300px !important;
 }
 
 /* Mejoramos la visualización del texto en el menú */
@@ -13,9 +13,6 @@
     padding: 12px 15px;
     white-space: normal;
     line-height: 1.4;
-    min-height: 48px;
-    display: flex;
-    align-items: center;
 }
 
 /* Aseguramos que el texto del menú se ajuste correctamente */
@@ -48,12 +45,60 @@
     margin-right: 10px;
 }
 
-/* Estilos para el dropdown del navbar */
-.dropdown-menu-animate-up {
-    animation: dropdown-menu-animate-up 0.3s ease-out;
+/* Estilos específicos para el sistema de Talento Humano */
+.mini-stats-wid {
+    border: none;
+    box-shadow: 0 0 35px 0 rgba(154, 161, 171, 0.15);
+    transition: all 0.3s ease;
 }
 
-@keyframes dropdown-menu-animate-up {
+.mini-stats-wid:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 35px 0 rgba(154, 161, 171, 0.25);
+}
+
+.mini-stat-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.avatar-title {
+    color: white;
+    font-size: 20px;
+}
+
+/* Estilos para las tarjetas de estadísticas */
+.round-8 {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* Estilos para el navbar */
+.navbar-light {
+    background-color: #00367c !important;
+}
+
+.navbar-light .navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.navbar-light .navbar-nav .nav-link:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Estilos para el dropdown del perfil */
+.dropdown-menu-animate-up {
+    animation: dropdownFadeInUp 0.3s ease-out;
+}
+
+@keyframes dropdownFadeInUp {
     from {
         opacity: 0;
         transform: translateY(10px);
@@ -64,23 +109,336 @@
     }
 }
 
-.message-body {
-    padding: 0.5rem;
+/* Estilos para el footer */
+.footer-trasparent {
+    background-color: #00367c !important;
+}
+
+/* Estilos para las vistas específicas */
+.page-titles {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.page-titles .breadcrumb {
+    margin: 0;
+    padding: 0;
+}
+
+/* Estilos para las tablas de datos */
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Estilos para los modales */
+.modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    border-bottom: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-footer {
+    border-top: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+    border-radius: 0 0 12px 12px;
+}
+
+/* Estilos para los formularios */
+.form-control:focus {
+    border-color: #00367c;
+    box-shadow: 0 0 0 0.2rem rgba(0, 54, 124, 0.25);
+}
+
+.form-select:focus {
+    border-color: #00367c;
+    box-shadow: 0 0 0 0.2rem rgba(0, 54, 124, 0.25);
+}
+
+/* Estilos para los botones */
+.btn-primary {
+    background-color: #00367c;
+    border-color: #00367c;
+}
+
+.btn-primary:hover {
+    background-color: #002a5f;
+    border-color: #002a5f;
+}
+
+.btn-outline-primary {
+    color: #00367c;
+    border-color: #00367c;
+}
+
+.btn-outline-primary:hover {
+    background-color: #00367c;
+    border-color: #00367c;
+}
+
+/* Estilos para las alertas */
+.alert {
+    border-radius: 8px;
+    border: none;
+    padding: 15px 20px;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+/* Estilos para los badges */
+.badge {
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 20px;
+}
+
+/* Estilos para las tarjetas de información */
+.info-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.info-card h5 {
+    color: white;
+    margin-bottom: 10px;
+}
+
+.info-card p {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 0;
+}
+
+/* Estilos para el sidebar responsive */
+@media (max-width: 768px) {
+    .left-sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+    
+    .left-sidebar.show {
+        transform: translateX(0);
+    }
+    
+    .body-wrapper {
+        margin-left: 0 !important;
+    }
+    
+    .sidebar-link {
+        margin-right: 0;
+        border-radius: 0;
+    }
+}
+
+/* Estilos para el toggle del sidebar */
+.sidebartoggler {
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.sidebartoggler:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Estilos para el scroll del sidebar */
+.scroll-sidebar {
+    height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+
+/* Estilos para los íconos del sidebar */
+#sidebarnav .sidebar-link i {
+    font-size: 18px;
+    width: 20px;
+    text-align: center;
+}
+
+/* Estilos para el estado activo del sidebar */
+#sidebarnav .sidebar-link.active {
+    background-color: #00367c;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 54, 124, 0.2);
+}
+
+#sidebarnav .sidebar-link.active:hover {
+    background-color: #002a5f;
+}
+
+/* Estilos para el hover del sidebar */
+#sidebarnav .sidebar-link:hover {
+    background-color: rgba(0, 54, 124, 0.1);
+    color: #00367c;
+}
+
+/* Estilos para el logo del sidebar */
+.brand-logo img {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para el texto del logo */
+.brand-logo span {
+    color: #00367c;
+    font-weight: 700;
+}
+
+/* Estilos para el navbar */
+.app-header {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para el mensaje de bienvenida */
+.text-white {
+    color: white !important;
+}
+
+/* Estilos para la foto de perfil */
+.rounded-circle {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: border-color 0.2s;
+}
+
+.rounded-circle:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Estilos para el dropdown del perfil */
+.dropdown-menu {
+    min-width: 200px;
+    padding: 8px 0;
 }
 
 .dropdown-item {
-    padding: 0.75rem 1rem;
-    border-radius: 0.375rem;
-    margin: 0.125rem 0.5rem;
-    transition: all 0.2s ease;
+    padding: 10px 20px;
+    transition: all 0.2s;
 }
 
 .dropdown-item:hover {
     background-color: #f8f9fa;
-    color: #495057;
+    color: #00367c;
 }
 
-.dropdown-item.text-danger:hover {
+.dropdown-item i {
+    margin-right: 10px;
+    font-size: 16px;
+}
+
+/* Estilos para el botón de logout */
+.btn-outline-danger {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.btn-outline-danger:hover {
     background-color: #dc3545;
+    border-color: #dc3545;
     color: white;
+}
+
+/* Estilos para el footer */
+footer {
+    margin-top: auto;
+}
+
+footer img {
+    filter: brightness(0) invert(1);
+}
+
+/* Estilos para el contenido principal */
+.content {
+    min-height: calc(100vh - 140px);
+}
+
+/* Estilos para las tarjetas de estadísticas */
+.stats-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Estilos para los gráficos */
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin: 20px 0;
+}
+
+/* Estilos para los filtros */
+.filter-section {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Estilos para los botones de acción */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Estilos para las tablas responsivas */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 12px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons .btn {
+        min-width: 100%;
+    }
 }

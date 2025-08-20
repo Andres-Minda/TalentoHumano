@@ -32,41 +32,39 @@
                     </a>
                     <div class="dropdown-menu dropdown-menu-end dropdown-menu-animate-up" aria-labelledby="drop2">
                         <div class="message-body">
-                            <?php 
-                            $rol_id = session('id_rol');
-                            if ($rol_id == 1): // Super Administrador
-                            ?>
-                                <a href="<?= base_url('super-admin/perfil') ?>" class="d-flex align-items-center gap-2 dropdown-item">
+                            <?php if (session('id_rol') == 1): ?>
+                                <!-- Rutas específicas para Super Administrador -->
+                                <a href="<?= base_url('index.php/super-admin/perfil') ?>" class="d-flex align-items-center gap-2 dropdown-item">
                                     <i class="ti ti-user fs-6"></i>
                                     <p class="mb-0 fs-3">Mi Perfil</p>
                                 </a>
-                                <a href="<?= base_url('super-admin/cuenta') ?>" class="d-flex align-items-center gap-2 dropdown-item">
+                                <a href="<?= base_url('index.php/super-admin/cuenta') ?>" class="d-flex align-items-center gap-2 dropdown-item">
                                     <i class="ti ti-settings fs-6"></i>
                                     <p class="mb-0 fs-3">Mi Cuenta</p>
                                 </a>
-                            <?php elseif ($rol_id == 2): // Admin Talento Humano
-                            ?>
-                                <a href="<?= base_url('admin-th/perfil') ?>" class="d-flex align-items-center gap-2 dropdown-item">
+                            <?php elseif (session('id_rol') == 2): ?>
+                                <!-- Rutas específicas para Admin Talento Humano -->
+                                <a href="<?= base_url('index.php/admin-th/perfil') ?>" class="d-flex align-items-center gap-2 dropdown-item">
                                     <i class="ti ti-user fs-6"></i>
                                     <p class="mb-0 fs-3">Mi Perfil</p>
                                 </a>
-                                <a href="<?= base_url('admin-th/cuenta') ?>" class="d-flex align-items-center gap-2 dropdown-item">
+                                <a href="<?= base_url('index.php/admin-th/cuenta') ?>" class="d-flex align-items-center gap-2 dropdown-item">
                                     <i class="ti ti-settings fs-6"></i>
                                     <p class="mb-0 fs-3">Mi Cuenta</p>
                                 </a>
-                            <?php else: // Empleado (antes Docente)
-                            ?>
-                                <a href="<?= base_url('empleado/perfil') ?>" class="d-flex align-items-center gap-2 dropdown-item">
+                            <?php else: ?>
+                                <!-- Rutas específicas para Empleados -->
+                                <a href="<?= base_url('index.php/empleado/mi-perfil') ?>" class="d-flex align-items-center gap-2 dropdown-item">
                                     <i class="ti ti-user fs-6"></i>
                                     <p class="mb-0 fs-3">Mi Perfil</p>
                                 </a>
-                                <a href="<?= base_url('empleado/cuenta') ?>" class="d-flex align-items-center gap-2 dropdown-item">
+                                <a href="<?= base_url('index.php/empleado/cuenta') ?>" class="d-flex align-items-center gap-2 dropdown-item">
                                     <i class="ti ti-settings fs-6"></i>
                                     <p class="mb-0 fs-3">Mi Cuenta</p>
                                 </a>
                             <?php endif; ?>
                             <hr class="dropdown-divider">
-                            <a href="<?= base_url('logout') ?>" class="btn btn-outline-danger mx-3 mt-2 d-block">
+                            <a href="<?= base_url('index.php/auth/logout') ?>" class="btn btn-outline-danger mx-3 mt-2 d-block">
                                 <i class="ti ti-logout me-1"></i>Cerrar sesión
                             </a>
                         </div>

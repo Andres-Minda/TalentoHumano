@@ -1,14 +1,14 @@
 <?php 
 // Detectar automáticamente el tipo de empleado para mostrar el sidebar correcto
-$tipoEmpleado = $empleado['tipo_empleado'] ?? 'DOCENTE';
+$tipoEmpleado = ($empleado && isset($empleado['tipo_empleado'])) ? $empleado['tipo_empleado'] : 'DOCENTE';
 $sidebar = 'sidebar_empleado'; // Forzar sidebar de empleado
 
 // Usar la información del controlador si está disponible
-$tituloDashboard = $titulo_dashboard ?? 'Dashboard - Empleado';
-$descripcionDashboard = $descripcion_dashboard ?? 'Panel de control para empleados';
+$tituloDashboard = $titulo ?? 'Dashboard - Empleado';
+$descripcionDashboard = $descripcionDashboard ?? 'Panel de control para empleados';
 
 // Si no hay información del controlador, determinar por tipo de empleado
-if (!isset($titulo_dashboard)) {
+if (!isset($titulo)) {
     switch ($tipoEmpleado) {
         case 'DOCENTE':
             $tituloDashboard = 'Dashboard - Docente';
@@ -58,9 +58,6 @@ if (!isset($titulo_dashboard)) {
                         <?php if ($empleado && isset($empleado['tipo_empleado'])): ?>
                             <p class="text-muted">
                                 Tipo: <?= $empleado['tipo_empleado'] ?> 
-                                <?php if (isset($empleado['tipo_docente']) && $empleado['tipo_docente']): ?>
-                                    - <?= $empleado['tipo_docente'] ?>
-                                <?php endif; ?>
                                 | Departamento: <?= $empleado['departamento'] ?? 'No asignado' ?>
                             </p>
                         <?php endif; ?>

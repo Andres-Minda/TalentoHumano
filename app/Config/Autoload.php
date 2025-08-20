@@ -48,12 +48,12 @@ class Autoload extends AutoloadConfig
      * The class map provides a map of class names and their exact
      * location on the drive. Classes loaded in this manner will have
      * slightly faster performance because they will not have to be
-     * searched for within one or more directories as they would if they
-     * were being autoloaded through a namespace.
+     * searched for within one or more directories as they would if
+     * they were being autoloaded through a namespace.
      *
      * Prototype:
      *   $classmap = [
-     *       'MyClass'   => '/path/to/class/file.php'
+     *       'MyClass'   => '/path/to/class/file',
      *   ];
      *
      * @var array<string, string>
@@ -70,7 +70,7 @@ class Autoload extends AutoloadConfig
      *
      * Prototype:
      *   $files = [
-     *       '/path/to/my/file.php',
+     *       '/path/to/my/file',
      *   ];
      *
      * @var list<string>
@@ -88,5 +88,15 @@ class Autoload extends AutoloadConfig
      *
      * @var list<string>
      */
-    public $helpers = [];
+    public $helpers = [
+        'form',
+        'url',
+        'date',
+        'number',
+        'text',
+        'array',
+        'filesystem',
+        'html',
+        'security'
+    ];
 }

@@ -5,301 +5,334 @@ $sidebar = 'sidebar_super_admin';
 <?= $this->extend('layouts/base') ?>
 
 <?= $this->section('content') ?>
-<div class="container-fluid">
-    <!-- Page title -->
-    <div class="row">
-        <div class="col-12">
-            <div class="page-title-box d-flex align-items-center justify-content-between">
-                <h4 class="mb-0">Dashboard - Super Administrador</h4>
-                <div class="page-title-right">
-                    <ol class="breadcrumb m-0">
-                        <li class="breadcrumb-item"><a href="<?= base_url('super-admin/dashboard') ?>">Inicio</a></li>
-                        <li class="breadcrumb-item active">Dashboard</li>
+<div class="page-wrapper">
+    <div class="page-content">
+        <!-- Breadcrumb -->
+        <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+            <div class="breadcrumb-title pe-3">Dashboard</div>
+            <div class="ps-3">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0 p-0">
+                        <li class="breadcrumb-item"><a href="javascript:;"><i class="bx bx-home-alt"></i></a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Super Administrador</li>
                     </ol>
-                </div>
+                </nav>
             </div>
         </div>
-    </div>
 
-    <!-- Statistics Cards -->
-    <div class="row">
-        <div class="col-xl-3 col-md-6">
-            <div class="card mini-stats-wid">
-                <div class="card-body">
-                    <div class="d-flex">
-                        <div class="flex-grow-1">
-                            <p class="text-muted fw-medium">Total Usuarios</p>
-                            <h4 class="mb-0"><?= $totalUsuarios ?? 0 ?></h4>
-                        </div>
-                        <div class="flex-shrink-0 align-self-center">
-                            <div class="mini-stat-icon avatar-sm rounded-circle bg-primary align-self-center">
-                                <span class="avatar-title">
-                                    <i class="ti ti-users font-size-24"></i>
-                                </span>
+        <!-- Welcome Section -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i class="ti ti-shield-check fs-1 text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h4 class="mb-1">Bienvenido, <?= $usuario['nombres'] ?> <?= $usuario['apellidos'] ?></h4>
+                                <p class="mb-0 text-muted">Panel de Super Administración del Sistema</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card mini-stats-wid">
-                <div class="card-body">
-                    <div class="d-flex">
-                        <div class="flex-grow-1">
-                            <p class="text-muted fw-medium">Total Empleados</p>
-                            <h4 class="mb-0"><?= $totalEmpleados ?? 0 ?></h4>
-                        </div>
-                        <div class="flex-shrink-0 align-self-center">
-                            <div class="mini-stat-icon avatar-sm rounded-circle bg-success align-self-center">
-                                <span class="avatar-title">
-                                    <i class="ti ti-user-check font-size-24"></i>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card mini-stats-wid">
-                <div class="card-body">
-                    <div class="d-flex">
-                        <div class="flex-grow-1">
-                            <p class="text-muted fw-medium">Departamentos</p>
-                            <h4 class="mb-0"><?= $totalDepartamentos ?? 0 ?></h4>
-                        </div>
-                        <div class="flex-shrink-0 align-self-center">
-                            <div class="mini-stat-icon avatar-sm rounded-circle bg-warning align-self-center">
-                                <span class="avatar-title">
-                                    <i class="ti ti-building font-size-24"></i>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card mini-stats-wid">
-                <div class="card-body">
-                    <div class="d-flex">
-                        <div class="flex-grow-1">
-                            <p class="text-muted fw-medium">Roles Activos</p>
-                            <h4 class="mb-0"><?= $totalRoles ?? 0 ?></h4>
-                        </div>
-                        <div class="flex-shrink-0 align-self-center">
-                            <div class="mini-stat-icon avatar-sm rounded-circle bg-info align-self-center">
-                                <span class="avatar-title">
-                                    <i class="ti ti-shield-check font-size-24"></i>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Charts Row -->
-    <div class="row">
-        <div class="col-xl-8">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">Actividad del Sistema</h4>
-                    <p class="card-title-desc">Estadísticas de usuarios y empleados</p>
+        <!-- Statistics Cards -->
+        <div class="row">
+            <div class="col-xl-3 col-md-6">
+                <div class="card radius-10 bg-primary">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i class="ti ti-users fs-1 text-white"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h4 class="mb-0 text-white" id="total_usuarios">0</h4>
+                                <p class="mb-0 text-white-50">Total Usuarios</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div id="system-activity-chart" style="height: 300px;"></div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card radius-10 bg-success">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i class="ti ti-user-check fs-1 text-white"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h4 class="mb-0 text-white" id="usuarios_activos">0</h4>
+                                <p class="mb-0 text-white-50">Usuarios Activos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card radius-10 bg-warning">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i class="ti ti-role fs-1 text-white"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h4 class="mb-0 text-white" id="total_roles">0</h4>
+                                <p class="mb-0 text-white-50">Roles del Sistema</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card radius-10 bg-info">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i class="ti ti-database fs-1 text-white"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h4 class="mb-0 text-white" id="tamano_bd">0</h4>
+                                <p class="mb-0 text-white-50">Tamaño BD (MB)</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-4">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">Distribución por Roles</h4>
-                </div>
-                <div class="card-body">
-                    <div id="roles-distribution-chart" style="height: 300px;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Recent Activity -->
-    <div class="row">
-        <div class="col-xl-6">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">Últimos Usuarios Registrados</h4>
+        <!-- Quick Actions -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Acciones Rápidas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <a href="<?= site_url('super-admin/usuarios') ?>" class="btn btn-outline-primary w-100">
+                                    <i class="ti ti-users me-2"></i>
+                                    Gestionar Usuarios
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="<?= site_url('super-admin/roles') ?>" class="btn btn-outline-warning w-100">
+                                    <i class="ti ti-role me-2"></i>
+                                    Gestionar Roles
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="<?= site_url('super-admin/respaldos') ?>" class="btn btn-outline-info w-100">
+                                    <i class="ti ti-database me-2"></i>
+                                    Respaldos
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="<?= site_url('super-admin/configuracion') ?>" class="btn btn-outline-success w-100">
+                                    <i class="ti ti-settings me-2"></i>
+                                    Configuración
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-centered table-nowrap mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Usuario</th>
-                                    <th>Rol</th>
-                                    <th>Estado</th>
-                                    <th>Último Acceso</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (isset($ultimosUsuarios) && !empty($ultimosUsuarios)): ?>
-                                    <?php foreach ($ultimosUsuarios as $usuario): ?>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Estado del Sistema</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-borderless">
+                                <tbody>
                                     <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-sm bg-light rounded-circle me-3">
-                                                    <span class="avatar-title text-primary">
-                                                        <i class="ti ti-user"></i>
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <h6 class="mb-0"><?= esc($usuario['email']) ?></h6>
-                                                    <small class="text-muted"><?= esc($usuario['cedula']) ?></small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-primary"><?= esc($usuario['nombre_rol']) ?></span>
-                                        </td>
-                                        <td>
-                                            <?php if ($usuario['activo']): ?>
-                                                <span class="badge bg-success">Activo</span>
-                                            <?php else: ?>
-                                                <span class="badge bg-danger">Inactivo</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?= $usuario['last_login'] ? date('d/m/Y H:i', strtotime($usuario['last_login'])) : 'Nunca' ?>
-                                        </td>
+                                        <td><strong>Servidor Web:</strong></td>
+                                        <td><span class="badge bg-success">Activo</span></td>
                                     </tr>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
                                     <tr>
-                                        <td colspan="4" class="text-center">No hay usuarios registrados</td>
+                                        <td><strong>Base de Datos:</strong></td>
+                                        <td><span class="badge bg-success">Conectado</span></td>
                                     </tr>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
+                                    <tr>
+                                        <td><strong>Cache:</strong></td>
+                                        <td><span class="badge bg-info">Habilitado</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Último Backup:</strong></td>
+                                        <td>Hace 2 días</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Actividad Reciente</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-borderless">
+                                <thead>
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Acción</th>
+                                        <th>Hora</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="actividad_reciente">
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No hay actividad reciente</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-6">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">Acciones Rápidas</h4>
+
+        <!-- Charts Section -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Usuarios por Rol</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="chartUsuariosRol" style="height: 300px;"></div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <a href="<?= base_url('super-admin/usuarios') ?>" class="btn btn-primary w-100">
-                                <i class="ti ti-users me-2"></i>Gestionar Usuarios
-                            </a>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <a href="<?= base_url('super-admin/roles') ?>" class="btn btn-success w-100">
-                                <i class="ti ti-shield me-2"></i>Gestionar Roles
-                            </a>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <a href="<?= base_url('super-admin/departamentos') ?>" class="btn btn-warning w-100">
-                                <i class="ti ti-building me-2"></i>Gestionar Departamentos
-                            </a>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <a href="<?= base_url('super-admin/configuracion') ?>" class="btn btn-info w-100">
-                                <i class="ti ti-settings me-2"></i>Configuración
-                            </a>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <a href="<?= base_url('super-admin/backup') ?>" class="btn btn-secondary w-100">
-                                <i class="ti ti-database me-2"></i>Backup
-                            </a>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <a href="<?= base_url('super-admin/reportes') ?>" class="btn btn-dark w-100">
-                                <i class="ti ti-chart-bar me-2"></i>Reportes
-                            </a>
-                        </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Accesos por Día</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="chartAccesosDiarios" style="height: 300px;"></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-<?= $this->endSection() ?>
 
-<?= $this->section('scripts') ?>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // System Activity Chart
-    var systemActivityOptions = {
+    // Cargar estadísticas
+    cargarEstadisticas();
+    
+    // Inicializar gráficos
+    inicializarGraficos();
+    
+    // Cargar datos de las tablas
+    cargarDatosTablas();
+});
+
+function cargarEstadisticas() {
+    // Simular carga de estadísticas
+    document.getElementById('total_usuarios').textContent = '67';
+    document.getElementById('usuarios_activos').textContent = '64';
+    document.getElementById('total_roles').textContent = '6';
+    document.getElementById('tamano_bd').textContent = '45.2';
+}
+
+function inicializarGraficos() {
+    // Gráfico de usuarios por rol
+    const optionsUsuariosRol = {
+        series: [25, 20, 15, 5, 2],
+        chart: {
+            type: 'donut',
+            height: 300
+        },
+        labels: ['Docentes', 'Administrativos', 'Directivos', 'Admin TH', 'Super Admin'],
+        colors: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d'],
+        responsive: [{
+            breakpoint: 480,
+            options: {
+                chart: {
+                    width: 200
+                },
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }]
+    };
+
+    const chartUsuariosRol = new ApexCharts(document.querySelector("#chartUsuariosRol"), optionsUsuariosRol);
+    chartUsuariosRol.render();
+
+    // Gráfico de accesos diarios
+    const optionsAccesosDiarios = {
         series: [{
-            name: 'Usuarios',
-            data: [<?= isset($chartData['usuarios']) ? implode(',', $chartData['usuarios']) : '0,0,0,0,0,0,0' ?>]
-        }, {
-            name: 'Empleados',
-            data: [<?= isset($chartData['empleados']) ? implode(',', $chartData['empleados']) : '0,0,0,0,0,0,0' ?>]
+            name: 'Accesos',
+            data: [45, 52, 38, 24, 33, 26, 21, 20, 6, 8, 15, 10]
         }],
         chart: {
+            type: 'line',
             height: 300,
-            type: 'area',
             toolbar: {
                 show: false
             }
         },
-        dataLabels: {
-            enabled: false
-        },
         stroke: {
             curve: 'smooth',
-            width: 2
-        },
-        colors: ['#5D87FF', '#13DEB9'],
-        fill: {
-            type: 'gradient',
-            gradient: {
-                opacityFrom: 0.6,
-                opacityTo: 0.1,
-            }
+            width: 3
         },
         xaxis: {
-            categories: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+            categories: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
         },
-        tooltip: {
-            theme: 'dark'
-        }
-    };
-
-    var systemActivityChart = new ApexCharts(document.querySelector("#system-activity-chart"), systemActivityOptions);
-    systemActivityChart.render();
-
-    // Roles Distribution Chart
-    var rolesDistributionOptions = {
-        series: [<?= isset($chartData['roles']) ? implode(',', $chartData['roles']) : '0,0,0' ?>],
-        chart: {
-            height: 300,
-            type: 'donut',
-        },
-        labels: ['Super Admin', 'Admin TH', 'Docente'],
-        colors: ['#5D87FF', '#13DEB9', '#FFAE1F'],
-        plotOptions: {
-            pie: {
-                donut: {
-                    size: '70%'
-                }
+        yaxis: {
+            title: {
+                text: 'Cantidad de Accesos'
             }
         },
-        legend: {
-            position: 'bottom'
+        colors: ['#007bff'],
+        markers: {
+            size: 5,
+            colors: ['#007bff'],
+            strokeColors: '#fff',
+            strokeWidth: 2
         }
     };
 
-    var rolesDistributionChart = new ApexCharts(document.querySelector("#roles-distribution-chart"), rolesDistributionOptions);
-    rolesDistributionChart.render();
-});
+    const chartAccesosDiarios = new ApexCharts(document.querySelector("#chartAccesosDiarios"), optionsAccesosDiarios);
+    chartAccesosDiarios.render();
+}
+
+function cargarDatosTablas() {
+    // Simular datos de actividad reciente
+    const actividades = [
+        { usuario: 'Admin TH', accion: 'Registró inasistencia', hora: '10:30' },
+        { usuario: 'Docente', accion: 'Solicitó capacitación', hora: '09:15' },
+        { usuario: 'Super Admin', accion: 'Creó nuevo usuario', hora: '08:45' }
+    ];
+
+    const tbodyActividad = document.getElementById('actividad_reciente');
+    tbodyActividad.innerHTML = '';
+
+    actividades.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.usuario}</td>
+            <td>${item.accion}</td>
+            <td>${item.hora}</td>
+        `;
+        tbodyActividad.appendChild(row);
+    });
+}
 </script>
 <?= $this->endSection() ?> 

@@ -88,7 +88,7 @@ class Filters extends BaseFilters
      * Example:
      * 'POST' => ['foo', 'bar']
      *
-     * If you use this, you should disable auto-routing because auto-routing
+     * If you need to disable auto-routing because auto-routing
      * permits any HTTP method to access a controller. Accessing the controller
      * with a method you don't expect could bypass the filter.
      *

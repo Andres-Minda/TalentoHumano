@@ -23,7 +23,7 @@
                     <div class="card-body text-center">
                         <div class="mb-3">
                             <?php 
-                            $foto_perfil = session('foto_perfil');
+                            $foto_perfil = session()->get('foto_perfil');
                             if ($foto_perfil && file_exists(FCPATH . 'sistema/assets/images/profile/' . $foto_perfil)) {
                                 $foto_url = base_url('sistema/assets/images/profile/' . $foto_perfil);
                             } else {
@@ -32,7 +32,7 @@
                             ?>
                             <img src="<?= $foto_url ?>" alt="Foto de perfil" class="rounded-circle" width="120" height="120" style="object-fit: cover;">
                         </div>
-                        <h5 class="mb-1"><?= $empleado['nombres'] ?? session('nombres') ?> <?= $empleado['apellidos'] ?? session('apellidos') ?></h5>
+                        <h5 class="mb-1"><?= $empleado['nombres'] ?? session()->get('nombres') ?> <?= $empleado['apellidos'] ?? session()->get('apellidos') ?></h5>
                         <p class="text-muted mb-2"><?= $empleado['tipo_empleado'] ?? 'Empleado' ?></p>
                         <p class="text-muted mb-0"><?= $empleado['departamento'] ?? 'Departamento no asignado' ?></p>
                         
@@ -61,20 +61,20 @@
                                 <p class="mb-0"><?= $empleado['apellidos'] ?? 'No especificado' ?></p>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Fecha de Nacimiento:</label>
-                                <p class="mb-0"><?= $empleado['fecha_nacimiento'] ? date('d/m/Y', strtotime($empleado['fecha_nacimiento'])) : 'No especificado' ?></p>
+                                <label class="form-label fw-bold">Tipo de Empleado:</label>
+                                <p class="mb-0"><?= $empleado['tipo_empleado'] ?? 'No especificado' ?></p>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Género:</label>
-                                <p class="mb-0"><?= $empleado['genero'] ?? 'No especificado' ?></p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Estado Civil:</label>
-                                <p class="mb-0"><?= $empleado['estado_civil'] ?? 'No especificado' ?></p>
+                                <label class="form-label fw-bold">Departamento:</label>
+                                <p class="mb-0"><?= $empleado['departamento'] ?? 'No asignado' ?></p>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Fecha de Ingreso:</label>
-                                <p class="mb-0"><?= $empleado['fecha_ingreso'] ? date('d/m/Y', strtotime($empleado['fecha_ingreso'])) : 'No especificado' ?></p>
+                                <p class="mb-0"><?= isset($empleado['fecha_ingreso']) && $empleado['fecha_ingreso'] ? date('d/m/Y', strtotime($empleado['fecha_ingreso'])) : 'No especificado' ?></p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Fecha de Contratación:</label>
+                                <p class="mb-0"><?= isset($empleado['fecha_contratacion']) && $empleado['fecha_contratacion'] ? date('d/m/Y', strtotime($empleado['fecha_contratacion'])) : 'No especificado' ?></p>
                             </div>
                         </div>
                         
@@ -82,22 +82,22 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Dirección:</label>
-                                <p class="mb-0"><?= $empleado['direccion'] ?? 'No especificado' ?></p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Teléfono:</label>
-                                <p class="mb-0"><?= $empleado['telefono'] ?? 'No especificado' ?></p>
+                                <label class="form-label fw-bold">Cédula:</label>
+                                <p class="mb-0"><?= session()->get('cedula') ?? 'No especificado' ?></p>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Email:</label>
-                                <p class="mb-0"><?= session('email') ?? 'No especificado' ?></p>
+                                <p class="mb-0"><?= session()->get('email') ?? 'No especificado' ?></p>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Estado:</label>
                                 <span class="badge bg-<?= ($empleado['estado'] === 'Activo') ? 'success' : 'danger' ?>">
                                     <?= $empleado['estado'] ?? 'No especificado' ?>
                                 </span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Observaciones:</label>
+                                <p class="mb-0"><?= $empleado['observaciones'] ?? 'Sin observaciones' ?></p>
                             </div>
                         </div>
                     </div>
@@ -122,15 +122,15 @@
                                 <label class="form-label fw-bold">Departamento:</label>
                                 <p class="mb-0"><?= $empleado['departamento'] ?? 'No especificado' ?></p>
                             </div>
-                            <?php if (isset($empleado['tipo_docente']) && $empleado['tipo_docente']): ?>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Tipo de Docente:</label>
-                                <p class="mb-0"><?= $empleado['tipo_docente'] ?></p>
+                                <label class="form-label fw-bold">Fecha de Ingreso:</label>
+                                <p class="mb-0"><?= isset($empleado['fecha_ingreso']) && $empleado['fecha_ingreso'] ? date('d/m/Y', strtotime($empleado['fecha_ingreso'])) : 'No especificado' ?></p>
                             </div>
-                            <?php endif; ?>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Salario:</label>
-                                <p class="mb-0"><?= isset($empleado['salario']) ? '$' . number_format($empleado['salario'], 2) : 'No especificado' ?></p>
+                                <label class="form-label fw-bold">Estado:</label>
+                                <span class="badge bg-<?= ($empleado['estado'] === 'Activo') ? 'success' : 'danger' ?>">
+                                    <?= $empleado['estado'] ?? 'No especificado' ?>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -160,12 +160,12 @@
                             <input type="text" class="form-control" name="apellidos" value="<?= $empleado['apellidos'] ?? '' ?>" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Teléfono</label>
-                            <input type="tel" class="form-control" name="telefono" value="<?= $empleado['telefono'] ?? '' ?>">
+                            <label class="form-label">Departamento</label>
+                            <input type="text" class="form-control" name="departamento" value="<?= $empleado['departamento'] ?? '' ?>">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Dirección</label>
-                            <textarea class="form-control" name="direccion" rows="2"><?= $empleado['direccion'] ?? '' ?></textarea>
+                            <label class="form-label">Observaciones</label>
+                            <textarea class="form-control" name="observaciones" rows="2"><?= $empleado['observaciones'] ?? '' ?></textarea>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Foto de Perfil</label>

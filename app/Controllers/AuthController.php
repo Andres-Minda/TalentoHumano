@@ -18,27 +18,22 @@ class AuthController extends Controller
 
     public function attemptLogin()
     {
+        // 1. Obtener datos del formulario
+        $identifier = $this->request->getPost('identificador'); // cédula o email
+        $password = $this->request->getPost('password');
+        
+        // 2. Validar datos de entrada
+        if (empty($identifier) || empty($password)) {
+            return redirect()->back()->with('error', 'Por favor, complete todos los campos.');
+        }
+        
         try {
-            // 1. Validar los datos de entrada
-            $rules = [
-                'identificador' => 'required',
-                'password'      => 'required'
-            ];
-
-            if (!$this->validate($rules)) {
-                return redirect()->back()->withInput()->with('error', 'Por favor complete todos los campos.');
-            }
-
-            // 2. Obtener datos del formulario
-            $identifier = $this->request->getPost('identificador');
-            $password = $this->request->getPost('password');
-
-            // 3. Probar conexión a la base de datos
+            // 3. Conectar a la base de datos
             $db = \Config\Database::connect();
             
-            // 4. Buscar usuario directamente con información completa
+            // 4. Buscar usuario en la tabla usuarios
             $builder = $db->table('usuarios u');
-            $builder->select('u.id_usuario, u.cedula, u.email, u.id_rol, u.activo, u.password_hash, r.nombre_rol');
+            $builder->select('u.id_usuario, u.cedula, u.email, u.id_rol, u.activo, u.password_hash, r.nombre_rol as nombre_rol');
             $builder->join('roles r', 'r.id_rol = u.id_rol', 'left');
             $builder->groupStart();
             $builder->where('u.cedula', $identifier);
@@ -60,6 +55,12 @@ class AuthController extends Controller
                     $user['apellidos'] = $empleado['apellidos'];
                     $user['tipo_empleado'] = $empleado['tipo_empleado'];
                     $user['departamento'] = $empleado['departamento'];
+                } else {
+                    // Si no se encuentra en empleados, establecer valores por defecto
+                    $user['nombres'] = 'Empleado';
+                    $user['apellidos'] = 'Usuario';
+                    $user['tipo_empleado'] = 'EMPLEADO';
+                    $user['departamento'] = 'Sin asignar';
                 }
             }
             
@@ -68,6 +69,7 @@ class AuthController extends Controller
                 $user['nombres'] = 'Super';
                 $user['apellidos'] = 'Administrador';
                 $user['tipo_empleado'] = 'SUPER_ADMIN';
+                $user['departamento'] = 'Administración';
             }
             
             // 4.3. Si es Admin TH, establecer nombres por defecto
@@ -75,12 +77,13 @@ class AuthController extends Controller
                 $user['nombres'] = 'Administrador';
                 $user['apellidos'] = 'Talento Humano';
                 $user['tipo_empleado'] = 'ADMIN_TH';
+                $user['departamento'] = 'Talento Humano';
             }
 
             // 5. Verificar credenciales
             if ($user && password_verify($password, $user['password_hash'])) {
                 // Verificar si el usuario está activo
-                if (!$user['activo']) {
+                if ($user['activo'] != 1) {
                     return redirect()->back()->with('error', 'Su cuenta ha sido desactivada. Contacte al administrador.');
                 }
 
@@ -102,6 +105,7 @@ class AuthController extends Controller
 
         } catch (\Exception $e) {
             // En producción, no mostrar errores detallados
+            log_message('error', 'Login error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Error en el sistema. Por favor, intente nuevamente.');
         }
     }
@@ -111,6 +115,16 @@ class AuthController extends Controller
      */
     private function setSession($user)
     {
+        // Determinar el tipo de sidebar según el rol
+        $sidebarType = 'empleado'; // Por defecto
+        if ($user['id_rol'] == 1) {
+            $sidebarType = 'super_admin';
+        } elseif ($user['id_rol'] == 2) {
+            $sidebarType = 'admin_th';
+        } elseif ($user['id_rol'] >= 3) {
+            $sidebarType = 'empleado';
+        }
+
         $sessionData = [
             'id_usuario'    => $user['id_usuario'],
             'cedula'        => $user['cedula'],
@@ -121,6 +135,7 @@ class AuthController extends Controller
             'apellidos'     => $user['apellidos'] ?? '',
             'tipo_empleado' => $user['tipo_empleado'] ?? 'EMPLEADO',
             'departamento'  => $user['departamento'] ?? '',
+            'sidebar_type'  => $sidebarType,
             'isLoggedIn'    => true,
             'login_time'    => time()
         ];
@@ -140,7 +155,10 @@ class AuthController extends Controller
                 return redirect()->to(base_url('index.php/super-admin/dashboard'));
             case 2: // AdministradorTalentoHumano
                 return redirect()->to(base_url('index.php/admin-th/dashboard'));
-            case 3: // Empleado (antes Docente)
+            case 3: // Docente
+            case 6: // ADMINISTRATIVO
+            case 7: // DIRECTIVO
+            case 8: // AUXILIAR
                 return redirect()->to(base_url('index.php/empleado/dashboard'));
             default:
                 return redirect()->to(base_url('index.php/dashboard'));
