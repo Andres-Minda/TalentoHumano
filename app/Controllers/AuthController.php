@@ -33,7 +33,7 @@ class AuthController extends Controller
             
             // 4. Buscar usuario en la tabla usuarios
             $builder = $db->table('usuarios u');
-            $builder->select('u.id_usuario, u.cedula, u.email, u.id_rol, u.activo, u.password_hash, r.nombre_rol as nombre_rol');
+            $builder->select('u.id_usuario, u.cedula, u.email, u.id_rol, u.activo, u.password_hash, u.password_changed, r.nombre_rol as nombre_rol');
             $builder->join('roles r', 'r.id_rol = u.id_rol', 'left');
             $builder->groupStart();
             $builder->where('u.cedula', $identifier);
@@ -126,18 +126,19 @@ class AuthController extends Controller
         }
 
         $sessionData = [
-            'id_usuario'    => $user['id_usuario'],
-            'cedula'        => $user['cedula'],
-            'email'         => $user['email'],
-            'id_rol'        => $user['id_rol'],
-            'nombre_rol'    => $user['nombre_rol'],
-            'nombres'       => $user['nombres'] ?? 'Usuario',
-            'apellidos'     => $user['apellidos'] ?? '',
-            'tipo_empleado' => $user['tipo_empleado'] ?? 'EMPLEADO',
-            'departamento'  => $user['departamento'] ?? '',
-            'sidebar_type'  => $sidebarType,
-            'isLoggedIn'    => true,
-            'login_time'    => time()
+            'id_usuario'      => $user['id_usuario'],
+            'cedula'          => $user['cedula'],
+            'email'           => $user['email'],
+            'id_rol'          => $user['id_rol'],
+            'nombre_rol'      => $user['nombre_rol'],
+            'nombres'         => $user['nombres'] ?? 'Usuario',
+            'apellidos'       => $user['apellidos'] ?? '',
+            'tipo_empleado'   => $user['tipo_empleado'] ?? 'EMPLEADO',
+            'departamento'    => $user['departamento'] ?? '',
+            'password_changed' => $user['password_changed'] ?? 0,
+            'sidebar_type'    => $sidebarType,
+            'isLoggedIn'      => true,
+            'login_time'      => time()
         ];
 
         session()->set($sessionData);

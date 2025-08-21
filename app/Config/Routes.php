@@ -29,9 +29,27 @@ $routes->group('super-admin', ['filter' => 'auth'], function($routes) {
 $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->get('dashboard', 'AdminTH\AdminTHController::dashboard');
     $routes->get('empleados', 'AdminTH\AdminTHController::empleados');
+    $routes->get('empleados/obtener', 'AdminTH\AdminTHController::obtenerEmpleados');
+    $routes->get('empleados/obtener/(:num)', 'AdminTH\AdminTHController::obtenerEmpleado/$1');
+    $routes->get('empleados/credenciales/(:num)', 'AdminTH\AdminTHController::obtenerCredenciales/$1');
+    $routes->post('empleados/guardar', 'AdminTH\AdminTHController::guardarEmpleado');
     $routes->get('departamentos', 'AdminTH\AdminTHController::departamentos');
+    $routes->get('departamentos/obtener', 'AdminTH\AdminTHController::obtenerDepartamentos');
+    $routes->get('departamentos/obtener/(:num)', 'AdminTH\AdminTHController::obtenerDepartamento/$1');
+    $routes->post('departamentos/guardar', 'AdminTH\AdminTHController::guardarDepartamento');
+    $routes->post('departamentos/eliminar', 'AdminTH\AdminTHController::eliminarDepartamento');
+    $routes->get('departamentos/activos', 'AdminTH\AdminTHController::obtenerDepartamentosActivos');
     $routes->get('puestos', 'AdminTH\AdminTHController::puestos');
-    $routes->get('capacitaciones', 'AdminTH\AdminTHController::capacitaciones');
+    $routes->get('puestos/obtener', 'AdminTH\AdminTHController::obtenerPuestos');
+    $routes->get('puestos/obtener/(:num)', 'AdminTH\AdminTHController::obtenerPuesto/$1');
+    $routes->post('puestos/guardar', 'AdminTH\AdminTHController::guardarPuesto');
+    $routes->post('puestos/eliminar', 'AdminTH\AdminTHController::eliminarPuesto');
+    $routes->post('puestos/generar-url', 'AdminTH\AdminTHController::generarUrlPostulacion');
+    $routes->get('puestos/(:num)/postulantes', 'AdminTH\AdminTHController::obtenerPostulantesPuesto/$1');
+    $routes->post('postulaciones/cambiar-estado', 'AdminTH\AdminTHController::cambiarEstadoPostulacion');
+$routes->get('capacitaciones', 'AdminTH\AdminTHController::capacitaciones');
+
+// Rutas para postulaciones públicas (se moverán al final)
     $routes->get('titulos-academicos', 'AdminTH\AdminTHController::titulosAcademicos');
     $routes->get('evaluaciones', 'AdminTH\AdminTHController::evaluaciones');
     $routes->get('inasistencias', 'AdminTH\AdminTHController::inasistencias');
@@ -48,6 +66,7 @@ $routes->group('empleado', ['filter' => 'auth'], function($routes) {
     $routes->get('dashboard', 'Empleado\EmpleadoController::dashboard');
     $routes->get('mi-perfil', 'Empleado\EmpleadoController::miPerfil');
     $routes->get('cuenta', 'Empleado\EmpleadoController::cuenta');
+    $routes->post('cambiar-password', 'Empleado\EmpleadoController::cambiarPassword');
     $routes->get('capacitaciones', 'Empleado\EmpleadoController::capacitaciones');
     $routes->get('titulos-academicos', 'Empleado\EmpleadoController::titulosAcademicos');
     $routes->get('evaluaciones', 'Empleado\EmpleadoController::evaluaciones');
@@ -111,3 +130,10 @@ if (ENVIRONMENT === 'development') {
     $routes->get('test', 'TestController::index');
     $routes->get('debug', 'DebugController::index');
 }
+
+// Rutas para postulaciones públicas (deben ir al final para no interferir con otras rutas)
+$routes->get('postulacion-([0-9]+)-(.+)', 'PostulacionController::mostrarFormulario/$1-$2');
+$routes->get('admin-th/postulacion-([0-9]+)-(.+)', 'PostulacionController::mostrarFormulario/$1-$2');
+$routes->post('postulacion/procesar', 'PostulacionController::procesarPostulacion');
+$routes->post('postulacion/subir-cv', 'PostulacionController::subirCV');
+$routes->get('postulacion/estado/(:segment)/(:num)', 'PostulacionController::verEstado/$1/$2');

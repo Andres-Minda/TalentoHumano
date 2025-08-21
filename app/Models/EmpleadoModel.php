@@ -19,9 +19,14 @@ class EmpleadoModel extends Model
         'tipo_empleado',
         'departamento',
         'fecha_ingreso',
-        'fecha_contratacion',
         'estado',
-        'observaciones'
+        'salario',
+        'fecha_nacimiento',
+        'genero',
+        'estado_civil',
+        'direccion',
+        'telefono',
+        'activo'
     ];
 
     protected $useTimestamps = true;
@@ -119,12 +124,23 @@ class EmpleadoModel extends Model
     {
         $builder = $this->db->table('empleados e');
         $builder->select('
-            e.*,
+            e.id_empleado,
+            e.nombres,
+            e.apellidos,
+            e.tipo_empleado,
+            e.departamento,
+            e.estado,
+            e.activo,
             u.cedula,
-            u.email
+            u.email,
+            u.id_usuario
         ');
         $builder->join('usuarios u', 'u.id_usuario = e.id_usuario');
-        $builder->where('e.estado', 'ACTIVO');
+        
+        // Solo mostrar empleados activos por defecto, pero permitir mostrar todos si se especifica
+        if (!isset($filtros['mostrar_todos']) || !$filtros['mostrar_todos']) {
+            $builder->where('e.estado', 'ACTIVO');
+        }
         
         // Aplicar filtros
         if (isset($filtros['tipo_empleado'])) {
@@ -194,13 +210,9 @@ class EmpleadoModel extends Model
     /**
      * Cambiar estado del empleado
      */
-    public function cambiarEstado($idEmpleado, $nuevoEstado, $observaciones = null)
+    public function cambiarEstado($idEmpleado, $nuevoEstado)
     {
         $data = ['estado' => $nuevoEstado];
-        
-        if ($observaciones) {
-            $data['observaciones'] = $observaciones;
-        }
         
         return $this->update($idEmpleado, $data);
     }
@@ -238,4 +250,31 @@ class EmpleadoModel extends Model
         
         return $builder->get()->getRowArray();
     }
+
+    /**
+     * Obtener empleado por ID con información de usuario
+     */
+    public function getEmpleadoConUsuario($idEmpleado)
+    {
+        $builder = $this->db->table('empleados e');
+        $builder->select('
+            e.id_empleado,
+            e.nombres,
+            e.apellidos,
+            e.tipo_empleado,
+            e.departamento,
+            e.estado,
+            e.activo,
+            e.fecha_ingreso,
+            e.salario,
+            u.cedula,
+            u.email,
+            u.id_usuario
+        ');
+        $builder->join('usuarios u', 'u.id_usuario = e.id_usuario');
+        $builder->where('e.id_empleado', $idEmpleado);
+        
+        return $builder->get()->getRowArray();
+    }
+
 } 

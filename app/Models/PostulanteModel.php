@@ -12,104 +12,190 @@ class PostulanteModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
 
-    protected $allowedFields    = [
-        'cedula', 'nombres', 'apellidos', 'email', 'telefono', 'direccion',
-        'fecha_nacimiento', 'estado_civil', 'genero', 'nivel_educativo',
-        'titulo_academico', 'universidad', 'experiencia_laboral', 'disponibilidad',
-        'salario_esperado', 'archivo_cv', 'archivo_cedula', 'archivo_titulo',
-        'archivo_referencias', 'estado', 'fecha_registro', 'observaciones'
+    protected $allowedFields = [
+        'id_usuario',
+        'id_puesto',
+        'nombres',
+        'apellidos',
+        'cedula',
+        'email',
+        'telefono',
+        'fecha_nacimiento',
+        'genero',
+        'estado_civil',
+        'direccion',
+        'ciudad',
+        'provincia',
+        'codigo_postal',
+        'nacionalidad',
+        'estado_postulacion',
+        'fecha_postulacion',
+        'cv_path',
+        'carta_motivacion',
+        'experiencia_laboral',
+        'educacion',
+        'habilidades',
+        'idiomas',
+        'certificaciones',
+        'referencias',
+        'disponibilidad_inmediata',
+        'expectativa_salarial',
+        'notas_admin',
+        'activo'
     ];
 
     protected $useTimestamps = true;
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
 
-    protected $beforeInsert = ['setFechaRegistro'];
-
+    // Validaciones
     protected $validationRules = [
-        'cedula'              => 'required|min_length[10]|max_length[10]|is_unique[postulantes.cedula,id_postulante,{id_postulante}]',
-        'nombres'             => 'required|min_length[2]|max_length[100]',
-        'apellidos'           => 'required|min_length[2]|max_length[100]',
-        'email'               => 'required|valid_email|is_unique[postulantes.email,id_postulante,{id_postulante}]',
-        'telefono'            => 'required|min_length[7]|max_length[15]',
-        'direccion'           => 'required|min_length[10]|max_length[300]',
-        'fecha_nacimiento'    => 'required|valid_date',
-        'estado_civil'        => 'required|in_list[Soltero,Casado,Divorciado,Viudo,Unión Libre]',
-        'genero'              => 'required|in_list[Masculino,Femenino,Otro]',
-        'nivel_educativo'     => 'required|in_list[Primaria,Secundaria,Técnico,Universitario,Postgrado]',
-        'titulo_academico'    => 'permit_empty|max_length[200]',
-        'universidad'         => 'permit_empty|max_length[200]',
-        'experiencia_laboral' => 'required|min_length[10]|max_length[1000]',
-        'disponibilidad'      => 'required|in_list[Inmediata,15 días,30 días,60 días,90 días]',
-        'salario_esperado'    => 'required|numeric|greater_than[0]',
-        'estado'              => 'required|in_list[Activo,Inactivo,Seleccionado,Rechazado]'
+        'id_usuario'              => 'required|integer',
+        'id_puesto'               => 'required|integer',
+        'nombres'                 => 'required|min_length[2]|max_length[100]',
+        'apellidos'               => 'required|min_length[2]|max_length[100]',
+        'cedula'                  => 'required|min_length[10]|max_length[10]',
+        'email'                   => 'required|valid_email|max_length[100]',
+        'telefono'                => 'required|min_length[10]|max_length[15]',
+        'fecha_nacimiento'        => 'required|valid_date',
+        'genero'                  => 'required|in_list[Masculino,Femenino,No especificado]',
+        'estado_civil'            => 'required|in_list[Soltero,Casado,Divorciado,Viudo,Unión libre]',
+        'direccion'               => 'required|min_length[10]|max_length[200]',
+        'ciudad'                  => 'required|min_length[2]|max_length[100]',
+        'provincia'               => 'required|min_length[2]|max_length[100]',
+        'codigo_postal'           => 'permit_empty|max_length[10]',
+        'nacionalidad'            => 'required|min_length[2]|max_length[100]',
+        'estado_postulacion'      => 'required|in_list[Pendiente,En revisión,Aprobada,Rechazada,Contratado]',
+        'fecha_postulacion'       => 'required|valid_date',
+        'cv_path'                 => 'permit_empty|max_length[500]',
+        'carta_motivacion'        => 'permit_empty|max_length[2000]',
+        'experiencia_laboral'     => 'permit_empty|max_length[2000]',
+        'educacion'               => 'permit_empty|max_length[2000]',
+        'habilidades'             => 'permit_empty|max_length[1000]',
+        'idiomas'                 => 'permit_empty|max_length[500]',
+        'certificaciones'         => 'permit_empty|max_length[1000]',
+        'referencias'             => 'permit_empty|max_length[1000]',
+        'disponibilidad_inmediata' => 'required|in_list[Sí,No,En 2 semanas,En 1 mes]',
+        'expectativa_salarial'    => 'permit_empty|numeric|greater_than[0]',
+        'notas_admin'             => 'permit_empty|max_length[1000]',
+        'activo'                  => 'required|in_list[0,1]'
     ];
 
     protected $validationMessages = [
-        'cedula' => [
-            'required' => 'La cédula es obligatoria',
-            'min_length' => 'La cédula debe tener 10 dígitos',
-            'max_length' => 'La cédula debe tener 10 dígitos',
-            'is_unique' => 'La cédula ya está registrada'
+        'id_usuario' => [
+            'required' => 'El ID de usuario es obligatorio',
+            'integer'  => 'El ID de usuario debe ser un número entero'
+        ],
+        'id_puesto' => [
+            'required' => 'El ID del puesto es obligatorio',
+            'integer'  => 'El ID del puesto debe ser un número entero'
         ],
         'nombres' => [
-            'required' => 'Los nombres son obligatorios',
+            'required'   => 'Los nombres son obligatorios',
             'min_length' => 'Los nombres deben tener al menos 2 caracteres',
             'max_length' => 'Los nombres no pueden exceder 100 caracteres'
         ],
         'apellidos' => [
-            'required' => 'Los apellidos son obligatorios',
+            'required'   => 'Los apellidos son obligatorios',
             'min_length' => 'Los apellidos deben tener al menos 2 caracteres',
             'max_length' => 'Los apellidos no pueden exceder 100 caracteres'
         ],
+        'cedula' => [
+            'required'   => 'La cédula es obligatoria',
+            'min_length' => 'La cédula debe tener 10 dígitos',
+            'max_length' => 'La cédula debe tener 10 dígitos'
+        ],
         'email' => [
-            'required' => 'El email es obligatorio',
+            'required'   => 'El email es obligatorio',
             'valid_email' => 'El email debe tener un formato válido',
-            'is_unique' => 'El email ya está registrado'
+            'max_length' => 'El email no puede exceder 100 caracteres'
         ],
         'telefono' => [
-            'required' => 'El teléfono es obligatorio',
-            'min_length' => 'El teléfono debe tener al menos 7 dígitos',
+            'required'   => 'El teléfono es obligatorio',
+            'min_length' => 'El teléfono debe tener al menos 10 dígitos',
             'max_length' => 'El teléfono no puede exceder 15 dígitos'
         ],
-        'direccion' => [
-            'required' => 'La dirección es obligatoria',
-            'min_length' => 'La dirección debe tener al menos 10 caracteres',
-            'max_length' => 'La dirección no puede exceder 300 caracteres'
-        ],
         'fecha_nacimiento' => [
-            'required' => 'La fecha de nacimiento es obligatoria',
+            'required'   => 'La fecha de nacimiento es obligatoria',
             'valid_date' => 'La fecha de nacimiento debe ser una fecha válida'
-        ],
-        'estado_civil' => [
-            'required' => 'El estado civil es obligatorio',
-            'in_list' => 'El estado civil debe ser: Soltero, Casado, Divorciado, Viudo o Unión Libre'
         ],
         'genero' => [
             'required' => 'El género es obligatorio',
-            'in_list' => 'El género debe ser: Masculino, Femenino u Otro'
+            'in_list'  => 'El género seleccionado no es válido'
         ],
-        'nivel_educativo' => [
-            'required' => 'El nivel educativo es obligatorio',
-            'in_list' => 'El nivel educativo debe ser: Primaria, Secundaria, Técnico, Universitario o Postgrado'
+        'estado_civil' => [
+            'required' => 'El estado civil es obligatorio',
+            'in_list'  => 'El estado civil seleccionado no es válido'
+        ],
+        'direccion' => [
+            'required'   => 'La dirección es obligatoria',
+            'min_length' => 'La dirección debe tener al menos 10 caracteres',
+            'max_length' => 'La dirección no puede exceder 200 caracteres'
+        ],
+        'ciudad' => [
+            'required'   => 'La ciudad es obligatoria',
+            'min_length' => 'La ciudad debe tener al menos 2 caracteres',
+            'max_length' => 'La ciudad no puede exceder 100 caracteres'
+        ],
+        'provincia' => [
+            'required'   => 'La provincia es obligatoria',
+            'min_length' => 'La provincia debe tener al menos 2 caracteres',
+            'max_length' => 'La provincia no puede exceder 100 caracteres'
+        ],
+        'codigo_postal' => [
+            'max_length' => 'El código postal no puede exceder 10 caracteres'
+        ],
+        'nacionalidad' => [
+            'required'   => 'La nacionalidad es obligatoria',
+            'min_length' => 'La nacionalidad debe tener al menos 2 caracteres',
+            'max_length' => 'La nacionalidad no puede exceder 100 caracteres'
+        ],
+        'estado_postulacion' => [
+            'required' => 'El estado de la postulación es obligatorio',
+            'in_list'  => 'El estado de la postulación seleccionado no es válido'
+        ],
+        'fecha_postulacion' => [
+            'required'   => 'La fecha de postulación es obligatoria',
+            'valid_date' => 'La fecha de postulación debe ser una fecha válida'
+        ],
+        'cv_path' => [
+            'max_length' => 'La ruta del CV no puede exceder 500 caracteres'
+        ],
+        'carta_motivacion' => [
+            'max_length' => 'La carta de motivación no puede exceder 2000 caracteres'
         ],
         'experiencia_laboral' => [
-            'required' => 'La experiencia laboral es obligatoria',
-            'min_length' => 'La experiencia laboral debe tener al menos 10 caracteres',
-            'max_length' => 'La experiencia laboral no puede exceder 1000 caracteres'
+            'max_length' => 'La experiencia laboral no puede exceder 2000 caracteres'
         ],
-        'disponibilidad' => [
-            'required' => 'La disponibilidad es obligatoria',
-            'in_list' => 'La disponibilidad debe ser: Inmediata, 15 días, 30 días, 60 días o 90 días'
+        'educacion' => [
+            'max_length' => 'La educación no puede exceder 2000 caracteres'
         ],
-        'salario_esperado' => [
-            'required' => 'El salario esperado es obligatorio',
-            'numeric' => 'El salario esperado debe ser un número',
-            'greater_than' => 'El salario esperado debe ser mayor a 0'
+        'habilidades' => [
+            'max_length' => 'Las habilidades no pueden exceder 1000 caracteres'
         ],
-        'estado' => [
-            'required' => 'El estado es obligatorio',
-            'in_list' => 'El estado debe ser: Activo, Inactivo, Seleccionado o Rechazado'
+        'idiomas' => [
+            'max_length' => 'Los idiomas no pueden exceder 500 caracteres'
+        ],
+        'certificaciones' => [
+            'max_length' => 'Las certificaciones no pueden exceder 1000 caracteres'
+        ],
+        'referencias' => [
+            'max_length' => 'Las referencias no pueden exceder 1000 caracteres'
+        ],
+        'disponibilidad_inmediata' => [
+            'required' => 'La disponibilidad inmediata es obligatoria',
+            'in_list'  => 'La disponibilidad seleccionada no es válida'
+        ],
+        'expectativa_salarial' => [
+            'numeric'      => 'La expectativa salarial debe ser un número',
+            'greater_than' => 'La expectativa salarial debe ser mayor a 0'
+        ],
+        'notas_admin' => [
+            'max_length' => 'Las notas administrativas no pueden exceder 1000 caracteres'
+        ],
+        'activo' => [
+            'required' => 'El campo activo es obligatorio',
+            'in_list'  => 'El campo activo debe ser 0 o 1'
         ]
     ];
 
@@ -117,241 +203,163 @@ class PostulanteModel extends Model
     protected $cleanValidationRules = true;
 
     /**
-     * Establece la fecha de registro antes de insertar
+     * Obtener postulantes con información del puesto
      */
-    protected function setFechaRegistro($data)
+    public function getPostulantesConPuesto()
     {
-        if (!isset($data['data']['fecha_registro'])) {
-            $data['data']['fecha_registro'] = date('Y-m-d H:i:s');
-        }
-        return $data;
+        $db = \Config\Database::connect();
+        return $db->table('postulantes p')
+                  ->select('p.*, pt.titulo as titulo_puesto, d.nombre as nombre_departamento')
+                  ->join('puestos pt', 'pt.id_puesto = p.id_puesto')
+                  ->join('departamentos d', 'd.id_departamento = pt.id_departamento')
+                  ->orderBy('p.fecha_postulacion', 'DESC')
+                  ->get()
+                  ->getResultArray();
     }
 
     /**
-     * Obtiene postulantes activos
+     * Obtener postulante completo con información del puesto
      */
-    public function getPostulantesActivos()
+    public function getPostulanteCompleto($idPostulante)
     {
-        return $this->where('estado', 'Activo')
-                    ->orderBy('fecha_registro', 'DESC')
+        $db = \Config\Database::connect();
+        return $db->table('postulantes p')
+                  ->select('p.*, pt.titulo as titulo_puesto, pt.descripcion as descripcion_puesto, d.nombre as nombre_departamento')
+                  ->join('puestos pt', 'pt.id_puesto = p.id_puesto')
+                  ->join('departamentos d', 'd.id_departamento = pt.id_departamento')
+                  ->where('p.id_postulante', $idPostulante)
+                  ->get()
+                  ->getRowArray();
+    }
+
+    /**
+     * Obtener postulantes por puesto
+     */
+    public function getPostulantesPorPuesto($idPuesto)
+    {
+        return $this->where('id_puesto', $idPuesto)
+                    ->where('activo', 1)
+                    ->orderBy('fecha_postulacion', 'DESC')
                     ->findAll();
     }
 
     /**
-     * Obtiene postulantes por estado
+     * Obtener postulantes por usuario
+     */
+    public function getPostulantesPorUsuario($idUsuario)
+    {
+        return $this->where('id_usuario', $idUsuario)
+                    ->where('activo', 1)
+                    ->orderBy('fecha_postulacion', 'DESC')
+                    ->findAll();
+    }
+
+    /**
+     * Verificar si un usuario ya se postuló a un puesto
+     */
+    public function usuarioYaPostulado($idUsuario, $idPuesto)
+    {
+        return $this->where('id_usuario', $idUsuario)
+                    ->where('id_puesto', $idPuesto)
+                    ->where('activo', 1)
+                    ->first();
+    }
+
+    /**
+     * Cambiar estado de postulación
+     */
+    public function cambiarEstadoPostulacion($idPostulante, $nuevoEstado)
+    {
+        $data = [
+            'estado_postulacion' => $nuevoEstado,
+            'activo' => ($nuevoEstado === 'Rechazada') ? 0 : 1
+        ];
+        
+        return $this->update($idPostulante, $data);
+    }
+
+    /**
+     * Obtener estadísticas de postulaciones
+     */
+    public function getEstadisticasPostulaciones()
+    {
+        $builder = $this->builder();
+        $builder->select('
+            COUNT(*) as total,
+            SUM(CASE WHEN estado_postulacion = "Pendiente" THEN 1 ELSE 0 END) as pendientes,
+            SUM(CASE WHEN estado_postulacion = "En revisión" THEN 1 ELSE 0 END) as en_revision,
+            SUM(CASE WHEN estado_postulacion = "Aprobada" THEN 1 ELSE 0 END) as aprobadas,
+            SUM(CASE WHEN estado_postulacion = "Rechazada" THEN 1 ELSE 0 END) as rechazadas,
+            SUM(CASE WHEN estado_postulacion = "Contratado" THEN 1 ELSE 0 END) as contratados
+        ');
+        
+        return $builder->get()->getRowArray();
+    }
+
+    /**
+     * Buscar postulantes por término
+     */
+    public function buscarPostulantes($termino)
+    {
+        return $this->like('nombres', $termino)
+                    ->orLike('apellidos', $termino)
+                    ->orLike('cedula', $termino)
+                    ->orLike('email', $termino)
+                    ->where('activo', 1)
+                    ->orderBy('fecha_postulacion', 'DESC')
+                    ->findAll();
+    }
+
+    /**
+     * Obtener postulantes por estado
      */
     public function getPostulantesPorEstado($estado)
     {
-        return $this->where('estado', $estado)
-                    ->orderBy('fecha_registro', 'DESC')
+        return $this->where('estado_postulacion', $estado)
+                    ->where('activo', 1)
+                    ->orderBy('fecha_postulacion', 'DESC')
                     ->findAll();
     }
 
     /**
-     * Obtiene postulantes por nivel educativo
-     */
-    public function getPostulantesPorNivelEducativo($nivel)
-    {
-        return $this->where('nivel_educativo', $nivel)
-                    ->where('estado', 'Activo')
-                    ->orderBy('fecha_registro', 'DESC')
-                    ->findAll();
-    }
-
-    /**
-     * Obtiene postulantes por disponibilidad
-     */
-    public function getPostulantesPorDisponibilidad($disponibilidad)
-    {
-        return $this->where('disponibilidad', $disponibilidad)
-                    ->where('estado', 'Activo')
-                    ->orderBy('fecha_registro', 'DESC')
-                    ->findAll();
-    }
-
-    /**
-     * Busca postulantes por criterios
-     */
-    public function buscarPostulantes($criterios = [])
-    {
-        $builder = $this->db->table('postulantes p');
-
-        if (!empty($criterios['nivel_educativo'])) {
-            $builder->where('p.nivel_educativo', $criterios['nivel_educativo']);
-        }
-
-        if (!empty($criterios['estado'])) {
-            $builder->where('p.estado', $criterios['estado']);
-        }
-
-        if (!empty($criterios['disponibilidad'])) {
-            $builder->where('p.disponibilidad', $criterios['disponibilidad']);
-        }
-
-        if (!empty($criterios['salario_min'])) {
-            $builder->where('p.salario_esperado >=', $criterios['salario_min']);
-        }
-
-        if (!empty($criterios['salario_max'])) {
-            $builder->where('p.salario_esperado <=', $criterios['salario_max']);
-        }
-
-        if (!empty($criterios['busqueda'])) {
-            $busqueda = $criterios['busqueda'];
-            $builder->groupStart()
-                    ->like('p.nombres', $busqueda)
-                    ->orLike('p.apellidos', $busqueda)
-                    ->orLike('p.cedula', $busqueda)
-                    ->orLike('p.email', $busqueda)
-                    ->orLike('p.titulo_academico', $busqueda)
-                    ->orLike('p.universidad', $busqueda)
-                    ->groupEnd();
-        }
-
-        return $builder->orderBy('p.fecha_registro', 'DESC')
-                      ->get()
-                      ->getResultArray();
-    }
-
-    /**
-     * Obtiene estadísticas de postulantes
-     */
-    public function getEstadisticasPostulantes()
-    {
-        $total = $this->countAll();
-        $porEstado = $this->db->table('postulantes')
-                              ->select('estado, COUNT(*) as total')
-                              ->groupBy('estado')
-                              ->get()
-                              ->getResultArray();
+     * Obtener postulantes recientes (últimos 30 días)
+     {
+        $fechaLimite = date('Y-m-d', strtotime('-30 days'));
         
-        $porNivelEducativo = $this->db->table('postulantes')
-                                      ->select('nivel_educativo, COUNT(*) as total')
-                                      ->groupBy('nivel_educativo')
-                                      ->get()
-                                      ->getResultArray();
-
-        $porDisponibilidad = $this->db->table('postulantes')
-                                      ->select('disponibilidad, COUNT(*) as total')
-                                      ->groupBy('disponibilidad')
-                                      ->get()
-                                      ->getResultArray();
-
-        $promedioSalario = $this->db->table('postulantes')
-                                    ->select('AVG(salario_esperado) as promedio_salario')
-                                    ->where('estado', 'Activo')
-                                    ->get()
-                                    ->getRow();
-
-        return [
-            'total' => $total,
-            'por_estado' => $porEstado,
-            'por_nivel_educativo' => $porNivelEducativo,
-            'por_disponibilidad' => $porDisponibilidad,
-            'promedio_salario' => $promedioSalario ? round($promedioSalario->promedio_salario, 2) : 0
-        ];
-    }
-
-    /**
-     * Obtiene postulantes recientes
-     */
-    public function getPostulantesRecientes($limit = 10)
-    {
-        return $this->orderBy('created_at', 'DESC')
-                    ->limit($limit)
+        return $this->where('fecha_postulacion >=', $fechaLimite)
+                    ->where('activo', 1)
+                    ->orderBy('fecha_postulacion', 'DESC')
                     ->findAll();
     }
 
     /**
-     * Verifica si una cédula ya existe
+     * Actualizar CV del postulante
      */
-    public function cedulaExiste($cedula, $excludeId = null)
+    public function actualizarCV($idPostulante, $cvPath)
     {
-        $builder = $this->where('cedula', $cedula);
-        
-        if ($excludeId) {
-            $builder->where('id_postulante !=', $excludeId);
-        }
-        
-        return $builder->countAllResults() > 0;
+        return $this->update($idPostulante, ['cv_path' => $cvPath]);
     }
 
     /**
-     * Verifica si un email ya existe
+     * Obtener postulantes con CV
      */
-    public function emailExiste($email, $excludeId = null)
+    public function getPostulantesConCV()
     {
-        $builder = $this->where('email', $email);
-        
-        if ($excludeId) {
-            $builder->where('id_postulante !=', $excludeId);
-        }
-        
-        return $builder->countAllResults() > 0;
-    }
-
-    /**
-     * Obtiene postulantes por rango de salario
-     */
-    public function getPostulantesPorRangoSalario($salarioMin, $salarioMax)
-    {
-        return $this->where('salario_esperado >=', $salarioMin)
-                    ->where('salario_esperado <=', $salarioMax)
-                    ->where('estado', 'Activo')
-                    ->orderBy('salario_esperado', 'ASC')
+        return $this->where('cv_path IS NOT NULL')
+                    ->where('cv_path !=', '')
+                    ->where('activo', 1)
                     ->findAll();
     }
 
     /**
-     * Obtiene postulantes con experiencia laboral
+     * Obtener postulantes por rango de fechas
      */
-    public function getPostulantesConExperiencia()
+    public function getPostulantesPorRangoFechas($fechaInicio, $fechaFin)
     {
-        return $this->where('estado', 'Activo')
-                    ->where('experiencia_laboral IS NOT NULL')
-                    ->where('experiencia_laboral !=', '')
-                    ->orderBy('fecha_registro', 'DESC')
+        return $this->where('fecha_postulacion >=', $fechaInicio)
+                    ->where('fecha_postulacion <=', $fechaFin)
+                    ->where('activo', 1)
+                    ->orderBy('fecha_postulacion', 'DESC')
                     ->findAll();
-    }
-
-    /**
-     * Actualiza el estado de un postulante
-     */
-    public function actualizarEstado($postulanteId, $nuevoEstado, $observaciones = '')
-    {
-        $data = [
-            'estado' => $nuevoEstado,
-            'observaciones' => $observaciones
-        ];
-
-        return $this->update($postulanteId, $data);
-    }
-
-    /**
-     * Obtiene postulantes por vacante específica
-     */
-    public function getPostulantesPorVacante($vacanteId)
-    {
-        return $this->db->table('postulaciones p')
-                        ->select('p.*, po.*')
-                        ->join('postulantes po', 'po.id_postulante = p.id_postulante', 'left')
-                        ->where('p.id_vacante', $vacanteId)
-                        ->orderBy('p.fecha_aplicacion', 'DESC')
-                        ->get()
-                        ->getResultArray();
-    }
-
-    /**
-     * Obtiene el historial de aplicaciones de un postulante
-     */
-    public function getHistorialAplicaciones($postulanteId)
-    {
-        return $this->db->table('postulaciones p')
-                        ->select('p.*, v.titulo as titulo_vacante, v.departamento, v.estado as estado_vacante')
-                        ->join('vacantes v', 'v.id_vacante = p.id_vacante', 'left')
-                        ->where('p.id_postulante', $postulanteId)
-                        ->orderBy('p.fecha_aplicacion', 'DESC')
-                        ->get()
-                        ->getResultArray();
     }
 }

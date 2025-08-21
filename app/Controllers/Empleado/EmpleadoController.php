@@ -301,4 +301,70 @@ class EmpleadoController extends Controller
 
         return view('Roles/Empleado/solicitudes_generales', $data);
     }
+
+    /**
+     * Cambiar contraseña del empleado
+     */
+    public function cambiarPassword()
+    {
+        if (!$this->request->is('post')) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        try {
+            $datos = $this->request->getPost();
+            $userId = session()->get('id_usuario');
+            
+            // Validar datos
+            if (empty($datos['password_actual']) || empty($datos['password_nuevo']) || empty($datos['password_confirmar'])) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Todos los campos son obligatorios']);
+            }
+            
+            if ($datos['password_nuevo'] !== $datos['password_confirmar']) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Las contraseñas nuevas no coinciden']);
+            }
+            
+            if (strlen($datos['password_nuevo']) < 6) {
+                return $this->response->setJSON(['success' => false, 'message' => 'La contraseña debe tener al menos 6 caracteres']);
+            }
+            
+            // Conectar a la base de datos
+            $db = \Config\Database::connect();
+            
+            // Obtener usuario actual
+            $usuario = $db->table('usuarios')->where('id_usuario', $userId)->get()->getRowArray();
+            
+            if (!$usuario) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Usuario no encontrado']);
+            }
+            
+            // Verificar contraseña actual
+            if (!password_verify($datos['password_actual'], $usuario['password_hash'])) {
+                return $this->response->setJSON(['success' => false, 'message' => 'La contraseña actual es incorrecta']);
+            }
+            
+            // Actualizar contraseña y marcar como cambiada
+            $nuevaPasswordHash = password_hash($datos['password_nuevo'], PASSWORD_DEFAULT);
+            
+            $db->table('usuarios')->where('id_usuario', $userId)->update([
+                'password_hash' => $nuevaPasswordHash,
+                'password_changed' => 1
+            ]);
+            
+            // Actualizar sesión
+            session()->set('password_changed', 1);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Contraseña cambiada exitosamente'
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error al cambiar contraseña: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al cambiar contraseña: ' . $e->getMessage()
+            ]);
+        }
+    }
 }

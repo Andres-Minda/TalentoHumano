@@ -66,6 +66,37 @@ if (!isset($titulo)) {
             </div>
         </div>
 
+        <!-- Advertencia de Contraseña -->
+        <?php if (session()->get('password_changed') == 0): ?>
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="ti ti-alert-triangle me-3 fs-4"></i>
+                        <div class="flex-grow-1">
+                            <h5 class="alert-heading mb-2">⚠️ ADVERTENCIA DE SEGURIDAD</h5>
+                            <p class="mb-2">Su cuenta aún utiliza las credenciales de creación inicial. Por seguridad, debe cambiar su contraseña inmediatamente.</p>
+                            <p class="mb-0">
+                                <strong>Credenciales actuales:</strong><br>
+                                Email: <code><?= $user['email'] ?></code><br>
+                                Contraseña: <code>123456</code>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-warning btn-sm" onclick="mostrarModalCambiarPassword()">
+                            <i class="ti ti-key me-1"></i> Cambiar Contraseña Ahora
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm ms-2" onclick="recordarDespues()">
+                            <i class="ti ti-clock me-1"></i> Recordar Después
+                        </button>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Summary Cards -->
         <div class="row">
             <div class="col-xl-3 col-lg-6 col-md-6">
@@ -254,4 +285,144 @@ if (!isset($titulo)) {
     </div>
 </div>
 
+<!-- Modal para cambiar contraseña -->
+<div class="modal fade" id="modalCambiarPassword" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="ti ti-key me-2"></i> Cambiar Contraseña
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="ti ti-info-circle me-2"></i>
+                    Por seguridad, debe cambiar su contraseña de acceso al sistema.
+                </div>
+                
+                <form id="formCambiarPassword">
+                    <div class="mb-3">
+                        <label for="password_actual" class="form-label">Contraseña Actual *</label>
+                        <input type="password" class="form-control" id="password_actual" name="password_actual" required>
+                        <div class="form-text">Ingrese la contraseña actual: 123456</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password_nuevo" class="form-label">Nueva Contraseña *</label>
+                        <input type="password" class="form-control" id="password_nuevo" name="password_nuevo" required minlength="6">
+                        <div class="form-text">Mínimo 6 caracteres</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password_confirmar" class="form-label">Confirmar Nueva Contraseña *</label>
+                        <input type="password" class="form-control" id="password_confirmar" name="password_confirmar" required minlength="6">
+                        <div class="form-text">Debe coincidir con la nueva contraseña</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="cambiarPassword()">
+                    <i class="ti ti-key me-1"></i> Cambiar Contraseña
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script>
+function mostrarModalCambiarPassword() {
+    const modal = new bootstrap.Modal(document.getElementById('modalCambiarPassword'));
+    modal.show();
+}
+
+function recordarDespues() {
+    // Ocultar la alerta por ahora
+    const alerta = document.querySelector('.alert-warning');
+    if (alerta) {
+        alerta.style.display = 'none';
+    }
+}
+
+function cambiarPassword() {
+    const form = document.getElementById('formCambiarPassword');
+    const formData = new FormData(form);
+    
+    // Validar que las contraseñas coincidan
+    const passwordNuevo = formData.get('password_nuevo');
+    const passwordConfirmar = formData.get('password_confirmar');
+    
+    if (passwordNuevo !== passwordConfirmar) {
+        alert('❌ Las contraseñas nuevas no coinciden');
+        return;
+    }
+    
+    if (passwordNuevo.length < 6) {
+        alert('❌ La contraseña debe tener al menos 6 caracteres');
+        return;
+    }
+    
+    // Mostrar indicador de carga
+    const btnCambiar = document.querySelector('#modalCambiarPassword .btn-warning');
+    const textoOriginal = btnCambiar.innerHTML;
+    btnCambiar.innerHTML = '<i class="ti ti-loader ti-spin me-1"></i> Cambiando...';
+    btnCambiar.disabled = true;
+    
+    // Enviar solicitud
+    fetch('<?= site_url('empleado/cambiar-password') ?>', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ ' + data.message);
+            
+            // Cerrar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalCambiarPassword'));
+            modal.hide();
+            
+            // Ocultar la alerta de advertencia
+            const alerta = document.querySelector('.alert-warning');
+            if (alerta) {
+                alerta.style.display = 'none';
+            }
+            
+            // Limpiar formulario
+            form.reset();
+            
+            // Recargar la página para actualizar la sesión
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+            
+        } else {
+            alert('❌ Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error de conexión. Por favor, intente nuevamente.');
+    })
+    .finally(() => {
+        // Restaurar botón
+        btnCambiar.innerHTML = textoOriginal;
+        btnCambiar.disabled = false;
+    });
+}
+
+// Auto-focus en el primer campo del modal
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('modalCambiarPassword');
+    if (modal) {
+        modal.addEventListener('shown.bs.modal', function() {
+            document.getElementById('password_actual').focus();
+        });
+    }
+});
+</script>
 <?= $this->endSection() ?>
