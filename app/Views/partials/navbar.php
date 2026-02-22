@@ -32,35 +32,15 @@
                     </a>
                     <div class="dropdown-menu dropdown-menu-end dropdown-menu-animate-up" aria-labelledby="drop2">
                         <div class="message-body">
-                            <?php if (session('id_rol') == 1): ?>
-                                <!-- Rutas específicas para Super Administrador -->
-                                <a href="<?= base_url('index.php/super-admin/perfil') ?>" class="d-flex align-items-center gap-2 dropdown-item">
+                            <?php if (session('id_rol') == 2): ?>
+                                <a href="<?= base_url('index.php/admin-th/mi-perfil') ?>" class="d-flex align-items-center gap-2 dropdown-item">
                                     <i class="ti ti-user fs-6"></i>
                                     <p class="mb-0 fs-3">Mi Perfil</p>
-                                </a>
-                                <a href="<?= base_url('index.php/super-admin/cuenta') ?>" class="d-flex align-items-center gap-2 dropdown-item">
-                                    <i class="ti ti-settings fs-6"></i>
-                                    <p class="mb-0 fs-3">Mi Cuenta</p>
-                                </a>
-                            <?php elseif (session('id_rol') == 2): ?>
-                                <!-- Rutas específicas para Admin Talento Humano -->
-                                <a href="<?= base_url('index.php/admin-th/perfil') ?>" class="d-flex align-items-center gap-2 dropdown-item">
-                                    <i class="ti ti-user fs-6"></i>
-                                    <p class="mb-0 fs-3">Mi Perfil</p>
-                                </a>
-                                <a href="<?= base_url('index.php/admin-th/cuenta') ?>" class="d-flex align-items-center gap-2 dropdown-item">
-                                    <i class="ti ti-settings fs-6"></i>
-                                    <p class="mb-0 fs-3">Mi Cuenta</p>
                                 </a>
                             <?php else: ?>
-                                <!-- Rutas específicas para Empleados -->
                                 <a href="<?= base_url('index.php/empleado/mi-perfil') ?>" class="d-flex align-items-center gap-2 dropdown-item">
                                     <i class="ti ti-user fs-6"></i>
                                     <p class="mb-0 fs-3">Mi Perfil</p>
-                                </a>
-                                <a href="<?= base_url('index.php/empleado/cuenta') ?>" class="d-flex align-items-center gap-2 dropdown-item">
-                                    <i class="ti ti-settings fs-6"></i>
-                                    <p class="mb-0 fs-3">Mi Cuenta</p>
                                 </a>
                             <?php endif; ?>
                             <hr class="dropdown-divider">

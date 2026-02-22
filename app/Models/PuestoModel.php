@@ -239,6 +239,19 @@ class PuestoModel extends Model
     }
 
     /**
+     * Obtener puesto por ID con validaciones para postulación
+     */
+    public function getPuestoParaPostulacion($idPuesto)
+    {
+        return $this->where('id_puesto', $idPuesto)
+                    ->where('activo', 1)
+                    ->where('estado', 'Abierto')
+                    ->where('fecha_limite >=', date('Y-m-d'))
+                    ->where('vacantes_disponibles >', 0)
+                    ->first();
+    }
+
+    /**
      * Buscar puestos por término
      */
     public function buscarPuestos($termino)

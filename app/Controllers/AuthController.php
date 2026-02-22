@@ -4,6 +4,8 @@ namespace App\Controllers;
 
 use CodeIgniter\Controller;
 use App\Models\UsuarioModel;
+use App\Models\SesionActivaModel;
+use App\Models\LogSistemaModel;
 
 class AuthController extends Controller
 {
@@ -43,8 +45,8 @@ class AuthController extends Controller
             
             $user = $builder->get()->getRowArray();
             
-            // 4.1. Si es empleado, obtener información adicional
-            if ($user && $user['id_rol'] >= 3) {
+            // 4.1. Obtener información del empleado para todos los roles
+            if ($user) {
                 $empleadoBuilder = $db->table('empleados e');
                 $empleadoBuilder->select('e.nombres, e.apellidos, e.tipo_empleado, e.departamento');
                 $empleadoBuilder->where('e.id_usuario', $user['id_usuario']);
@@ -56,28 +58,19 @@ class AuthController extends Controller
                     $user['tipo_empleado'] = $empleado['tipo_empleado'];
                     $user['departamento'] = $empleado['departamento'];
                 } else {
-                    // Si no se encuentra en empleados, establecer valores por defecto
-                    $user['nombres'] = 'Empleado';
-                    $user['apellidos'] = 'Usuario';
-                    $user['tipo_empleado'] = 'EMPLEADO';
-                    $user['departamento'] = 'Sin asignar';
+                    // Valores por defecto si no tiene registro en empleados
+                    if ($user['id_rol'] == 2) {
+                        $user['nombres'] = 'Administrador';
+                        $user['apellidos'] = 'Talento Humano';
+                        $user['tipo_empleado'] = 'ADMIN_TH';
+                        $user['departamento'] = 'Talento Humano';
+                    } else {
+                        $user['nombres'] = 'Empleado';
+                        $user['apellidos'] = 'Usuario';
+                        $user['tipo_empleado'] = 'EMPLEADO';
+                        $user['departamento'] = 'Sin asignar';
+                    }
                 }
-            }
-            
-            // 4.2. Si es Super Admin, establecer nombres por defecto
-            if ($user && $user['id_rol'] == 1) {
-                $user['nombres'] = 'Super';
-                $user['apellidos'] = 'Administrador';
-                $user['tipo_empleado'] = 'SUPER_ADMIN';
-                $user['departamento'] = 'Administración';
-            }
-            
-            // 4.3. Si es Admin TH, establecer nombres por defecto
-            if ($user && $user['id_rol'] == 2) {
-                $user['nombres'] = 'Administrador';
-                $user['apellidos'] = 'Talento Humano';
-                $user['tipo_empleado'] = 'ADMIN_TH';
-                $user['departamento'] = 'Talento Humano';
             }
 
             // 5. Verificar credenciales
@@ -88,9 +81,28 @@ class AuthController extends Controller
                 }
 
                 // 6. Establecer sesión
-                $this->setSession($user);
+                $tokenSesion = $this->setSession($user);
                 
-                // 7. Redirigir según el rol
+                // 7. Registrar sesión activa
+                $sesionModel = new SesionActivaModel();
+                $sesionModel->crearSesion(
+                    $user['id_usuario'],
+                    $tokenSesion,
+                    $this->request->getIPAddress(),
+                    $this->request->getUserAgent()
+                );
+                
+                // 8. Registrar log de inicio de sesión
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    $user['id_usuario'],
+                    'LOGIN',
+                    'AUTENTICACION',
+                    'Usuario inició sesión exitosamente',
+                    $this->request->getIPAddress()
+                );
+                
+                // 9. Redirigir según el rol
                 return $this->redirectByRole();
 
             } else {
@@ -115,15 +127,11 @@ class AuthController extends Controller
      */
     private function setSession($user)
     {
-        // Determinar el tipo de sidebar según el rol
-        $sidebarType = 'empleado'; // Por defecto
-        if ($user['id_rol'] == 1) {
-            $sidebarType = 'super_admin';
-        } elseif ($user['id_rol'] == 2) {
-            $sidebarType = 'admin_th';
-        } elseif ($user['id_rol'] >= 3) {
-            $sidebarType = 'empleado';
-        }
+        // Determinar el tipo de sidebar según el rol (solo 2 perfiles)
+        $sidebarType = ($user['id_rol'] == 2) ? 'admin_th' : 'empleado';
+
+        // Generar token único para la sesión
+        $tokenSesion = bin2hex(random_bytes(32));
 
         $sessionData = [
             'id_usuario'      => $user['id_usuario'],
@@ -138,10 +146,13 @@ class AuthController extends Controller
             'password_changed' => $user['password_changed'] ?? 0,
             'sidebar_type'    => $sidebarType,
             'isLoggedIn'      => true,
-            'login_time'      => time()
+            'login_time'      => time(),
+            'token_sesion'    => $tokenSesion
         ];
 
         session()->set($sessionData);
+        
+        return $tokenSesion;
     }
 
     /**
@@ -151,19 +162,12 @@ class AuthController extends Controller
     {
         $roleId = session()->get('id_rol');
         
-        switch ($roleId) {
-            case 1: // SuperAdministrador
-                return redirect()->to(base_url('index.php/super-admin/dashboard'));
-            case 2: // AdministradorTalentoHumano
-                return redirect()->to(base_url('index.php/admin-th/dashboard'));
-            case 3: // Docente
-            case 6: // ADMINISTRATIVO
-            case 7: // DIRECTIVO
-            case 8: // AUXILIAR
-                return redirect()->to(base_url('index.php/empleado/dashboard'));
-            default:
-                return redirect()->to(base_url('index.php/dashboard'));
+        if ($roleId == 2) {
+            return redirect()->to(base_url('index.php/admin-th/dashboard'));
         }
+        
+        // Todos los demás (Empleado, rol 3) van al panel de empleado
+        return redirect()->to(base_url('index.php/empleado/dashboard'));
     }
     
     /**
@@ -171,10 +175,68 @@ class AuthController extends Controller
      */
     public function logout()
     {
-        // Destruye toda la sesión
+        try {
+            $idUsuario = session()->get('id_usuario');
+            $tokenSesion = session()->get('token_sesion');
+            
+            if ($idUsuario && $tokenSesion) {
+                // Cerrar sesión activa en la base de datos
+                $sesionModel = new SesionActivaModel();
+                $sesionModel->cerrarSesion($tokenSesion);
+                
+                // Registrar log de cierre de sesión
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    $idUsuario,
+                    'LOGOUT',
+                    'AUTENTICACION',
+                    'Usuario cerró sesión',
+                    $this->request->getIPAddress()
+                );
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Error en logout DB operations: ' . $e->getMessage());
+        }
+        
+        // Destruye toda la sesión (siempre, incluso si hubo error en DB)
         session()->destroy();
+        
         // Redirige al login
-        return redirect()->to('/login');
+        return redirect()->to(base_url('index.php/login'))->with('success', 'Sesión cerrada correctamente');
+    }
+
+    /**
+     * Cerrar todas las sesiones de un usuario excepto la actual
+     */
+    public function cerrarTodasLasSesiones()
+    {
+        $idUsuario = session()->get('id_usuario');
+        $tokenActual = session()->get('token_sesion');
+        
+        if (!$idUsuario || !$tokenActual) {
+            return redirect()->back()->with('error', 'Sesión no válida');
+        }
+        
+        try {
+            $sesionModel = new SesionActivaModel();
+            $sesionModel->cerrarTodasLasSesiones($idUsuario, $tokenActual);
+            
+            // Registrar log
+            $logModel = new LogSistemaModel();
+            $logModel->registrarLog(
+                $idUsuario,
+                'CERRAR_TODAS_SESIONES',
+                'SEGURIDAD',
+                'Usuario cerró todas sus sesiones activas',
+                $this->request->getIPAddress()
+            );
+            
+            return redirect()->back()->with('success', 'Todas las sesiones han sido cerradas correctamente');
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error cerrando sesiones: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error al cerrar las sesiones');
+        }
     }
 
     /**

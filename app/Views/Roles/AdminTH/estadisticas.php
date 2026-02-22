@@ -1,78 +1,79 @@
+<?php $sidebar = 'sidebar_admin_th'; ?>
 <?= $this->extend('layouts/base') ?>
 
 <?= $this->section('content') ?>
+
 <div class="page-wrapper">
     <div class="page-content">
-        <!-- Breadcrumb -->
-        <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-            <div class="breadcrumb-title pe-3">Estadísticas</div>
-            <div class="ps-3">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-0 p-0">
-                        <li class="breadcrumb-item"><a href="<?= site_url('admin-th/dashboard') ?>">Dashboard</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Estadísticas</li>
-                    </ol>
-                </nav>
+        <!-- Header -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-flex align-items-center justify-content-between">
+                    <h4 class="mb-0"><i class="bi bi-bar-chart"></i> Estadísticas del Sistema</h4>
+                    <div class="page-title-right">
+                        <span class="text-muted">Métricas y análisis detallados</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Resumen Ejecutivo -->
+        <!-- Quick Stats Cards -->
         <div class="row">
-            <div class="col-md-3">
+            <div class="col-xl-3 col-md-6">
                 <div class="card bg-primary text-white">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h3 class="text-white mb-0" id="totalEmpleados">127</h3>
-                                <span class="text-white-50">Total Empleados</span>
+                                <h4 class="mb-0" id="totalEmpleados">-</h4>
+                                <p class="mb-0">Total Empleados</p>
                             </div>
                             <div class="align-self-center">
-                                <i class="ti ti-users fs-2"></i>
+                                <i class="bi bi-people-fill" style="font-size: 2.5rem; opacity: 0.3;"></i>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-xl-3 col-md-6">
                 <div class="card bg-success text-white">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h3 class="text-white mb-0" id="capacitacionesActivas">23</h3>
-                                <span class="text-white-50">Capacitaciones Activas</span>
+                                <h4 class="mb-0" id="capacitacionesActivas">-</h4>
+                                <p class="mb-0">Capacitaciones Activas</p>
                             </div>
                             <div class="align-self-center">
-                                <i class="ti ti-school fs-2"></i>
+                                <i class="bi bi-mortarboard-fill" style="font-size: 2.5rem; opacity: 0.3;"></i>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-xl-3 col-md-6">
                 <div class="card bg-warning text-white">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h3 class="text-white mb-0" id="evaluacionesPendientes">8</h3>
-                                <span class="text-white-50">Evaluaciones Pendientes</span>
+                                <h4 class="mb-0" id="inasistenciasMes">-</h4>
+                                <p class="mb-0">Inasistencias del Mes</p>
                             </div>
                             <div class="align-self-center">
-                                <i class="ti ti-clipboard-check fs-2"></i>
+                                <i class="bi bi-calendar-x-fill" style="font-size: 2.5rem; opacity: 0.3;"></i>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-xl-3 col-md-6">
                 <div class="card bg-info text-white">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h3 class="text-white mb-0" id="solicitudesPendientes">15</h3>
-                                <span class="text-white-50">Solicitudes Pendientes</span>
+                                <h4 class="mb-0" id="evaluacionesPendientes">-</h4>
+                                <p class="mb-0">Evaluaciones Pendientes</p>
                             </div>
                             <div class="align-self-center">
-                                <i class="ti ti-file-text fs-2"></i>
+                                <i class="bi bi-clipboard-data-fill" style="font-size: 2.5rem; opacity: 0.3;"></i>
                             </div>
                         </div>
                     </div>
@@ -80,104 +81,217 @@
             </div>
         </div>
 
-        <!-- Gráficos de Estadísticas -->
+        <!-- Charts Row -->
         <div class="row">
-            <!-- Distribución de Empleados por Tipo -->
-            <div class="col-md-6">
+            <!-- Empleados por Departamento -->
+            <div class="col-xl-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title">Distribución de Empleados por Tipo</h5>
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-building"></i> Empleados por Departamento
+                        </h5>
                     </div>
                     <div class="card-body">
-                        <div id="chartEmpleadosTipo"></div>
+                        <canvas id="chartEmpleadosDepartamento" height="300"></canvas>
                     </div>
                 </div>
             </div>
-
-            <!-- Capacitaciones por Mes -->
-            <div class="col-md-6">
+            
+            <!-- Capacitaciones por Estado -->
+            <div class="col-xl-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title">Capacitaciones por Mes</h5>
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-mortarboard"></i> Capacitaciones por Estado
+                        </h5>
                     </div>
                     <div class="card-body">
-                        <div id="chartCapacitacionesMes"></div>
+                        <canvas id="chartCapacitacionesEstado" height="300"></canvas>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- More Charts Row -->
         <div class="row">
-            <!-- Inasistencias por Departamento -->
-            <div class="col-md-6">
+            <!-- Inasistencias por Mes -->
+            <div class="col-xl-8">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title">Inasistencias por Departamento</h5>
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-calendar-check"></i> Inasistencias por Mes (Último Año)
+                        </h5>
                     </div>
                     <div class="card-body">
-                        <div id="chartInasistenciasDpto"></div>
+                        <canvas id="chartInasistenciasMes" height="200"></canvas>
                     </div>
                 </div>
             </div>
-
-            <!-- Estado de Evaluaciones -->
-            <div class="col-md-6">
+            
+            <!-- Evaluaciones por Calificación -->
+            <div class="col-xl-4">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title">Estado de Evaluaciones</h5>
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-clipboard-check"></i> Distribución de Calificaciones
+                        </h5>
                     </div>
                     <div class="card-body">
-                        <div id="chartEstadoEvaluaciones"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tendencias Anuales -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title">Tendencias Anuales</h5>
-                        <div class="card-actions">
-                            <select class="form-select form-select-sm" id="filtroAnio">
-                                <option value="2025">2025</option>
-                                <option value="2024">2024</option>
-                                <option value="2023">2023</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div id="chartTendenciasAnuales"></div>
+                        <canvas id="chartCalificaciones" height="200"></canvas>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Tabla de Métricas Detalladas -->
+        <!-- Detailed Statistics Tables -->
         <div class="row">
-            <div class="col-12">
+            <!-- Top Empleados por Capacitaciones -->
+            <div class="col-xl-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title">Métricas Detalladas por Departamento</h5>
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-trophy"></i> Top 5 Empleados por Capacitaciones Completadas
+                        </h5>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-striped" id="tablaMetricas">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Posición</th>
+                                        <th>Empleado</th>
+                                        <th>Departamento</th>
+                                        <th>Capacitaciones</th>
+                                        <th>Puntuación</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaTopEmpleados">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">
+                                            <i class="bi bi-hourglass-split"></i> Cargando datos...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Departamentos con Mayor Inasistencia -->
+            <div class="col-xl-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-exclamation-triangle"></i> Departamentos con Mayor Inasistencia
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
                                 <thead>
                                     <tr>
                                         <th>Departamento</th>
-                                        <th>Empleados</th>
-                                        <th>Capacitaciones</th>
-                                        <th>Evaluaciones</th>
+                                        <th>Total Empleados</th>
                                         <th>Inasistencias</th>
-                                        <th>% Rendimiento</th>
+                                        <th>Porcentaje</th>
+                                        <th>Tendencia</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tbodyMetricas">
-                                    <!-- Los datos se cargarán dinámicamente -->
+                                <tbody id="tablaDepartamentosInasistencia">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">
+                                            <i class="bi bi-hourglass-split"></i> Cargando datos...
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-speedometer2"></i> Métricas de Rendimiento
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 text-center mb-3">
+                                <div class="border rounded p-3">
+                                    <i class="bi bi-graph-up text-success" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2">Tasa de Asistencia</h6>
+                                    <h4 class="text-success" id="tasaAsistencia">-</h4>
+                                    <small class="text-muted">Promedio mensual</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-center mb-3">
+                                <div class="border rounded p-3">
+                                    <i class="bi bi-mortarboard text-primary" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2">Participación en Capacitaciones</h6>
+                                    <h4 class="text-primary" id="participacionCapacitaciones">-</h4>
+                                    <small class="text-muted">Último trimestre</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-center mb-3">
+                                <div class="border rounded p-3">
+                                    <i class="bi bi-clipboard-check text-info" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2">Promedio de Evaluaciones</h6>
+                                    <h4 class="text-info" id="promedioEvaluaciones">-</h4>
+                                    <small class="text-muted">Escala 1-10</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-center mb-3">
+                                <div class="border rounded p-3">
+                                    <i class="bi bi-clock text-warning" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2">Tiempo Promedio de Respuesta</h6>
+                                    <h4 class="text-warning" id="tiempoRespuesta">-</h4>
+                                    <small class="text-muted">En horas</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Options -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-download"></i> Exportar Estadísticas
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <button class="btn btn-outline-primary w-100" onclick="exportarEstadisticas('pdf')">
+                                    <i class="bi bi-file-pdf"></i> Exportar a PDF
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <button class="btn btn-outline-success w-100" onclick="exportarEstadisticas('excel')">
+                                    <i class="bi bi-file-excel"></i> Exportar a Excel
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <button class="btn btn-outline-info w-100" onclick="exportarEstadisticas('csv')">
+                                    <i class="bi bi-file-text"></i> Exportar a CSV
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <button class="btn btn-outline-secondary w-100" onclick="actualizarEstadisticas()">
+                                    <i class="bi bi-arrow-clockwise"></i> Actualizar Datos
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -186,145 +300,284 @@
     </div>
 </div>
 
-<script src="<?= base_url('sistema/assets/libs/apexcharts/src/apexcharts.js') ?>"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    initCharts();
-    cargarMetricasDetalladas();
+$(document).ready(function() {
+    cargarEstadisticas();
+    inicializarGraficos();
 });
 
-function initCharts() {
-    // Gráfico de Distribución de Empleados por Tipo
-    const chartEmpleadosTipo = new ApexCharts(document.querySelector("#chartEmpleadosTipo"), {
-        series: [65, 35, 15, 12],
-        chart: {
-            type: 'donut',
-            height: 300
-        },
-        labels: ['Docentes', 'Administrativos', 'Directivos', 'Auxiliares'],
-        colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
-        legend: {
-            position: 'bottom'
+function cargarEstadisticas() {
+    // Cargar estadísticas básicas
+    Promise.all([
+        fetch('<?= base_url('admin-th/empleados/estadisticas') ?>'),
+        fetch('<?= base_url('admin-th/capacitaciones/estadisticas') ?>'),
+        fetch('<?= base_url('admin-th/inasistencias/estadisticas') ?>'),
+        fetch('<?= base_url('admin-th/evaluaciones/estadisticas') ?>')
+    ])
+    .then(responses => Promise.all(responses.map(r => r.json())))
+    .then(data => {
+        // Actualizar estadísticas básicas
+        if (data[0].success) {
+            document.getElementById('totalEmpleados').textContent = data[0].total_empleados || 0;
         }
-    });
-    chartEmpleadosTipo.render();
-
-    // Gráfico de Capacitaciones por Mes
-    const chartCapacitacionesMes = new ApexCharts(document.querySelector("#chartCapacitacionesMes"), {
-        series: [{
-            name: 'Capacitaciones',
-            data: [8, 12, 15, 10, 18, 20, 22, 16, 14, 19, 15, 12]
-        }],
-        chart: {
-            type: 'line',
-            height: 300
-        },
-        xaxis: {
-            categories: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-        },
-        colors: ['#10b981'],
-        stroke: {
-            curve: 'smooth'
-        }
-    });
-    chartCapacitacionesMes.render();
-
-    // Gráfico de Inasistencias por Departamento
-    const chartInasistenciasDpto = new ApexCharts(document.querySelector("#chartInasistenciasDpto"), {
-        series: [{
-            name: 'Inasistencias',
-            data: [12, 8, 5, 15, 10]
-        }],
-        chart: {
-            type: 'bar',
-            height: 300
-        },
-        xaxis: {
-            categories: ['TI', 'RRHH', 'Finanzas', 'Académico', 'Administración']
-        },
-        colors: ['#f59e0b']
-    });
-    chartInasistenciasDpto.render();
-
-    // Gráfico de Estado de Evaluaciones
-    const chartEstadoEvaluaciones = new ApexCharts(document.querySelector("#chartEstadoEvaluaciones"), {
-        series: [45, 25, 15, 15],
-        chart: {
-            type: 'pie',
-            height: 300
-        },
-        labels: ['Completadas', 'En Proceso', 'Pendientes', 'Vencidas'],
-        colors: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
-    });
-    chartEstadoEvaluaciones.render();
-
-    // Gráfico de Tendencias Anuales
-    const chartTendenciasAnuales = new ApexCharts(document.querySelector("#chartTendenciasAnuales"), {
-        series: [
-            {
-                name: 'Contrataciones',
-                data: [15, 8, 12, 20, 18, 25, 30, 22, 16, 19, 14, 12]
-            },
-            {
-                name: 'Capacitaciones',
-                data: [8, 12, 15, 10, 18, 20, 22, 16, 14, 19, 15, 12]
-            },
-            {
-                name: 'Evaluaciones',
-                data: [25, 20, 30, 28, 35, 40, 38, 32, 28, 30, 25, 22]
-            }
-        ],
-        chart: {
-            type: 'area',
-            height: 350,
-            stacked: false
-        },
-        xaxis: {
-            categories: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-        },
-        colors: ['#3b82f6', '#10b981', '#f59e0b'],
-        fill: {
-            type: 'gradient',
-            opacity: 0.6
-        }
-    });
-    chartTendenciasAnuales.render();
-}
-
-function cargarMetricasDetalladas() {
-    // Datos simulados de métricas por departamento
-    const metricas = [
-        { departamento: 'Tecnología de la Información', empleados: 25, capacitaciones: 12, evaluaciones: 20, inasistencias: 8, rendimiento: 92 },
-        { departamento: 'Recursos Humanos', empleados: 15, capacitaciones: 8, evaluaciones: 12, inasistencias: 5, rendimiento: 95 },
-        { departamento: 'Finanzas', empleados: 18, capacitaciones: 6, evaluaciones: 15, inasistencias: 3, rendimiento: 98 },
-        { departamento: 'Académico', empleados: 45, capacitaciones: 20, evaluaciones: 35, inasistencias: 15, rendimiento: 88 },
-        { departamento: 'Administrativo', empleados: 24, capacitaciones: 10, evaluaciones: 18, inasistencias: 10, rendimiento: 85 }
-    ];
-
-    const tbody = document.getElementById('tbodyMetricas');
-    tbody.innerHTML = '';
-
-    metricas.forEach(metrica => {
-        const row = document.createElement('tr');
-        const rendimientoColor = metrica.rendimiento >= 90 ? 'success' : metrica.rendimiento >= 80 ? 'warning' : 'danger';
         
-        row.innerHTML = `
-            <td><strong>${metrica.departamento}</strong></td>
-            <td>${metrica.empleados}</td>
-            <td>${metrica.capacitaciones}</td>
-            <td>${metrica.evaluaciones}</td>
-            <td>${metrica.inasistencias}</td>
-            <td><span class="badge bg-${rendimientoColor}">${metrica.rendimiento}%</span></td>
-        `;
-        tbody.appendChild(row);
+        if (data[1].success) {
+            document.getElementById('capacitacionesActivas').textContent = data[1].activas || 0;
+        }
+        
+        if (data[2].success) {
+            document.getElementById('inasistenciasMes').textContent = data[2].mes_actual || 0;
+        }
+        
+        if (data[3].success) {
+            document.getElementById('evaluacionesPendientes').textContent = data[3].pendientes || 0;
+        }
+        
+        // Cargar tablas detalladas
+        cargarTablaTopEmpleados();
+        cargarTablaDepartamentosInasistencia();
+        cargarMetricasRendimiento();
+    })
+    .catch(error => {
+        console.error('Error cargando estadísticas:', error);
     });
 }
 
-// Filtro por año para tendencias
-document.getElementById('filtroAnio').addEventListener('change', function() {
-    const anio = this.value;
-    console.log('Cargando datos para el año:', anio);
-    // Aquí implementarías la lógica para actualizar el gráfico con datos del año seleccionado
-});
+function inicializarGraficos() {
+    // Gráfico de Empleados por Departamento
+    const ctxEmpleados = document.getElementById('chartEmpleadosDepartamento').getContext('2d');
+    new Chart(ctxEmpleados, {
+        type: 'doughnut',
+        data: {
+            labels: ['Administración', 'Docencia', 'Tecnología', 'Otros'],
+            datasets: [{
+                data: [25, 40, 20, 15],
+                backgroundColor: ['#007bff', '#28a745', '#ffc107', '#6c757d'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Gráfico de Capacitaciones por Estado
+    const ctxCapacitaciones = document.getElementById('chartCapacitacionesEstado').getContext('2d');
+    new Chart(ctxCapacitaciones, {
+        type: 'bar',
+        data: {
+            labels: ['Activas', 'Completadas', 'Canceladas', 'Pendientes'],
+            datasets: [{
+                label: 'Cantidad',
+                data: [12, 8, 3, 5],
+                backgroundColor: ['#28a745', '#007bff', '#dc3545', '#ffc107'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Gráfico de Inasistencias por Mes
+    const ctxInasistencias = document.getElementById('chartInasistenciasMes').getContext('2d');
+    new Chart(ctxInasistencias, {
+        type: 'line',
+        data: {
+            labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+            datasets: [{
+                label: 'Inasistencias',
+                data: [15, 12, 18, 22, 19, 25, 28, 24, 20, 16, 14, 18],
+                borderColor: '#ffc107',
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Gráfico de Calificaciones
+    const ctxCalificaciones = document.getElementById('chartCalificaciones').getContext('2d');
+    new Chart(ctxCalificaciones, {
+        type: 'pie',
+        data: {
+            labels: ['Excelente (9-10)', 'Bueno (7-8)', 'Regular (5-6)', 'Bajo (1-4)'],
+            datasets: [{
+                data: [30, 45, 20, 5],
+                backgroundColor: ['#28a745', '#007bff', '#ffc107', '#dc3545'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function cargarTablaTopEmpleados() {
+    // Simular carga de datos
+    setTimeout(() => {
+        const tbody = document.getElementById('tablaTopEmpleados');
+        tbody.innerHTML = `
+            <tr>
+                <td><span class="badge bg-warning">1º</span></td>
+                <td>María González</td>
+                <td>Docencia</td>
+                <td>15</td>
+                <td><span class="badge bg-success">95%</span></td>
+            </tr>
+            <tr>
+                <td><span class="badge bg-secondary">2º</span></td>
+                <td>Carlos Rodríguez</td>
+                <td>Tecnología</td>
+                <td>14</td>
+                <td><span class="badge bg-success">92%</span></td>
+            </tr>
+            <tr>
+                <td><span class="badge bg-info">3º</span></td>
+                <td>Ana Martínez</td>
+                <td>Administración</td>
+                <td>13</td>
+                <td><span class="badge bg-success">88%</span></td>
+            </tr>
+            <tr>
+                <td><span class="badge bg-primary">4º</span></td>
+                <td>Luis Pérez</td>
+                <td>Docencia</td>
+                <td>12</td>
+                <td><span class="badge bg-success">85%</span></td>
+            </tr>
+            <tr>
+                <td><span class="badge bg-success">5º</span></td>
+                <td>Carmen López</td>
+                <td>Tecnología</td>
+                <td>11</td>
+                <td><span class="badge bg-success">82%</span></td>
+            </tr>
+        `;
+    }, 1000);
+}
+
+function cargarTablaDepartamentosInasistencia() {
+    // Simular carga de datos
+    setTimeout(() => {
+        const tbody = document.getElementById('tablaDepartamentosInasistencia');
+        tbody.innerHTML = `
+            <tr>
+                <td>Docencia</td>
+                <td>40</td>
+                <td>28</td>
+                <td><span class="badge bg-warning">70%</span></td>
+                <td><i class="bi bi-arrow-up text-danger"></i></td>
+            </tr>
+            <tr>
+                <td>Administración</td>
+                <td>25</td>
+                <td>15</td>
+                <td><span class="badge bg-success">60%</span></td>
+                <td><i class="bi bi-arrow-down text-success"></i></td>
+            </tr>
+            <tr>
+                <td>Tecnología</td>
+                <td>20</td>
+                <td>12</td>
+                <td><span class="badge bg-success">60%</span></td>
+                <td><i class="bi bi-arrow-down text-success"></i></td>
+            </tr>
+        `;
+    }, 1000);
+}
+
+function cargarMetricasRendimiento() {
+    // Simular carga de métricas
+    document.getElementById('tasaAsistencia').textContent = '92.5%';
+    document.getElementById('participacionCapacitaciones').textContent = '78%';
+    document.getElementById('promedioEvaluaciones').textContent = '7.8';
+    document.getElementById('tiempoRespuesta').textContent = '4.2h';
+}
+
+function exportarEstadisticas(formato) {
+    Swal.fire({
+        title: 'Exportando Estadísticas',
+        text: `Generando archivo en formato ${formato.toUpperCase()}...`,
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    setTimeout(() => {
+        Swal.fire({
+            icon: 'success',
+            title: 'Exportación Completada',
+            text: `Las estadísticas se han exportado exitosamente en formato ${formato.toUpperCase()}`,
+            confirmButtonText: 'Descargar',
+            showCancelButton: true,
+            cancelButtonText: 'Cerrar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Simular descarga
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Descarga Iniciada',
+                    text: 'El archivo se está descargando...',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+        });
+    }, 2000);
+}
+
+function actualizarEstadisticas() {
+    Swal.fire({
+        title: 'Actualizando Datos',
+        text: 'Recopilando información más reciente...',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    setTimeout(() => {
+        cargarEstadisticas();
+        Swal.fire({
+            icon: 'success',
+            title: 'Datos Actualizados',
+            text: 'Las estadísticas se han actualizado exitosamente',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    }, 1500);
+}
 </script>
+
 <?= $this->endSection() ?>

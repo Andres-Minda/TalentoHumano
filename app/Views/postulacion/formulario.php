@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $titulo ?? 'Formulario de Postulación' ?></title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="<?= base_url('public/sistema/assets/images/logos/faviconV2.png') ?>">
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -83,10 +86,7 @@
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
         
-        .talento-logo {
-            max-width: 120px;
-            margin-bottom: 1rem;
-        }
+
         
         .puesto-info {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -124,7 +124,6 @@
     <div class="container form-container">
         <!-- Header del Formulario -->
         <div class="form-header">
-                            <img src="<?= base_url('public/sistema/assets/images/logos/Talento_humano.jpg') ?>" alt="Talento Humano Logo" class="talento-logo">
             <h1 class="mb-3">Formulario de Postulación</h1>
             <p class="lead mb-0">Complete todos los campos para postularse a la oferta de trabajo</p>
         </div>

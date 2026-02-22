@@ -90,23 +90,55 @@ class EmpleadoModel extends Model
     }
 
     /**
-     * Obtener empleados por tipo
+     * Obtener empleados por tipo o estadísticas por tipo
      */
-    public function getEmpleadosPorTipo($tipoEmpleado)
+    public function getEmpleadosPorTipo($tipoEmpleado = null)
     {
-        return $this->where('tipo_empleado', $tipoEmpleado)
-                    ->where('estado', 'ACTIVO')
-                    ->findAll();
+        if ($tipoEmpleado !== null) {
+            // Si se especifica un tipo, devolver empleados de ese tipo
+            return $this->where('tipo_empleado', $tipoEmpleado)
+                        ->where('estado', 'ACTIVO')
+                        ->findAll();
+        } else {
+            // Si no se especifica, devolver estadísticas por tipo
+            $builder = $this->db->table('empleados e');
+            $builder->select('
+                e.tipo_empleado,
+                COUNT(*) as total
+            ');
+            $builder->where('e.estado', 'ACTIVO');
+            $builder->groupBy('e.tipo_empleado');
+            $builder->orderBy('total', 'DESC');
+            
+            return $builder->get()->getResultArray();
+        }
     }
 
     /**
-     * Obtener empleados por departamento
+     * Obtener empleados por departamento o estadísticas por departamento
      */
-    public function getEmpleadosPorDepartamento($departamento)
+    public function getEmpleadosPorDepartamento($departamento = null)
     {
-        return $this->where('departamento', $departamento)
-                    ->where('estado', 'ACTIVO')
-                    ->findAll();
+        if ($departamento !== null) {
+            // Si se especifica un departamento, devolver empleados de ese departamento
+            return $this->where('departamento', $departamento)
+                        ->where('estado', 'ACTIVO')
+                        ->findAll();
+        } else {
+            // Si no se especifica, devolver estadísticas por departamento
+            $builder = $this->db->table('empleados e');
+            $builder->select('
+                e.departamento,
+                COUNT(*) as total
+            ');
+            $builder->where('e.estado', 'ACTIVO');
+            $builder->where('e.departamento IS NOT NULL');
+            $builder->where('e.departamento !=', '');
+            $builder->groupBy('e.departamento');
+            $builder->orderBy('total', 'DESC');
+            
+            return $builder->get()->getResultArray();
+        }
     }
 
     /**
@@ -275,6 +307,45 @@ class EmpleadoModel extends Model
         $builder->where('e.id_empleado', $idEmpleado);
         
         return $builder->get()->getRowArray();
+    }
+
+
+
+
+
+    /**
+     * Obtener estadísticas de empleados por estado
+     */
+    public function getEmpleadosPorEstado()
+    {
+        $builder = $this->db->table('empleados e');
+        $builder->select('
+            e.estado,
+            COUNT(*) as total
+        ');
+        $builder->groupBy('e.estado');
+        $builder->orderBy('total', 'DESC');
+        
+        return $builder->get()->getResultArray();
+    }
+
+    /**
+     * Obtener estadísticas de empleados por género
+     */
+    public function getEmpleadosPorGenero()
+    {
+        $builder = $this->db->table('empleados e');
+        $builder->select('
+            e.genero,
+            COUNT(*) as total
+        ');
+        $builder->where('e.estado', 'ACTIVO');
+        $builder->where('e.genero IS NOT NULL');
+        $builder->where('e.genero !=', '');
+        $builder->groupBy('e.genero');
+        $builder->orderBy('total', 'DESC');
+        
+        return $builder->get()->getResultArray();
     }
 
 } 

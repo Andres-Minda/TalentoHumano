@@ -6,6 +6,8 @@ use App\Models\EmpleadoModel;
 use App\Models\TituloAcademicoModel;
 use App\Models\CapacitacionEmpleadoModel;
 use App\Models\UsuarioModel;
+use App\Models\InasistenciaModel;
+use App\Models\NotificacionModel;
 use CodeIgniter\Controller;
 
 class EmpleadoController extends Controller
@@ -14,6 +16,8 @@ class EmpleadoController extends Controller
     protected $tituloAcademicoModel;
     protected $capacitacionModel;
     protected $usuarioModel;
+    protected $inasistenciaModel;
+    protected $notificacionModel;
 
     public function __construct()
     {
@@ -21,6 +25,8 @@ class EmpleadoController extends Controller
         $this->tituloAcademicoModel = new TituloAcademicoModel();
         $this->capacitacionModel = new CapacitacionEmpleadoModel();
         $this->usuarioModel = new UsuarioModel();
+        $this->inasistenciaModel = new InasistenciaModel();
+        $this->notificacionModel = new NotificacionModel();
     }
 
     /**
@@ -113,23 +119,6 @@ class EmpleadoController extends Controller
         ];
 
         return view('Roles/Empleado/mi_perfil', $data);
-    }
-
-    /**
-     * Configuración de cuenta
-     */
-    public function cuenta()
-    {
-        $data = [
-            'titulo' => 'Configuración de Cuenta',
-            'usuario' => [
-                'nombres' => session()->get('nombres'),
-                'apellidos' => session()->get('apellidos'),
-                'rol' => session()->get('nombre_rol')
-            ]
-        ];
-
-        return view('Roles/Empleado/cuenta', $data);
     }
 
     /**
@@ -365,6 +354,87 @@ class EmpleadoController extends Controller
                 'success' => false,
                 'message' => 'Error al cambiar contraseña: ' . $e->getMessage()
             ]);
+        }
+    }
+    
+    /**
+     * Acceso rápido del empleado
+     */
+    public function accesoRapido()
+    {
+        $data = [
+            'titulo' => 'Acceso Rápido',
+            'usuario' => [
+                'nombres' => session()->get('nombres'),
+                'apellidos' => session()->get('apellidos'),
+                'rol' => session()->get('nombre_rol')
+            ]
+        ];
+
+        return view('Roles/Empleado/acceso_rapido', $data);
+    }
+
+    /**
+     * Actualizar perfil del empleado
+     */
+    public function actualizarPerfil()
+    {
+        if (!$this->request->is('post')) {
+            return redirect()->back()->with('error', 'Método no permitido');
+        }
+
+        try {
+            $userId = session()->get('id_usuario');
+            $nombres = trim($this->request->getPost('nombres') ?? '');
+            $apellidos = trim($this->request->getPost('apellidos') ?? '');
+            $departamento = trim($this->request->getPost('departamento') ?? '');
+            $observaciones = trim($this->request->getPost('observaciones') ?? '');
+
+            if (empty($nombres) || empty($apellidos)) {
+                return redirect()->back()->with('error', 'Nombres y apellidos son obligatorios');
+            }
+
+            $db = \Config\Database::connect();
+
+            // Actualizar tabla empleados
+            $updateData = [
+                'nombres' => $nombres,
+                'apellidos' => $apellidos,
+            ];
+            
+            if (!empty($departamento)) {
+                $updateData['departamento'] = $departamento;
+            }
+
+            $db->table('empleados')
+                ->where('id_usuario', $userId)
+                ->update($updateData);
+
+            // Actualizar sesión
+            session()->set('nombres', $nombres);
+            session()->set('apellidos', $apellidos);
+            if (!empty($departamento)) {
+                session()->set('departamento', $departamento);
+            }
+
+            // Manejar foto de perfil si fue subida
+            $foto = $this->request->getFile('foto_perfil');
+            if ($foto && $foto->isValid() && !$foto->hasMoved()) {
+                $newName = 'user_' . $userId . '_' . $foto->getRandomName();
+                $foto->move(FCPATH . 'sistema/assets/images/profile/', $newName);
+                
+                $db->table('empleados')
+                    ->where('id_usuario', $userId)
+                    ->update(['foto_url' => $newName]);
+                
+                session()->set('foto_perfil', $newName);
+            }
+
+            return redirect()->to(base_url('index.php/empleado/mi-perfil'))->with('success', 'Perfil actualizado correctamente');
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error al actualizar perfil: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error al actualizar el perfil: ' . $e->getMessage());
         }
     }
 }

@@ -9,7 +9,7 @@
             <div class="ps-3">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb mb-0 p-0">
-                        <li class="breadcrumb-item"><a href="<?= base_url('index.php/empleado/dashboard') ?>"><i class="bx bx-home-alt"></i></a></li>
+                        <li class="breadcrumb-item"><a href="<?= base_url('index.php/admin-th/dashboard') ?>"><i class="bx bx-home-alt"></i></a></li>
                         <li class="breadcrumb-item active" aria-current="page">Mi Perfil</li>
                     </ol>
                 </nav>
@@ -17,18 +17,6 @@
         </div>
 
         <!-- Alert Messages -->
-        <?php if (session()->getFlashdata('success')): ?>
-            <div class="alert alert-success alert-dismissible fade show">
-                <i class="ti ti-check me-2"></i><?= session()->getFlashdata('success') ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-        <?php if (session()->getFlashdata('error')): ?>
-            <div class="alert alert-danger alert-dismissible fade show">
-                <i class="ti ti-alert-circle me-2"></i><?= session()->getFlashdata('error') ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
         <div id="alertContainer"></div>
 
         <div class="row">
@@ -65,58 +53,37 @@
                                                     ? base_url('sistema/assets/images/profile/' . $foto)
                                                     : base_url('sistema/assets/images/profile/user-1.jpg');
                                                 ?>
-                                                <img src="<?= $fotoUrl ?>" alt="Foto de perfil" class="rounded-circle mb-3" width="120" height="120" style="object-fit: cover; border: 3px solid #28a745;">
+                                                <img src="<?= $fotoUrl ?>" alt="Foto de perfil" class="rounded-circle mb-3" width="120" height="120" style="object-fit: cover; border: 3px solid #007bff;">
                                                 <h5 class="mb-1"><?= esc(session('nombres')) ?> <?= esc(session('apellidos')) ?></h5>
-                                                <p class="text-muted mb-1"><?= esc(session('tipo_empleado') ?? 'Empleado') ?></p>
+                                                <p class="text-muted mb-1">Administrador de Talento Humano</p>
                                                 <p class="text-muted mb-0"><i class="ti ti-mail me-1"></i><?= esc(session('email')) ?></p>
                                                 <p class="text-muted mb-0"><i class="ti ti-id me-1"></i><?= esc(session('cedula')) ?></p>
-                                                <?php if (!empty($empleado['departamento'])): ?>
-                                                    <p class="text-muted mb-0"><i class="ti ti-building me-1"></i><?= esc($empleado['departamento']) ?></p>
-                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
                                     <!-- Formulario editable -->
                                     <div class="col-md-8">
-                                        <form action="<?= base_url('index.php/empleado/actualizar-perfil') ?>" method="POST">
+                                        <form id="formPerfil">
                                             <div class="row">
                                                 <div class="col-md-6 mb-3">
                                                     <label for="nombres" class="form-label fw-bold">Nombres</label>
-                                                    <input type="text" class="form-control" id="nombres" name="nombres" value="<?= esc($empleado['nombres'] ?? session('nombres')) ?>" required>
+                                                    <input type="text" class="form-control" id="nombres" name="nombres" value="<?= esc(session('nombres')) ?>" required>
                                                 </div>
                                                 <div class="col-md-6 mb-3">
                                                     <label for="apellidos" class="form-label fw-bold">Apellidos</label>
-                                                    <input type="text" class="form-control" id="apellidos" name="apellidos" value="<?= esc($empleado['apellidos'] ?? session('apellidos')) ?>" required>
+                                                    <input type="text" class="form-control" id="apellidos" name="apellidos" value="<?= esc(session('apellidos')) ?>" required>
                                                 </div>
                                                 <div class="col-md-6 mb-3">
-                                                    <label class="form-label fw-bold">Correo Electrónico</label>
-                                                    <input type="email" class="form-control" value="<?= esc(session('email')) ?>" readonly disabled>
+                                                    <label for="email" class="form-label fw-bold">Correo Electrónico</label>
+                                                    <input type="email" class="form-control" id="email" name="email" value="<?= esc(session('email')) ?>" required>
                                                 </div>
                                                 <div class="col-md-6 mb-3">
                                                     <label class="form-label fw-bold">Cédula</label>
                                                     <input type="text" class="form-control" value="<?= esc(session('cedula')) ?>" readonly disabled>
                                                 </div>
-                                                <?php if (!empty($empleado['tipo_empleado'])): ?>
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label fw-bold">Tipo de Empleado</label>
-                                                    <input type="text" class="form-control" value="<?= esc($empleado['tipo_empleado']) ?>" readonly disabled>
-                                                </div>
-                                                <?php endif; ?>
-                                                <?php if (!empty($empleado['departamento'])): ?>
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label fw-bold">Departamento</label>
-                                                    <input type="text" class="form-control" value="<?= esc($empleado['departamento']) ?>" readonly disabled>
-                                                </div>
-                                                <?php endif; ?>
-                                                <?php if (!empty($empleado['fecha_ingreso'])): ?>
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label fw-bold">Fecha de Ingreso</label>
-                                                    <input type="text" class="form-control" value="<?= date('d/m/Y', strtotime($empleado['fecha_ingreso'])) ?>" readonly disabled>
-                                                </div>
-                                                <?php endif; ?>
                                             </div>
                                             <div class="text-end">
-                                                <button type="submit" class="btn btn-success">
+                                                <button type="submit" class="btn btn-primary">
                                                     <i class="ti ti-device-floppy me-1"></i> Guardar Cambios
                                                 </button>
                                             </div>
@@ -176,10 +143,12 @@
                                         <div class="card border border-danger shadow-none mt-3">
                                             <div class="card-body text-center">
                                                 <h6 class="text-danger mb-2"><i class="ti ti-alert-triangle me-1"></i>Zona de Sesión</h6>
-                                                <p class="text-muted mb-3">Cerrar tu sesión actual.</p>
-                                                <a href="<?= base_url('index.php/auth/logout') ?>" class="btn btn-outline-danger">
-                                                    <i class="ti ti-logout me-1"></i> Cerrar Sesión
-                                                </a>
+                                                <p class="text-muted mb-3">Cerrar tu sesión actual o todas las sesiones activas.</p>
+                                                <div class="d-flex justify-content-center gap-2">
+                                                    <a href="<?= base_url('index.php/auth/logout') ?>" class="btn btn-outline-danger">
+                                                        <i class="ti ti-logout me-1"></i> Cerrar Sesión
+                                                    </a>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -196,7 +165,29 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // --- Cambiar Contraseña via AJAX ---
+    // --- Guardar Perfil ---
+    document.getElementById('formPerfil').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const data = {
+            nombres: document.getElementById('nombres').value.trim(),
+            apellidos: document.getElementById('apellidos').value.trim(),
+            email: document.getElementById('email').value.trim()
+        };
+
+        fetch('<?= base_url("index.php/admin-th/actualizar-perfil") ?>', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify(data)
+        })
+        .then(r => r.json())
+        .then(res => {
+            mostrarAlerta(res.success ? 'success' : 'danger', res.message);
+            if (res.success) setTimeout(() => location.reload(), 1500);
+        })
+        .catch(() => mostrarAlerta('danger', 'Error de conexión al servidor'));
+    });
+
+    // --- Cambiar Contraseña ---
     document.getElementById('formPassword').addEventListener('submit', function(e) {
         e.preventDefault();
         const nuevo = document.getElementById('password_nuevo').value;
@@ -207,15 +198,16 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const formData = new FormData();
-        formData.append('password_actual', document.getElementById('password_actual').value);
-        formData.append('password_nuevo', nuevo);
-        formData.append('password_confirmar', confirmar);
+        const data = {
+            password_actual: document.getElementById('password_actual').value,
+            password_nuevo: nuevo,
+            password_confirmar: confirmar
+        };
 
-        fetch('<?= base_url("index.php/empleado/cambiar-password") ?>', {
+        fetch('<?= base_url("index.php/admin-th/cambiar-contrasena") ?>', {
             method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            body: formData
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify(data)
         })
         .then(r => r.json())
         .then(res => {

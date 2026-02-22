@@ -176,4 +176,20 @@ class DepartamentoModel extends Model
                   ->get()
                   ->getResultArray();
     }
+
+    /**
+     * Obtener estadísticas de departamentos por estado
+     */
+    public function getDepartamentosPorEstado()
+    {
+        $builder = $this->builder();
+        $builder->select('
+            estado,
+            COUNT(*) as total
+        ');
+        $builder->groupBy('estado');
+        $builder->orderBy('total', 'DESC');
+        
+        return $builder->get()->getResultArray();
+    }
 } 

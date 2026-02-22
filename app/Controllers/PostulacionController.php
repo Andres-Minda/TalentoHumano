@@ -25,32 +25,41 @@ class PostulacionController extends Controller
      */
     public function mostrarFormulario($param1 = null, $param2 = null)
     {
-        // Determinar la URL de postulación correcta
+        // Determinar el ID del puesto y la URL de postulación
+        $idPuesto = null;
         $urlPostulacion = null;
         
         if ($param1 && $param2) {
-            // Si se reciben dos parámetros, el segundo es la URL de postulación
+            // Si se reciben dos parámetros, el primero es el ID y el segundo es la URL
+            $idPuesto = (int)$param1;
             $urlPostulacion = $param2;
         } elseif ($param1) {
-            // Si solo se recibe un parámetro, es la URL de postulación
-            $urlPostulacion = $param1;
+            // Si solo se recibe un parámetro, intentar extraer el ID
+            if (is_numeric($param1)) {
+                $idPuesto = (int)$param1;
+            } else {
+                $urlPostulacion = $param1;
+            }
         }
         
-        if (!$urlPostulacion) {
-            return view('postulacion/error', [
-                'mensaje' => 'URL de postulación no válida.',
-                'titulo' => 'URL Inválida'
-            ]);
-        }
-        
-        // Buscar el puesto por URL
-        $puesto = $this->puestoModel->getPuestoPorUrl($urlPostulacion);
-        
-        if (!$puesto) {
-            return view('postulacion/error', [
-                'mensaje' => 'La oferta de trabajo no está disponible o ha expirado.',
-                'titulo' => 'Oferta No Disponible'
-            ]);
+        // Si tenemos el ID del puesto, buscar por ID primero
+        if ($idPuesto) {
+            $puesto = $this->puestoModel->getPuestoParaPostulacion($idPuesto);
+            if (!$puesto) {
+                return view('postulacion/error', [
+                    'mensaje' => 'La oferta de trabajo no está disponible o ha expirado.',
+                    'titulo' => 'Oferta No Disponible'
+                ]);
+            }
+        } else {
+            // Si no tenemos ID, buscar por URL
+            $puesto = $this->puestoModel->getPuestoPorUrl($urlPostulacion);
+            if (!$puesto) {
+                return view('postulacion/error', [
+                    'mensaje' => 'La oferta de trabajo no está disponible o ha expirado.',
+                    'titulo' => 'Oferta No Disponible'
+                ]);
+            }
         }
 
         // Verificar si el puesto está activo y abierto

@@ -1,0 +1,62 @@
+**PERFIL SUPER ADMINISTRADOR **
+//Configuración de perfil
+-Información de la cuenta no muestra información real
+-Guardar configuración  no funciona da un error
+-Sesiones Activas No muestra información real y no permite cerrar todas las sesiones
+-Configuración de privacidad tampoco funciona
+
+//Apartado de gestión de usuarios
+Al seleccionar ROL* 
+-Existen roles que deberían entrar dentro de empleado
+En las acciones 
+-Aun no hay acciones 
+
+//Gestion de Roles 
+-No se entiende para que sirve la asignación de roles
+-No hay acciones
+//Gestión de Respaldos 
+-No muestra ninguna vista
+
+//Logs de sistema
+-No muestra ninguna vista
+
+//Estadísticas Globales
+-No muestra vista
+
+**Acesso rapido
+//Admin Talento Humano
+-No muestra vista
+//Vista empleado
+-No muestra vista
+
+**TALENTO HUMANO ADMINISTRADOR**
+//Perfil
+-No funciona la opción de cerrar sesión del perfil, mejor quitarla dejar la de cerrar sesión.
+-Configuración del perfil no funcionan la mayoría de opciones como en el perfil anterior.
+
+//Gestión de Empleados 
+-No permite eliminar pero preferible solo dejar una opción de deshabilitar  
+
+//Gestión de Capacitaciones 
+-No funciona ninguna accion ni eliminar ni actualizar
+
+//Títulos Académicos
+-No se entiende la función de esta pestaña
+
+//Gestión de evaluaciones
+-Se necesita poder asignar que en la evaluación de los docentes se califiquen entre ellos mismos
+
+//Gestión de inasistencias
+~EN GENERAL EN ESTA VISTA NINGUNA FUNCIÓN ESTA IMPLEMENTADA AÚN~
+-Registrar inasistencia no funciona
+-Revisar justificaciones no funciona
+-Generar reportes no funciona
+-Eliminar la opción de gestionar políticas
+
+//Politicas de inasistencia
+-Eliminar esta opción
+//Solicitudes de capacitación 
+-Las acciones no están implementadas en la vista
+
+//Reportes del sistema
+-Las opciones dicen realizar acciones pero realmente no funcionan

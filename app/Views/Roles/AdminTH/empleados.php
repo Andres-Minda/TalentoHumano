@@ -55,6 +55,53 @@
     </div>
 </div>
 
+<!-- Sección de Gráficos -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">
+                    <i class="ti ti-chart-pie me-2"></i>
+                    Estadísticas de Empleados
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Gráfico 1: Empleados por Departamento -->
+                    <div class="col-lg-6">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0">
+                                    <i class="ti ti-building me-2"></i>
+                                    Empleados por Departamento
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chartDepartamentos" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Gráfico 2: Empleados por Tipo -->
+                    <div class="col-lg-6">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">
+                                    <i class="ti ti-users me-2"></i>
+                                    Empleados por Tipo
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chartTipos" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal para nuevo/editar empleado -->
 <div class="modal fade" id="modalEmpleado" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -772,5 +819,154 @@ function cargarDepartamentosDropdown() {
         });
     });
 }
+
+// Variables globales para los gráficos
+let chartDepartamentos, chartTipos;
+
+// Función para cargar y mostrar las estadísticas
+function cargarEstadisticas() {
+    fetch('<?= site_url('admin-th/empleados/estadisticas') ?>')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const estadisticas = data.estadisticas;
+            
+            // Crear gráfico de empleados por departamento
+            crearGraficoDepartamentos(estadisticas.porDepartamento);
+            
+            // Crear gráfico de empleados por tipo
+            crearGraficoTipos(estadisticas.porTipo);
+        } else {
+            console.error('Error al cargar estadísticas:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error de conexión al cargar estadísticas:', error);
+    });
+}
+
+// Función para crear gráfico de empleados por departamento
+function crearGraficoDepartamentos(datos) {
+    const ctx = document.getElementById('chartDepartamentos').getContext('2d');
+    
+    // Destruir gráfico anterior si existe
+    if (chartDepartamentos) {
+        chartDepartamentos.destroy();
+    }
+    
+    const labels = datos.map(item => item.departamento || 'Sin departamento');
+    const values = datos.map(item => parseInt(item.total));
+    
+    chartDepartamentos = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+                    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Función para crear gráfico de empleados por tipo
+function crearGraficoTipos(datos) {
+    const ctx = document.getElementById('chartTipos').getContext('2d');
+    
+    // Destruir gráfico anterior si existe
+    if (chartTipos) {
+        chartTipos.destroy();
+    }
+    
+    const labels = datos.map(item => item.tipo_empleado);
+    const values = datos.map(item => parseInt(item.total));
+    
+    chartTipos = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Cantidad de Empleados',
+                data: values,
+                backgroundColor: [
+                    '#4BC0C0', '#FF6384', '#36A2EB', '#FFCE56',
+                    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                ],
+                borderColor: '#fff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.label}: ${context.parsed.y} empleados`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+
+// Cargar estadísticas cuando se carga la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar Chart.js desde CDN si no está disponible
+    if (typeof Chart === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js';
+        script.onload = function() {
+            cargarEstadisticas();
+        };
+        document.head.appendChild(script);
+    } else {
+        cargarEstadisticas();
+    }
+});
 </script>
 <?= $this->endSection() ?>

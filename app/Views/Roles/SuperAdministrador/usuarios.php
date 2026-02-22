@@ -311,6 +311,144 @@ $sidebar = 'sidebar_super_admin';
         </div>
     </div>
 </div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editUserForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editUserId" name="id_usuario">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editCedula" class="form-label">Cédula *</label>
+                                <input type="text" class="form-control" id="editCedula" name="cedula" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editEmail" class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="editEmail" name="email" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editPassword" class="form-label">Contraseña (opcional)</label>
+                                <input type="password" class="form-control" id="editPassword" name="password">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editConfirmPassword" class="form-label">Confirmar Contraseña (opcional)</label>
+                                <input type="password" class="form-control" id="editConfirmPassword" name="confirm_password">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editRol" class="form-label">Rol *</label>
+                                <select class="form-select" id="editRol" name="id_rol" required>
+                                    <option value="">Seleccionar rol</option>
+                                    <?php if (isset($roles) && !empty($roles)): ?>
+                                        <?php foreach ($roles as $rol): ?>
+                                            <option value="<?= $rol['id_rol'] ?>"><?= esc($rol['nombre_rol']) ?></option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editActivo" class="form-label">Estado</label>
+                                <select class="form-select" id="editActivo" name="activo">
+                                    <option value="1">Activo</option>
+                                    <option value="0">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUserEdit()">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View User Modal -->
+<div class="modal fade" id="viewUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalles del Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Cédula:</strong> <span id="viewCedula"></span></p>
+                        <p><strong>Email:</strong> <span id="viewEmail"></span></p>
+                        <p><strong>Rol:</strong> <span id="viewRol"></span></p>
+                        <p><strong>Estado:</strong> <span id="viewEstado"></span></p>
+                        <p><strong>Fecha de Registro:</strong> <span id="viewFechaRegistro"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Role Modal -->
+<div class="modal fade" id="changeRoleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cambiar Rol del Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="changeRoleForm">
+                <div class="modal-body">
+                    <input type="hidden" id="changeRoleUserId" name="id_usuario">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Rol Actual:</strong> <span id="changeRoleCurrentRole"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="changeRoleNewRole" class="form-label">Nuevo Rol *</label>
+                                <select class="form-select" id="changeRoleNewRole" name="id_rol" required>
+                                    <option value="">Seleccionar rol</option>
+                                    <?php if (isset($roles) && !empty($roles)): ?>
+                                        <?php foreach ($roles as $rol): ?>
+                                            <option value="<?= $rol['id_rol'] ?>"><?= esc($rol['nombre_rol']) ?></option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUserRoleChange()">Guardar Cambio</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -404,25 +542,113 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function editUser(userId) {
-    // Implementar edición de usuario
-    Swal.fire({
-        icon: 'info',
-        title: 'Función en desarrollo',
-        text: 'La edición de usuarios estará disponible próximamente'
+    // Obtener datos del usuario
+    fetch(`<?= base_url('super-admin/usuarios/obtener') ?>/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const usuario = data.usuario;
+                
+                // Llenar el modal de edición
+                document.getElementById('editUserId').value = usuario.id_usuario;
+                document.getElementById('editCedula').value = usuario.cedula;
+                document.getElementById('editEmail').value = usuario.email;
+                document.getElementById('editRol').value = usuario.id_rol;
+                document.getElementById('editActivo').value = usuario.activo;
+                
+                // Mostrar modal
+                $('#editUserModal').modal('show');
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Error al obtener datos del usuario'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error de conexión'
+            });
+        });
+}
+
+function saveUserEdit() {
+    const formData = new FormData(document.getElementById('editUserForm'));
+    
+    fetch('<?= base_url('super-admin/usuarios/editar') ?>', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: data.message
+            }).then(() => {
+                $('#editUserModal').modal('hide');
+                location.reload();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message || 'Error al actualizar usuario'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error de conexión'
+        });
     });
 }
 
 function viewUser(userId) {
-    // Implementar vista de usuario
-    Swal.fire({
-        icon: 'info',
-        title: 'Función en desarrollo',
-        text: 'La vista de usuarios estará disponible próximamente'
-    });
+    // Obtener datos del usuario
+    fetch(`<?= base_url('super-admin/usuarios/obtener') ?>/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const usuario = data.usuario;
+                
+                // Llenar el modal de vista
+                document.getElementById('viewCedula').textContent = usuario.cedula;
+                document.getElementById('viewEmail').textContent = usuario.email;
+                document.getElementById('viewRol').textContent = usuario.nombre_rol;
+                document.getElementById('viewEstado').textContent = usuario.activo ? 'Activo' : 'Inactivo';
+                document.getElementById('viewFechaRegistro').textContent = new Date(usuario.fecha_registro).toLocaleDateString('es-ES');
+                
+                // Mostrar modal
+                $('#viewUserModal').modal('show');
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Error al obtener datos del usuario'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error de conexión'
+            });
+        });
 }
 
 function toggleUserStatus(userId, status) {
-    const action = status ? 'activar' : 'desactivar';
+    const action = status ? 'habilitar' : 'deshabilitar';
     
     Swal.fire({
         title: '¿Estás seguro?',
@@ -435,15 +661,16 @@ function toggleUserStatus(userId, status) {
         cancelButtonText: 'Cancelar'
     }).then((result) => {
         if (result.isConfirmed) {
-            fetch('<?= base_url('super-admin/usuarios/toggle-status') ?>', {
+            const url = status ? 
+                '<?= base_url('super-admin/usuarios/habilitar') ?>' : 
+                '<?= base_url('super-admin/usuarios/deshabilitar') ?>';
+            
+            const formData = new FormData();
+            formData.append('id_usuario', userId);
+            
+            fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_id: userId,
-                    status: status
-                })
+                body: formData
             })
             .then(response => response.json())
             .then(data => {
@@ -451,7 +678,7 @@ function toggleUserStatus(userId, status) {
                     Swal.fire({
                         icon: 'success',
                         title: 'Éxito',
-                        text: `Usuario ${action}do correctamente`
+                        text: data.message
                     }).then(() => {
                         location.reload();
                     });
@@ -467,6 +694,75 @@ function toggleUserStatus(userId, status) {
     });
 }
 
+function changeUserRole(userId) {
+    // Obtener datos del usuario
+    fetch(`<?= base_url('super-admin/usuarios/obtener') ?>/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const usuario = data.usuario;
+                
+                // Llenar el modal de cambio de rol
+                document.getElementById('changeRoleUserId').value = usuario.id_usuario;
+                document.getElementById('changeRoleCurrentRole').textContent = usuario.nombre_rol;
+                document.getElementById('changeRoleNewRole').value = usuario.id_rol;
+                
+                // Mostrar modal
+                $('#changeRoleModal').modal('show');
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Error al obtener datos del usuario'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error de conexión'
+            });
+        });
+}
+
+function saveUserRoleChange() {
+    const formData = new FormData(document.getElementById('changeRoleForm'));
+    
+    fetch('<?= base_url('super-admin/usuarios/cambiar-rol') ?>', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: data.message
+            }).then(() => {
+                $('#changeRoleModal').modal('hide');
+                location.reload();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message || 'Error al cambiar rol'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error de conexión'
+        });
+    });
+}
+
 function deleteUser(userId) {
     Swal.fire({
         title: '¿Estás seguro?',
@@ -479,33 +775,8 @@ function deleteUser(userId) {
         cancelButtonText: 'Cancelar'
     }).then((result) => {
         if (result.isConfirmed) {
-            fetch('<?= base_url('super-admin/usuarios/eliminar') ?>', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_id: userId
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Eliminado',
-                        text: 'Usuario eliminado correctamente'
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.message || 'Error al eliminar usuario'
-                    });
-                }
-            });
+            // En lugar de eliminar, deshabilitar
+            toggleUserStatus(userId, false);
         }
     });
 }

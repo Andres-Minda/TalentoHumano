@@ -135,32 +135,59 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function cargarCapacitaciones() {
-    // Simular carga de capacitaciones
-    const capacitaciones = [
-        { id: 1, nombre: 'Gestión de Proyectos', descripcion: 'Capacitación en metodologías ágiles', duracion: 40, modalidad: 'PRESENCIAL', estado: 'ACTIVA' },
-        { id: 2, nombre: 'Liderazgo Efectivo', descripcion: 'Desarrollo de habilidades de liderazgo', duracion: 24, modalidad: 'VIRTUAL', estado: 'ACTIVA' },
-        { id: 3, nombre: 'Comunicación Asertiva', descripcion: 'Mejora de habilidades comunicativas', duracion: 16, modalidad: 'HIBRIDA', estado: 'EN_CURSO' }
-    ];
+    // Mostrar loading
+    const tbody = document.getElementById('tbodyCapacitaciones');
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center"><i class="spinner-border spinner-border-sm"></i> Cargando capacitaciones...</td></tr>';
+    
+    // Obtener capacitaciones del servidor
+    fetch('<?= base_url('admin-th/capacitaciones/obtener') ?>')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderizarCapacitaciones(data.capacitaciones);
+            } else {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar capacitaciones</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error de conexión</td></tr>';
+        });
+}
 
+function renderizarCapacitaciones(capacitaciones) {
     const tbody = document.getElementById('tbodyCapacitaciones');
     tbody.innerHTML = '';
+
+    if (capacitaciones.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay capacitaciones disponibles</td></tr>';
+        return;
+    }
 
     capacitaciones.forEach(capacitacion => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${capacitacion.id}</td>
+            <td>${capacitacion.id_capacitacion}</td>
             <td>${capacitacion.nombre}</td>
-            <td>${capacitacion.descripcion}</td>
-            <td>${capacitacion.duracion} hrs</td>
+            <td>${capacitacion.descripcion || 'Sin descripción'}</td>
+            <td>${capacitacion.duracion_horas} hrs</td>
             <td><span class="badge bg-info">${capacitacion.modalidad}</span></td>
             <td><span class="badge bg-${getEstadoBadgeColor(capacitacion.estado)}">${capacitacion.estado}</span></td>
             <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="editarCapacitacion(${capacitacion.id})">
-                    <i class="ti ti-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="eliminarCapacitacion(${capacitacion.id})">
-                    <i class="ti ti-trash"></i>
-                </button>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-sm btn-outline-primary" onclick="editarCapacitacion(${capacitacion.id_capacitacion})" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-info" onclick="verDetallesCapacitacion(${capacitacion.id_capacitacion})" title="Ver Detalles">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="cambiarEstadoCapacitacion(${capacitacion.id_capacitacion}, '${capacitacion.estado}')" title="Cambiar Estado">
+                        <i class="bi bi-toggle-on"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarCapacitacion(${capacitacion.id_capacitacion})" title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             </td>
         `;
         tbody.appendChild(row);
@@ -170,27 +197,255 @@ function cargarCapacitaciones() {
 function nuevaCapacitacion() {
     document.getElementById('modalTitle').textContent = 'Nueva Capacitación';
     document.getElementById('formCapacitacion').reset();
+    document.getElementById('formCapacitacion').setAttribute('data-accion', 'crear');
+    
+    // Establecer fechas por defecto
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('fecha_inicio').value = hoy;
+    
     const modal = new bootstrap.Modal(document.getElementById('modalCapacitacion'));
     modal.show();
 }
 
 function editarCapacitacion(id) {
-    document.getElementById('modalTitle').textContent = 'Editar Capacitación';
-    // Aquí cargarías los datos de la capacitación
-    const modal = new bootstrap.Modal(document.getElementById('modalCapacitacion'));
-    modal.show();
+    // Obtener datos de la capacitación
+    fetch(`<?= base_url('admin-th/capacitaciones/obtener') ?>/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const capacitacion = data.capacitacion;
+                
+                // Llenar el formulario
+                document.getElementById('modalTitle').textContent = 'Editar Capacitación';
+                document.getElementById('formCapacitacion').setAttribute('data-accion', 'editar');
+                document.getElementById('formCapacitacion').setAttribute('data-id', id);
+                
+                document.getElementById('nombre').value = capacitacion.nombre;
+                document.getElementById('descripcion').value = capacitacion.descripcion || '';
+                document.getElementById('duracion').value = capacitacion.duracion_horas;
+                document.getElementById('modalidad').value = capacitacion.modalidad;
+                document.getElementById('estado').value = capacitacion.estado;
+                document.getElementById('fecha_inicio').value = capacitacion.fecha_inicio || '';
+                document.getElementById('fecha_fin').value = capacitacion.fecha_fin || '';
+                
+                const modal = new bootstrap.Modal(document.getElementById('modalCapacitacion'));
+                modal.show();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Error al obtener datos de la capacitación'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error de conexión'
+            });
+        });
 }
 
 function guardarCapacitacion() {
-    // Aquí implementarías la lógica para guardar
-    alert('Funcionalidad de guardado en desarrollo');
+    const form = document.getElementById('formCapacitacion');
+    const accion = form.getAttribute('data-accion');
+    const formData = new FormData(form);
+    
+    // Validaciones básicas
+    if (!formData.get('nombre') || !formData.get('duracion') || !formData.get('modalidad')) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Campos Requeridos',
+            text: 'Por favor complete todos los campos obligatorios'
+        });
+        return;
+    }
+    
+    const url = accion === 'crear' ? 
+        '<?= base_url('admin-th/capacitaciones/crear') ?>' : 
+        '<?= base_url('admin-th/capacitaciones/actualizar') ?>';
+    
+    if (accion === 'editar') {
+        formData.append('id_capacitacion', form.getAttribute('data-id'));
+    }
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: data.message
+            }).then(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalCapacitacion'));
+                modal.hide();
+                cargarCapacitaciones();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message || 'Error al guardar la capacitación'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error de conexión'
+        });
+    });
+}
+
+function verDetallesCapacitacion(id) {
+    // Obtener detalles completos de la capacitación
+    fetch(`<?= base_url('admin-th/capacitaciones/obtener') ?>/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const capacitacion = data.capacitacion;
+                
+                Swal.fire({
+                    title: capacitacion.nombre,
+                    html: `
+                        <div class="text-start">
+                            <p><strong>Descripción:</strong> ${capacitacion.descripcion || 'Sin descripción'}</p>
+                            <p><strong>Duración:</strong> ${capacitacion.duracion_horas} horas</p>
+                            <p><strong>Modalidad:</strong> ${capacitacion.modalidad}</p>
+                            <p><strong>Estado:</strong> ${capacitacion.estado}</p>
+                            <p><strong>Fecha Inicio:</strong> ${capacitacion.fecha_inicio || 'No definida'}</p>
+                            <p><strong>Fecha Fin:</strong> ${capacitacion.fecha_fin || 'No definida'}</p>
+                            <p><strong>Fecha Creación:</strong> ${new Date(capacitacion.fecha_creacion).toLocaleDateString('es-ES')}</p>
+                        </div>
+                    `,
+                    icon: 'info',
+                    confirmButtonText: 'Cerrar'
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Error al obtener detalles'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error de conexión'
+            });
+        });
+}
+
+function cambiarEstadoCapacitacion(id, estadoActual) {
+    const nuevoEstado = estadoActual === 'ACTIVA' ? 'INACTIVA' : 'ACTIVA';
+    
+    Swal.fire({
+        title: '¿Cambiar Estado?',
+        text: `¿Deseas cambiar el estado de la capacitación a ${nuevoEstado}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, cambiar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const formData = new FormData();
+            formData.append('id_capacitacion', id);
+            formData.append('estado', nuevoEstado);
+            
+            fetch('<?= base_url('admin-th/capacitaciones/cambiar-estado') ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Estado Cambiado',
+                        text: data.message
+                    }).then(() => {
+                        cargarCapacitaciones();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'Error al cambiar el estado'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error de conexión'
+                });
+            });
+        }
+    });
 }
 
 function eliminarCapacitacion(id) {
-    if (confirm('¿Estás seguro de que quieres eliminar esta capacitación?')) {
-        // Aquí implementarías la lógica para eliminar
-        alert('Funcionalidad de eliminación en desarrollo');
-    }
+    Swal.fire({
+        title: '¿Eliminar Capacitación?',
+        text: "Esta acción no se puede deshacer",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const formData = new FormData();
+            formData.append('id_capacitacion', id);
+            
+            fetch('<?= base_url('admin-th/capacitaciones/eliminar') ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Eliminada',
+                        text: data.message
+                    }).then(() => {
+                        cargarCapacitaciones();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'Error al eliminar la capacitación'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error de conexión'
+                });
+            });
+        }
+    });
 }
 
 function getEstadoBadgeColor(estado) {
@@ -198,6 +453,8 @@ function getEstadoBadgeColor(estado) {
         case 'ACTIVA': return 'success';
         case 'INACTIVA': return 'danger';
         case 'EN_CURSO': return 'warning';
+        case 'COMPLETADA': return 'info';
+        case 'CANCELADA': return 'secondary';
         default: return 'secondary';
     }
 }

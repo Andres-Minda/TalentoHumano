@@ -75,13 +75,9 @@ class RoleFilter implements FilterInterface
         
         // Mapeo de roles por nombre (para compatibilidad)
         $roleMap = [
-            'SUPER_ADMIN' => 'SuperAdministrador',
             'ADMIN_TH' => 'AdministradorTalentoHumano',
-            'EMPLEADO' => 'Docente',
-            'DOCENTE' => 'Docente', // Agregar mapeo directo
-            'ADMINISTRATIVO' => 'ADMINISTRATIVO',
-            'DIRECTIVO' => 'DIRECTIVO',
-            'AUXILIAR' => 'AUXILIAR'
+            'EMPLEADO' => 'Empleado',
+            'DOCENTE' => 'Empleado',
         ];
         
         // Si se especifica un nombre de rol mapeado

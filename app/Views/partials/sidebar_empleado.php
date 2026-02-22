@@ -23,6 +23,12 @@
                     </a>
                 </li>
                 <li class="sidebar-item">
+                    <a class="sidebar-link" href="<?= base_url('index.php/empleado/acceso-rapido') ?>" aria-expanded="false">
+                        <span><i class="bi bi-lightning"></i></span>
+                        <span class="hide-menu">Acceso Rápido</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
                     <a class="sidebar-link" href="<?= base_url('index.php/empleado/mi-perfil') ?>" aria-expanded="false">
                         <span><i class="bi bi-person-circle"></i></span>
                         <span class="hide-menu">Mi Perfil</span>

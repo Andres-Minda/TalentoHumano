@@ -45,7 +45,7 @@
                                 <i class="ti ti-users fs-1 text-white"></i>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <h4 class="mb-0 text-white" id="total_empleados">0</h4>
+                                <h4 class="mb-0 text-white"><?= $totalEmpleados ?></h4>
                                 <p class="mb-0 text-white-50">Total Empleados</p>
                             </div>
                         </div>
@@ -60,7 +60,7 @@
                                 <i class="ti ti-calendar-check fs-1 text-white"></i>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <h4 class="mb-0 text-white" id="empleados_activos">0</h4>
+                                <h4 class="mb-0 text-white"><?= $empleadosActivos ?></h4>
                                 <p class="mb-0 text-white-50">Empleados Activos</p>
                             </div>
                         </div>
@@ -75,7 +75,7 @@
                                 <i class="ti ti-calendar-off fs-1 text-white"></i>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <h4 class="mb-0 text-white" id="inasistencias_pendientes">0</h4>
+                                <h4 class="mb-0 text-white"><?= $inasistenciasPendientes ?></h4>
                                 <p class="mb-0 text-white-50">Inasistencias Pendientes</p>
                             </div>
                         </div>
@@ -90,7 +90,7 @@
                                 <i class="ti ti-graduation-cap fs-1 text-white"></i>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <h4 class="mb-0 text-white" id="capacitaciones_activas">0</h4>
+                                <h4 class="mb-0 text-white"><?= $capacitacionesActivas ?></h4>
                                 <p class="mb-0 text-white-50">Capacitaciones Activas</p>
                             </div>
                         </div>
@@ -132,6 +132,18 @@
                                     Ver Reportes
                                 </a>
                             </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="<?= site_url('admin-th/postulantes') ?>" class="btn btn-outline-secondary w-100">
+                                    <i class="ti ti-person-lines-fill me-2"></i>
+                                    Gestionar Postulantes
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="<?= site_url('admin-th/departamentos') ?>" class="btn btn-outline-dark w-100">
+                                    <i class="ti ti-building me-2"></i>
+                                    Departamentos
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -155,10 +167,33 @@
                                         <th>Estado</th>
                                     </tr>
                                 </thead>
-                                <tbody id="ultimas_inasistencias">
-                                    <tr>
-                                        <td colspan="3" class="text-center text-muted">No hay inasistencias recientes</td>
-                                    </tr>
+                                <tbody>
+                                    <?php if (!empty($ultimasInasistencias)): ?>
+                                        <?php foreach ($ultimasInasistencias as $ina): ?>
+                                            <tr>
+                                                <td><?= esc($ina['nombres']) ?> <?= esc($ina['apellidos']) ?></td>
+                                                <td><?= date('d/m/Y', strtotime($ina['fecha_inasistencia'])) ?></td>
+                                                <td>
+                                                    <?php
+                                                        $tipo = $ina['tipo_inasistencia'] ?? ($ina['justificada'] ? 'Justificada' : 'Injustificada');
+                                                        $color = match($tipo) {
+                                                            'Justificada' => 'success',
+                                                            'Injustificada' => 'danger',
+                                                            'Permiso' => 'info',
+                                                            'Vacaciones' => 'primary',
+                                                            'Licencia Médica' => 'warning',
+                                                            default => 'secondary'
+                                                        };
+                                                    ?>
+                                                    <span class="badge bg-<?= $color ?>"><?= esc($tipo) ?></span>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">No hay inasistencias registradas</td>
+                                        </tr>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -180,10 +215,32 @@
                                         <th>Estado</th>
                                     </tr>
                                 </thead>
-                                <tbody id="solicitudes_capacitacion">
-                                    <tr>
-                                        <td colspan="3" class="text-center text-muted">No hay solicitudes recientes</td>
-                                    </tr>
+                                <tbody>
+                                    <?php if (!empty($solicitudesCapacitacion)): ?>
+                                        <?php foreach ($solicitudesCapacitacion as $sol): ?>
+                                            <tr>
+                                                <td><?= esc($sol['nombres']) ?> <?= esc($sol['apellidos']) ?></td>
+                                                <td><?= esc($sol['capacitacion']) ?></td>
+                                                <td>
+                                                    <?php
+                                                        $estado = $sol['estado'] ?? 'Pendiente';
+                                                        $color = match($estado) {
+                                                            'Aprobada', 'Completada' => 'success',
+                                                            'Rechazada' => 'danger',
+                                                            'Pendiente' => 'warning',
+                                                            'En curso' => 'info',
+                                                            default => 'secondary'
+                                                        };
+                                                    ?>
+                                                    <span class="badge bg-<?= $color ?>"><?= esc($estado) ?></span>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">No hay solicitudes de capacitación</td>
+                                        </tr>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -207,7 +264,7 @@
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">Inasistencias por Mes</h5>
+                        <h5 class="card-title mb-0">Inasistencias por Mes (<?= date('Y') ?>)</h5>
                     </div>
                     <div class="card-body">
                         <div id="chartInasistenciasMensuales" style="height: 300px;"></div>
@@ -221,173 +278,41 @@
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Cargar estadísticas
-    cargarEstadisticas();
-    
-    // Inicializar gráficos
-    inicializarGraficos();
-    
-    // Cargar datos de las tablas
-    cargarDatosTablas();
+    // --- Gráfico Empleados por Departamento ---
+    const deptLabels = <?= $chartDeptLabels ?>;
+    const deptData   = <?= $chartDeptData ?>;
+
+    if (deptLabels.length > 0) {
+        new ApexCharts(document.querySelector("#chartEmpleadosDepartamento"), {
+            series: deptData,
+            chart: { type: 'donut', height: 300 },
+            labels: deptLabels,
+            colors: ['#007bff','#28a745','#ffc107','#dc3545','#6c757d','#17a2b8','#6610f2','#e83e8c'],
+            responsive: [{
+                breakpoint: 480,
+                options: { chart: { width: 200 }, legend: { position: 'bottom' } }
+            }]
+        }).render();
+    } else {
+        document.querySelector("#chartEmpleadosDepartamento").innerHTML =
+            '<div class="d-flex align-items-center justify-content-center h-100 text-muted">No hay datos de departamentos</div>';
+    }
+
+    // --- Gráfico Inasistencias por Mes ---
+    const inasistenciasMes = <?= $chartInasistencias ?>;
+
+    new ApexCharts(document.querySelector("#chartInasistenciasMensuales"), {
+        series: [{ name: 'Inasistencias', data: inasistenciasMes }],
+        chart: { type: 'bar', height: 300, toolbar: { show: false } },
+        plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 4 } },
+        dataLabels: { enabled: false },
+        stroke: { show: true, width: 2, colors: ['transparent'] },
+        xaxis: { categories: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'] },
+        yaxis: { title: { text: 'Cantidad' } },
+        fill: { opacity: 1 },
+        colors: ['#ffc107'],
+        tooltip: { y: { formatter: val => val + " inasistencia(s)" } }
+    }).render();
 });
-
-function cargarEstadisticas() {
-    // Simular carga de estadísticas
-    document.getElementById('total_empleados').textContent = '45';
-    document.getElementById('empleados_activos').textContent = '42';
-    document.getElementById('inasistencias_pendientes').textContent = '3';
-    document.getElementById('capacitaciones_activas').textContent = '8';
-}
-
-function inicializarGraficos() {
-    // Gráfico de empleados por departamento
-    const optionsEmpleadosDepartamento = {
-        series: [15, 12, 8, 6, 4],
-        chart: {
-            type: 'donut',
-            height: 300
-        },
-        labels: ['Docentes', 'Administrativos', 'Directivos', 'Auxiliares', 'Otros'],
-        colors: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d'],
-        responsive: [{
-            breakpoint: 480,
-            options: {
-                chart: {
-                    width: 200
-                },
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }]
-    };
-
-    const chartEmpleadosDepartamento = new ApexCharts(document.querySelector("#chartEmpleadosDepartamento"), optionsEmpleadosDepartamento);
-    chartEmpleadosDepartamento.render();
-
-    // Gráfico de inasistencias mensuales
-    const optionsInasistenciasMensuales = {
-        series: [{
-            name: 'Inasistencias',
-            data: [5, 3, 7, 2, 4, 6, 3, 5, 4, 2, 3, 4]
-        }],
-        chart: {
-            type: 'bar',
-            height: 300,
-            toolbar: {
-                show: false
-            }
-        },
-        plotOptions: {
-            bar: {
-                horizontal: false,
-                columnWidth: '55%',
-                endingShape: 'rounded'
-            },
-        },
-        dataLabels: {
-            enabled: false
-        },
-        stroke: {
-            show: true,
-            width: 2,
-            colors: ['transparent']
-        },
-        xaxis: {
-            categories: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-        },
-        yaxis: {
-            title: {
-                text: 'Cantidad de Inasistencias'
-            }
-        },
-        fill: {
-            opacity: 1
-        },
-        tooltip: {
-            y: {
-                formatter: function (val) {
-                    return val + " inasistencias"
-                }
-            }
-        }
-    };
-
-    const chartInasistenciasMensuales = new ApexCharts(document.querySelector("#chartInasistenciasMensuales"), optionsInasistenciasMensuales);
-    chartInasistenciasMensuales.render();
-}
-
-function cargarDatosTablas() {
-    // Simular datos de inasistencias
-    const inasistencias = [
-        { empleado: 'Juan Pérez', fecha: '2025-01-20', estado: 'Pendiente' },
-        { empleado: 'María García', fecha: '2025-01-19', estado: 'Aprobada' },
-        { empleado: 'Carlos López', fecha: '2025-01-18', estado: 'Rechazada' }
-    ];
-
-    const tbodyInasistencias = document.getElementById('ultimas_inasistencias');
-    tbodyInasistencias.innerHTML = '';
-
-    inasistencias.forEach(item => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${item.empleado}</td>
-            <td>${formatearFecha(item.fecha)}</td>
-            <td>
-                <span class="badge bg-${getEstadoBadgeColor(item.estado)}">
-                    ${item.estado}
-                </span>
-            </td>
-        `;
-        tbodyInasistencias.appendChild(row);
-    });
-
-    // Simular datos de solicitudes de capacitación
-    const solicitudes = [
-        { empleado: 'Ana Martínez', capacitacion: 'Gestión de Proyectos', estado: 'Pendiente' },
-        { empleado: 'Luis Rodríguez', capacitacion: 'Liderazgo Efectivo', estado: 'Aprobada' },
-        { empleado: 'Carmen Silva', capacitacion: 'Comunicación Asertiva', estado: 'En Revisión' }
-    ];
-
-    const tbodySolicitudes = document.getElementById('solicitudes_capacitacion');
-    tbodySolicitudes.innerHTML = '';
-
-    solicitudes.forEach(item => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${item.empleado}</td>
-            <td>${item.capacitacion}</td>
-            <td>
-                <span class="badge bg-${getSolicitudBadgeColor(item.estado)}">
-                    ${item.estado}
-                </span>
-            </td>
-        `;
-        tbodySolicitudes.appendChild(row);
-    });
-}
-
-function getEstadoBadgeColor(estado) {
-    switch(estado) {
-        case 'Aprobada': return 'success';
-        case 'Rechazada': return 'danger';
-        case 'Pendiente': return 'warning';
-        default: return 'secondary';
-    }
-}
-
-function getSolicitudBadgeColor(estado) {
-    switch(estado) {
-        case 'Aprobada': return 'success';
-        case 'Rechazada': return 'danger';
-        case 'Pendiente': return 'warning';
-        case 'En Revisión': return 'info';
-        default: return 'secondary';
-    }
-}
-
-function formatearFecha(fecha) {
-    return new Date(fecha).toLocaleDateString('es-ES');
-}
 </script>
 <?= $this->endSection() ?>

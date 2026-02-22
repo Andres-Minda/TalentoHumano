@@ -12,6 +12,9 @@ use App\Models\InasistenciaModel;
 use App\Models\PoliticaInasistenciaModel;
 use App\Models\SolicitudCapacitacionModel;
 use App\Models\PostulanteModel;
+use App\Models\UsuarioModel;
+use App\Models\LogSistemaModel;
+use App\Models\NotificacionModel;
 use CodeIgniter\Controller;
 
 class AdminTHController extends Controller
@@ -26,6 +29,7 @@ class AdminTHController extends Controller
     protected $politicaInasistenciaModel;
     protected $solicitudCapacitacionModel;
     protected $postulanteModel;
+    protected $notificacionModel;
 
     public function __construct()
     {
@@ -39,6 +43,7 @@ class AdminTHController extends Controller
         $this->politicaInasistenciaModel = new PoliticaInasistenciaModel();
         $this->solicitudCapacitacionModel = new SolicitudCapacitacionModel();
         $this->postulanteModel = new PostulanteModel();
+        $this->notificacionModel = new NotificacionModel();
     }
 
     /**
@@ -46,13 +51,71 @@ class AdminTHController extends Controller
      */
     public function dashboard()
     {
+        $db = \Config\Database::connect();
+
+        // --- Tarjetas de resumen ---
+        $totalEmpleados = $db->table('empleados')->countAllResults();
+        $empleadosActivos = $db->table('empleados')->where('estado', 'Activo')->countAllResults();
+        $inasistenciasPendientes = $db->table('inasistencias')->where('justificada', 0)->countAllResults();
+        $capacitacionesActivas = $db->table('capacitaciones')->where('estado', 'En curso')->countAllResults();
+
+        // --- Últimas 5 Inasistencias ---
+        $ultimasInasistencias = $db->table('inasistencias i')
+            ->select('e.nombres, e.apellidos, i.fecha_inasistencia, i.tipo_inasistencia, i.justificada')
+            ->join('empleados e', 'e.id_empleado = i.empleado_id')
+            ->orderBy('i.fecha_inasistencia', 'DESC')
+            ->limit(5)
+            ->get()->getResultArray();
+
+        // --- Últimas 5 inscripciones a capacitaciones ---
+        $solicitudesCapacitacion = $db->table('capacitaciones_empleados ce')
+            ->select('e.nombres, e.apellidos, ce.nombre_capacitacion as capacitacion, ce.estado')
+            ->join('empleados e', 'e.id_empleado = ce.empleado_id')
+            ->orderBy('ce.created_at', 'DESC')
+            ->limit(5)
+            ->get()->getResultArray();
+
+        // --- Empleados por departamento (gráfico donut) ---
+        $empPorDepto = $db->table('empleados')
+            ->select('departamento, COUNT(*) as total')
+            ->where('estado', 'Activo')
+            ->groupBy('departamento')
+            ->get()->getResultArray();
+
+        $chartDeptLabels = array_column($empPorDepto, 'departamento');
+        $chartDeptData   = array_map('intval', array_column($empPorDepto, 'total'));
+
+        // --- Inasistencias por mes del año actual (gráfico barras) ---
+        $anioActual = date('Y');
+        $inaPorMes = $db->query("
+            SELECT MONTH(fecha_inasistencia) as mes, COUNT(*) as total
+            FROM inasistencias
+            WHERE YEAR(fecha_inasistencia) = ?
+            GROUP BY MONTH(fecha_inasistencia)
+            ORDER BY mes
+        ", [$anioActual])->getResultArray();
+
+        $chartMeses = array_fill(0, 12, 0);
+        foreach ($inaPorMes as $row) {
+            $chartMeses[(int)$row['mes'] - 1] = (int)$row['total'];
+        }
+
         $data = [
             'titulo' => 'Dashboard Admin Talento Humano',
             'usuario' => [
                 'nombres' => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
                 'rol' => session()->get('nombre_rol')
-            ]
+            ],
+            'totalEmpleados'          => $totalEmpleados,
+            'empleadosActivos'        => $empleadosActivos,
+            'inasistenciasPendientes' => $inasistenciasPendientes,
+            'capacitacionesActivas'   => $capacitacionesActivas,
+            'ultimasInasistencias'    => $ultimasInasistencias,
+            'solicitudesCapacitacion' => $solicitudesCapacitacion,
+            'chartDeptLabels'         => json_encode($chartDeptLabels),
+            'chartDeptData'           => json_encode($chartDeptData),
+            'chartInasistencias'      => json_encode($chartMeses),
         ];
 
         return view('Roles/AdminTH/dashboard', $data);
@@ -93,6 +156,62 @@ class AdminTHController extends Controller
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Error al obtener empleados: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Obtener estadísticas para gráficos de empleados
+     */
+    public function obtenerEstadisticasEmpleados()
+    {
+        try {
+            // Estadísticas por departamento
+            $empleadosPorDepartamento = $this->empleadoModel->getEmpleadosPorDepartamento();
+            
+            // Estadísticas por tipo de empleado
+            $empleadosPorTipo = $this->empleadoModel->getEmpleadosPorTipo();
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'estadisticas' => [
+                    'porDepartamento' => $empleadosPorDepartamento,
+                    'porTipo' => $empleadosPorTipo
+                ]
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error al obtener estadísticas de empleados: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al obtener estadísticas: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Obtener estadísticas para gráficos de departamentos
+     */
+    public function obtenerEstadisticasDepartamentos()
+    {
+        try {
+            // Estadísticas de departamentos por estado
+            $departamentosPorEstado = $this->departamentoModel->getDepartamentosPorEstado();
+            
+            // Estadísticas de empleados por departamento
+            $empleadosPorDepartamento = $this->empleadoModel->getEmpleadosPorDepartamento();
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'estadisticas' => [
+                    'porEstado' => $departamentosPorEstado,
+                    'empleadosPorDepartamento' => $empleadosPorDepartamento
+                ]
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error al obtener estadísticas de departamentos: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al obtener estadísticas: ' . $e->getMessage()
             ]);
         }
     }
@@ -837,6 +956,184 @@ class AdminTHController extends Controller
     }
 
     /**
+     * Vista de gestión de postulantes
+     */
+    public function postulantes()
+    {
+        // Verificar si el usuario está autenticado y tiene el rol correcto
+        if (!session()->get('id_usuario') || session()->get('id_rol') != 2) {
+            return redirect()->to('/login');
+        }
+
+        $postulanteModel = new \App\Models\PostulanteModel();
+        $puestoModel = new \App\Models\PuestoModel();
+        $departamentoModel = new \App\Models\DepartamentoModel();
+
+        // Obtener filtros de la URL
+        $estado = $this->request->getGet('estado') ?? '';
+        $puesto = $this->request->getGet('puesto') ?? '';
+        $departamento = $this->request->getGet('departamento') ?? '';
+        $busqueda = $this->request->getGet('busqueda') ?? '';
+
+        // Obtener datos para los filtros
+        $estados = ['Pendiente', 'En revisión', 'Aprobada', 'Rechazada', 'Contratado'];
+        $puestos = $puestoModel->findAll();
+        $departamentos = $departamentoModel->findAll();
+
+        // Construir la consulta base
+        $postulantes = $postulanteModel->getPostulantesConPuesto();
+
+        // Aplicar filtros
+        if ($estado) {
+            $postulantes = array_filter($postulantes, function($p) use ($estado) {
+                return $p['estado_postulacion'] === $estado;
+            });
+        }
+
+        if ($puesto) {
+            $postulantes = array_filter($postulantes, function($p) use ($puesto) {
+                return $p['id_puesto'] == $puesto;
+            });
+        }
+
+        if ($departamento) {
+            $postulantes = array_filter($postulantes, function($p) use ($departamento) {
+                return $p['id_departamento'] == $departamento;
+            });
+        }
+
+        if ($busqueda) {
+            $postulantes = array_filter($postulantes, function($p) use ($busqueda) {
+                return stripos($p['nombres'], $busqueda) !== false ||
+                       stripos($p['apellidos'], $busqueda) !== false ||
+                       stripos($p['cedula'], $busqueda) !== false ||
+                       stripos($p['email'], $busqueda) !== false;
+            });
+        }
+
+        // Obtener estadísticas
+        $estadisticas = $postulanteModel->getEstadisticasPostulaciones();
+
+        $data = [
+            'titulo' => 'Gestión de Postulantes',
+            'postulantes' => array_values($postulantes), // Reindexar array
+            'estados' => $estados,
+            'puestos' => $puestos,
+            'departamentos' => $departamentos,
+            'filtros' => [
+                'estado' => $estado,
+                'puesto' => $puesto,
+                'departamento' => $departamento,
+                'busqueda' => $busqueda
+            ],
+            'estadisticas' => $estadisticas
+        ];
+
+        return view('Roles/AdminTH/postulantes', $data);
+    }
+
+    /**
+     * Ver detalles de un postulante
+     */
+    public function verPostulante($idPostulante)
+    {
+        if (!session()->get('usuario_id') || session()->get('rol') !== 'admin_th') {
+            return redirect()->to('auth/login');
+        }
+
+        $postulanteModel = new \App\Models\PostulanteModel();
+        $postulante = $postulanteModel->getPostulanteCompleto($idPostulante);
+
+        if (!$postulante) {
+            return redirect()->to('admin-th/postulantes')->with('error', 'Postulante no encontrado');
+        }
+
+        $data = [
+            'titulo' => 'Detalles del Postulante',
+            'postulante' => $postulante
+        ];
+
+        return view('Roles/AdminTH/ver_postulante', $data);
+    }
+
+
+
+    /**
+     * Descargar CV del postulante
+     */
+    public function descargarCV($idPostulante)
+    {
+        if (!session()->get('id_usuario') || session()->get('id_rol') != 2) {
+            return redirect()->to('/login');
+        }
+
+        $postulanteModel = new \App\Models\PostulanteModel();
+        $postulante = $postulanteModel->find($idPostulante);
+
+        if (!$postulante || !$postulante['cv_path']) {
+            return redirect()->to('admin-th/postulantes')->with('error', 'CV no encontrado');
+        }
+
+        $rutaCV = FCPATH . $postulante['cv_path'];
+        
+        if (!file_exists($rutaCV)) {
+            return redirect()->to('admin-th/postulantes')->with('error', 'Archivo CV no encontrado');
+        }
+
+        $nombreArchivo = basename($postulante['cv_path']);
+        
+        return $this->response->download($rutaCV, $nombreArchivo);
+    }
+
+    /**
+     * Exportar postulantes a CSV
+     */
+    public function exportarPostulantes()
+    {
+        if (!session()->get('id_usuario') || session()->get('id_rol') != 2) {
+            return redirect()->to('/login');
+        }
+
+        $postulanteModel = new \App\Models\PostulanteModel();
+        $postulantes = $postulanteModel->getPostulantesConPuesto();
+
+        $filename = 'postulantes_' . date('Y-m-d_H-i-s') . '.csv';
+        
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        
+        $output = fopen('php://output', 'w');
+        
+        // Encabezados
+        fputcsv($output, [
+            'ID', 'Nombres', 'Apellidos', 'Cédula', 'Email', 'Teléfono',
+            'Puesto', 'Departamento', 'Estado', 'Fecha Postulación',
+            'Disponibilidad', 'Expectativa Salarial'
+        ]);
+
+        // Datos
+        foreach ($postulantes as $postulante) {
+            fputcsv($output, [
+                $postulante['id_postulante'],
+                $postulante['nombres'],
+                $postulante['apellidos'],
+                $postulante['cedula'],
+                $postulante['email'],
+                $postulante['telefono'],
+                $postulante['titulo_puesto'],
+                $postulante['nombre_departamento'],
+                $postulante['estado_postulacion'],
+                $postulante['fecha_postulacion'],
+                $postulante['disponibilidad_inmediata'],
+                $postulante['expectativa_salarial'] ?? 'No especificada'
+            ]);
+        }
+        
+        fclose($output);
+        exit;
+    }
+
+    /**
      * Gestión de capacitaciones
      */
     public function capacitaciones()
@@ -977,11 +1274,30 @@ class AdminTHController extends Controller
 
         return view('Roles/AdminTH/estadisticas', $data);
     }
+    
+    /**
+     * Acceso rápido
+     */
+    public function accesoRapido()
+    {
+        $data = [
+            'titulo' => 'Acceso Rápido',
+            'usuario' => [
+                'nombres' => session()->get('nombres'),
+                'apellidos' => session()->get('apellidos'),
+                'rol' => session()->get('nombre_rol')
+            ]
+        ];
+
+        return view('Roles/AdminTH/acceso_rapido', $data);
+    }
+    
+
 
     /**
-     * Mi perfil
+     * Mi Perfil (unificado: datos personales + seguridad)
      */
-    public function perfil()
+    public function miPerfil()
     {
         $data = [
             'titulo' => 'Mi Perfil',
@@ -992,23 +1308,1312 @@ class AdminTHController extends Controller
             ]
         ];
 
-        return view('Roles/AdminTH/perfil', $data);
+        return view('Roles/AdminTH/mi_perfil', $data);
     }
 
     /**
-     * Configuración de cuenta
+     * Actualizar perfil del administrador
      */
-    public function cuenta()
+    public function actualizarPerfil()
     {
-        $data = [
-            'titulo' => 'Configuración de Cuenta',
-            'usuario' => [
-                'nombres' => session()->get('nombres'),
-                'apellidos' => session()->get('apellidos'),
-                'rol' => session()->get('nombre_rol')
-            ]
-        ];
+        if (!$this->request->is('post')) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Método no permitido']);
+        }
 
-        return view('Roles/AdminTH/cuenta', $data);
+        try {
+            $json = $this->request->getJSON(true);
+            if (!$json) {
+                $json = $this->request->getPost();
+            }
+            
+            $userId = session()->get('id_usuario');
+            
+            $nombres = trim($json['nombres'] ?? '');
+            $apellidos = trim($json['apellidos'] ?? '');
+            $email = trim($json['email'] ?? '');
+            
+            if (empty($nombres) || empty($apellidos) || empty($email)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Nombres, apellidos y email son obligatorios']);
+            }
+            
+            $db = \Config\Database::connect();
+            
+            // Verificar que el email no esté duplicado
+            $existeEmail = $db->table('usuarios')
+                ->where('email', $email)
+                ->where('id_usuario !=', $userId)
+                ->countAllResults();
+            
+            if ($existeEmail > 0) {
+                return $this->response->setJSON(['success' => false, 'message' => 'El email ya está registrado por otro usuario']);
+            }
+            
+            // Actualizar en tabla empleados
+            $db->table('empleados')
+                ->where('id_usuario', $userId)
+                ->update([
+                    'nombres' => $nombres,
+                    'apellidos' => $apellidos
+                ]);
+            
+            // Actualizar email en tabla usuarios
+            $db->table('usuarios')
+                ->where('id_usuario', $userId)
+                ->update(['email' => $email]);
+            
+            // Actualizar sesión
+            session()->set('nombres', $nombres);
+            session()->set('apellidos', $apellidos);
+            session()->set('email', $email);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Perfil actualizado correctamente'
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error al actualizar perfil AdminTH: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al actualizar el perfil: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Cambiar contraseña del administrador
+     */
+    public function cambiarPassword()
+    {
+        if (!$this->request->is('post')) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        try {
+            $json = $this->request->getJSON(true);
+            if (!$json) {
+                $json = $this->request->getPost();
+            }
+            
+            $userId = session()->get('id_usuario');
+            
+            if (empty($json['password_actual']) || empty($json['password_nuevo']) || empty($json['password_confirmar'])) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Todos los campos son obligatorios']);
+            }
+            
+            if ($json['password_nuevo'] !== $json['password_confirmar']) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Las contraseñas nuevas no coinciden']);
+            }
+            
+            if (strlen($json['password_nuevo']) < 6) {
+                return $this->response->setJSON(['success' => false, 'message' => 'La contraseña debe tener al menos 6 caracteres']);
+            }
+            
+            $db = \Config\Database::connect();
+            $usuario = $db->table('usuarios')->where('id_usuario', $userId)->get()->getRowArray();
+            
+            if (!$usuario) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Usuario no encontrado']);
+            }
+            
+            if (!password_verify($json['password_actual'], $usuario['password_hash'])) {
+                return $this->response->setJSON(['success' => false, 'message' => 'La contraseña actual es incorrecta']);
+            }
+            
+            $db->table('usuarios')->where('id_usuario', $userId)->update([
+                'password_hash' => password_hash($json['password_nuevo'], PASSWORD_DEFAULT),
+                'password_changed' => 1
+            ]);
+            
+            session()->set('password_changed', 1);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Contraseña cambiada exitosamente'
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error al cambiar contraseña AdminTH: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al cambiar la contraseña'
+            ]);
+        }
+    }
+
+    // ==================== GESTIÓN DE EMPLEADOS AVANZADA ====================
+
+    /**
+     * Deshabilitar empleado
+     */
+    public function deshabilitarEmpleado()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $idEmpleado = $this->request->getPost('id_empleado');
+            $motivo = $this->request->getPost('motivo', FILTER_SANITIZE_STRING) ?: 'Deshabilitado por administrador';
+            
+            if (!$idEmpleado) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'ID de empleado requerido'
+                ]);
+            }
+
+            // Obtener empleado
+            $empleado = $this->empleadoModel->find($idEmpleado);
+            if (!$empleado) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Empleado no encontrado'
+                ]);
+            }
+
+            // Actualizar estado del empleado
+            $dataEmpleado = [
+                'estado' => 'INACTIVO',
+                'fecha_fin' => date('Y-m-d'),
+                'observaciones' => $motivo
+            ];
+
+            if ($this->empleadoModel->update($idEmpleado, $dataEmpleado)) {
+                // Deshabilitar usuario asociado si existe
+                if ($empleado['id_usuario']) {
+                    $usuarioModel = new UsuarioModel();
+                    $usuarioModel->update($empleado['id_usuario'], ['activo' => 0]);
+                }
+
+                // Registrar log
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    session()->get('id_usuario'),
+                    'DESHABILITAR_EMPLEADO',
+                    'EMPLEADOS',
+                    "Empleado deshabilitado: {$empleado['nombres']} {$empleado['apellidos']} - Motivo: {$motivo}"
+                );
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Empleado deshabilitado correctamente'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al deshabilitar el empleado'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error deshabilitando empleado: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ]);
+        }
+    }
+
+    /**
+     * Habilitar empleado
+     */
+    public function habilitarEmpleado()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $idEmpleado = $this->request->getPost('id_empleado');
+            $motivo = $this->request->getPost('motivo', FILTER_SANITIZE_STRING) ?: 'Reactivado por administrador';
+            
+            if (!$idEmpleado) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'ID de empleado requerido'
+                ]);
+            }
+
+            // Obtener empleado
+            $empleado = $this->empleadoModel->find($idEmpleado);
+            if (!$empleado) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Empleado no encontrado'
+                ]);
+            }
+
+            // Actualizar estado del empleado
+            $dataEmpleado = [
+                'estado' => 'ACTIVO',
+                'fecha_fin' => null,
+                'observaciones' => $motivo
+            ];
+
+            if ($this->empleadoModel->update($idEmpleado, $dataEmpleado)) {
+                // Habilitar usuario asociado si existe
+                if ($empleado['id_usuario']) {
+                    $usuarioModel = new UsuarioModel();
+                    $usuarioModel->update($empleado['id_usuario'], ['activo' => 1]);
+                }
+
+                // Registrar log
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    session()->get('id_usuario'),
+                    'HABILITAR_EMPLEADO',
+                    'EMPLEADOS',
+                    "Empleado habilitado: {$empleado['nombres']} {$empleado['apellidos']} - Motivo: {$motivo}"
+                );
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Empleado habilitado correctamente'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al habilitar el empleado'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error habilitando empleado: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ]);
+        }
+    }
+
+    /**
+     * Obtener historial de cambios de estado de un empleado
+     */
+    public function obtenerHistorialEmpleado($idEmpleado)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $logModel = new LogSistemaModel();
+            
+            // Buscar logs relacionados con este empleado
+            $logs = $logModel->select('logs_sistema.*, usuarios.cedula, usuarios.email')
+                            ->join('usuarios', 'usuarios.id_usuario = logs_sistema.id_usuario', 'left')
+                            ->where('modulo', 'EMPLEADOS')
+                            ->like('descripcion', "ID: {$idEmpleado}", 'both')
+                            ->orderBy('fecha_accion', 'DESC')
+                            ->limit(20)
+                            ->findAll();
+
+            $historial = [];
+            foreach ($logs as $log) {
+                $historial[] = [
+                    'fecha' => date('d/m/Y H:i:s', strtotime($log['fecha_accion'])),
+                    'accion' => $log['accion'],
+                    'descripcion' => $log['descripcion'],
+                    'usuario' => $log['cedula'] ?? 'Sistema',
+                    'ip_address' => $log['ip_address']
+                ];
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'historial' => $historial
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error obteniendo historial: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al obtener el historial'
+            ]);
+        }
+    }
+
+    /**
+     * Reporte de empleados inactivos
+     */
+    public function reporteEmpleadosInactivos()
+    {
+        try {
+            $empleadosInactivos = $this->empleadoModel->where('estado', 'INACTIVO')
+                                                    ->orderBy('fecha_fin', 'DESC')
+                                                    ->findAll();
+
+            $data = [
+                'titulo' => 'Reporte de Empleados Inactivos',
+                'usuario' => [
+                    'nombres' => session()->get('nombres'),
+                    'apellidos' => session()->get('apellidos'),
+                    'rol' => session()->get('nombre_rol')
+                ],
+                'empleados_inactivos' => $empleadosInactivos,
+                'total_inactivos' => count($empleadosInactivos)
+            ];
+
+            return view('Roles/AdminTH/reportes/empleados_inactivos', $data);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error generando reporte: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error al generar el reporte');
+        }
+    }
+
+    /**
+     * Exportar empleados inactivos a CSV
+     */
+    public function exportarEmpleadosInactivos()
+    {
+        try {
+            $empleadosInactivos = $this->empleadoModel->where('estado', 'INACTIVO')
+                                                    ->orderBy('fecha_fin', 'DESC')
+                                                    ->findAll();
+
+            // Generar CSV
+            $filename = 'empleados_inactivos_' . date('Y-m-d_H-i-s') . '.csv';
+            $filepath = WRITEPATH . 'exports/' . $filename;
+            
+            // Crear directorio si no existe
+            if (!is_dir(WRITEPATH . 'exports/')) {
+                mkdir(WRITEPATH . 'exports/', 0755, true);
+            }
+            
+            $file = fopen($filepath, 'w');
+            
+            // Encabezados
+            fputcsv($file, [
+                'ID',
+                'Cédula',
+                'Nombres',
+                'Apellidos',
+                'Tipo Empleado',
+                'Departamento',
+                'Fecha Inicio',
+                'Fecha Fin',
+                'Estado',
+                'Observaciones'
+            ]);
+            
+            // Datos
+            foreach ($empleadosInactivos as $empleado) {
+                fputcsv($file, [
+                    $empleado['id_empleado'],
+                    $empleado['cedula'],
+                    $empleado['nombres'],
+                    $empleado['apellidos'],
+                    $empleado['tipo_empleado'],
+                    $empleado['departamento'],
+                    $empleado['fecha_inicio'],
+                    $empleado['fecha_fin'],
+                    $empleado['estado'],
+                    $empleado['observaciones']
+                ]);
+            }
+            
+            fclose($file);
+
+            // Registrar log
+            $logModel = new LogSistemaModel();
+            $logModel->registrarLog(
+                session()->get('id_usuario'),
+                'EXPORTAR_EMPLEADOS_INACTIVOS',
+                'REPORTES',
+                'Exportación de empleados inactivos a CSV'
+            );
+            
+            return $this->response->download($filepath, null, true);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error exportando empleados inactivos: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error al exportar el reporte');
+        }
+    }
+
+    // ==================== GESTIÓN DE CAPACITACIONES ====================
+
+    /**
+     * Obtener capacitaciones para DataTable
+     */
+    public function obtenerCapacitaciones()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $capacitacionModel = new CapacitacionModel();
+            $capacitaciones = $capacitacionModel->getCapacitacionesConEstadisticas();
+
+            $data = [];
+            foreach ($capacitaciones as $capacitacion) {
+                $data[] = [
+                    'id_capacitacion' => $capacitacion['id_capacitacion'],
+                    'titulo' => $capacitacion['titulo'],
+                    'descripcion' => $capacitacion['descripcion'] ?? 'Sin descripción',
+                    'fecha_inicio' => date('d/m/Y', strtotime($capacitacion['fecha_inicio'])),
+                    'fecha_fin' => date('d/m/Y', strtotime($capacitacion['fecha_fin'])),
+                    'cupo_maximo' => $capacitacion['cupo_maximo'],
+                    'inscritos' => $capacitacion['total_inscritos'] ?? 0,
+                    'estado' => $this->obtenerEstadoCapacitacion($capacitacion),
+                    'acciones' => $this->generarAccionesCapacitacion($capacitacion)
+                ];
+            }
+
+            return $this->response->setJSON([
+                'data' => $data
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error obteniendo capacitaciones: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'error' => 'Error al obtener capacitaciones'
+            ]);
+        }
+    }
+
+    /**
+     * Obtener capacitación específica
+     */
+    public function obtenerCapacitacion($idCapacitacion)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $capacitacionModel = new CapacitacionModel();
+            $capacitacion = $capacitacionModel->getCapacitacionCompleta($idCapacitacion);
+
+            if (!$capacitacion) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Capacitación no encontrada'
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'capacitacion' => $capacitacion
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error obteniendo capacitación: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al obtener la capacitación'
+            ]);
+        }
+    }
+
+    /**
+     * Crear nueva capacitación
+     */
+    public function crearCapacitacion()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $rules = [
+                'titulo' => 'required|min_length[5]|max_length[200]',
+                'descripcion' => 'permit_empty|max_length[1000]',
+                'fecha_inicio' => 'required|valid_date',
+                'fecha_fin' => 'required|valid_date',
+                'cupo_maximo' => 'required|integer|greater_than[0]',
+                'instructor' => 'required|min_length[3]|max_length[100]',
+                'lugar' => 'required|min_length[3]|max_length[200]',
+                'horario' => 'required|min_length[5]|max_length[100]'
+            ];
+
+            if (!$this->validate($rules)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Datos de entrada inválidos',
+                    'errors' => $this->validator->getErrors()
+                ]);
+            }
+
+            // Validar que fecha_fin sea posterior a fecha_inicio
+            $fechaInicio = strtotime($this->request->getPost('fecha_inicio'));
+            $fechaFin = strtotime($this->request->getPost('fecha_fin'));
+            
+            if ($fechaFin <= $fechaInicio) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'La fecha de fin debe ser posterior a la fecha de inicio'
+                ]);
+            }
+
+            $capacitacionModel = new CapacitacionModel();
+            $data = [
+                'titulo' => $this->request->getPost('titulo'),
+                'descripcion' => $this->request->getPost('descripcion'),
+                'fecha_inicio' => $this->request->getPost('fecha_inicio'),
+                'fecha_fin' => $this->request->getPost('fecha_fin'),
+                'cupo_maximo' => $this->request->getPost('cupo_maximo'),
+                'instructor' => $this->request->getPost('instructor'),
+                'lugar' => $this->request->getPost('lugar'),
+                'horario' => $this->request->getPost('horario'),
+                'estado' => 'PROGRAMADA',
+                'creado_por' => session()->get('id_usuario'),
+                'fecha_creacion' => date('Y-m-d H:i:s')
+            ];
+
+            if ($capacitacionModel->insert($data)) {
+                // Registrar log
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    session()->get('id_usuario'),
+                    'CREAR_CAPACITACION',
+                    'CAPACITACIONES',
+                    "Capacitación creada: {$data['titulo']}"
+                );
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Capacitación creada correctamente'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al crear la capacitación'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error creando capacitación: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ]);
+        }
+    }
+
+    /**
+     * Actualizar capacitación
+     */
+    public function actualizarCapacitacion()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $idCapacitacion = $this->request->getPost('id_capacitacion');
+            
+            $rules = [
+                'id_capacitacion' => 'required|integer',
+                'titulo' => 'required|min_length[5]|max_length[200]',
+                'descripcion' => 'permit_empty|max_length[1000]',
+                'fecha_inicio' => 'required|valid_date',
+                'fecha_fin' => 'required|valid_date',
+                'cupo_maximo' => 'required|integer|greater_than[0]',
+                'instructor' => 'required|min_length[3]|max_length[100]',
+                'lugar' => 'required|min_length[3]|max_length[200]',
+                'horario' => 'required|min_length[5]|max_length[100]'
+            ];
+
+            if (!$this->validate($rules)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Datos de entrada inválidos',
+                    'errors' => $this->validator->getErrors()
+                ]);
+            }
+
+            // Validar que fecha_fin sea posterior a fecha_inicio
+            $fechaInicio = strtotime($this->request->getPost('fecha_inicio'));
+            $fechaFin = strtotime($this->request->getPost('fecha_fin'));
+            
+            if ($fechaFin <= $fechaInicio) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'La fecha de fin debe ser posterior a la fecha de inicio'
+                ]);
+            }
+
+            $capacitacionModel = new CapacitacionModel();
+            $capacitacion = $capacitacionModel->find($idCapacitacion);
+            
+            if (!$capacitacion) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Capacitación no encontrada'
+                ]);
+            }
+
+            // Verificar que no se pueda editar si ya tiene inscritos
+            $totalInscritos = $capacitacionModel->contarInscritos($idCapacitacion);
+            if ($totalInscritos > 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se puede editar una capacitación que ya tiene inscritos'
+                ]);
+            }
+
+            $data = [
+                'titulo' => $this->request->getPost('titulo'),
+                'descripcion' => $this->request->getPost('descripcion'),
+                'fecha_inicio' => $this->request->getPost('fecha_inicio'),
+                'fecha_fin' => $this->request->getPost('fecha_fin'),
+                'cupo_maximo' => $this->request->getPost('cupo_maximo'),
+                'instructor' => $this->request->getPost('instructor'),
+                'lugar' => $this->request->getPost('lugar'),
+                'horario' => $this->request->getPost('horario')
+            ];
+
+            if ($capacitacionModel->update($idCapacitacion, $data)) {
+                // Registrar log
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    session()->get('id_usuario'),
+                    'EDITAR_CAPACITACION',
+                    'CAPACITACIONES',
+                    "Capacitación editada: {$data['titulo']}"
+                );
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Capacitación actualizada correctamente'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al actualizar la capacitación'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error editando capacitación: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ]);
+        }
+    }
+
+    /**
+     * Cancelar capacitación
+     */
+    public function cancelarCapacitacion()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $idCapacitacion = $this->request->getPost('id_capacitacion');
+            $motivo = $this->request->getPost('motivo');
+
+            if (empty($motivo)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Debe especificar un motivo para cancelar la capacitación'
+                ]);
+            }
+
+            $capacitacionModel = new CapacitacionModel();
+            $capacitacion = $capacitacionModel->find($idCapacitacion);
+            
+            if (!$capacitacion) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Capacitación no encontrada'
+                ]);
+            }
+
+            // Verificar que no esté ya cancelada
+            if ($capacitacion['estado'] === 'CANCELADA') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'La capacitación ya está cancelada'
+                ]);
+            }
+
+            if ($capacitacionModel->update($idCapacitacion, [
+                'estado' => 'CANCELADA',
+                'motivo_cancelacion' => $motivo,
+                'fecha_cancelacion' => date('Y-m-d H:i:s')
+            ])) {
+                // Registrar log
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    session()->get('id_usuario'),
+                    'CANCELAR_CAPACITACION',
+                    'CAPACITACIONES',
+                    "Capacitación cancelada: {$capacitacion['titulo']} - Motivo: {$motivo}"
+                );
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Capacitación cancelada correctamente'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al cancelar la capacitación'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error cancelando capacitación: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ]);
+        }
+    }
+
+    /**
+     * Obtener estado de capacitación
+     */
+    private function obtenerEstadoCapacitacion($capacitacion)
+    {
+        $fechaActual = time();
+        $fechaInicio = strtotime($capacitacion['fecha_inicio']);
+        $fechaFin = strtotime($capacitacion['fecha_fin']);
+
+        if ($capacitacion['estado'] === 'CANCELADA') {
+            return '<span class="badge badge-danger">Cancelada</span>';
+        }
+
+        if ($fechaActual < $fechaInicio) {
+            return '<span class="badge badge-info">Programada</span>';
+        } elseif ($fechaActual >= $fechaInicio && $fechaActual <= $fechaFin) {
+            return '<span class="badge badge-success">En Curso</span>';
+        } else {
+            return '<span class="badge badge-secondary">Finalizada</span>';
+        }
+    }
+
+    /**
+     * Cambiar estado de capacitación
+     */
+    public function cambiarEstadoCapacitacion()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $idCapacitacion = $this->request->getPost('id_capacitacion');
+            $nuevoEstado = $this->request->getPost('estado');
+
+            $estadosValidos = ['PROGRAMADA', 'EN_CURSO', 'COMPLETADA', 'CANCELADA', 'INACTIVA'];
+            
+            if (!in_array($nuevoEstado, $estadosValidos)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Estado no válido'
+                ]);
+            }
+
+            $capacitacionModel = new CapacitacionModel();
+            $capacitacion = $capacitacionModel->find($idCapacitacion);
+            
+            if (!$capacitacion) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Capacitación no encontrada'
+                ]);
+            }
+
+            if ($capacitacionModel->update($idCapacitacion, ['estado' => $nuevoEstado])) {
+                // Registrar log
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    session()->get('id_usuario'),
+                    'CAMBIAR_ESTADO_CAPACITACION',
+                    'CAPACITACIONES',
+                    "Estado cambiado a {$nuevoEstado} para capacitación: {$capacitacion['titulo']}"
+                );
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Estado de capacitación actualizado correctamente'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al actualizar el estado'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error cambiando estado de capacitación: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ]);
+        }
+    }
+
+    /**
+     * Eliminar capacitación
+     */
+    public function eliminarCapacitacion()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $idCapacitacion = $this->request->getPost('id_capacitacion');
+
+            $capacitacionModel = new CapacitacionModel();
+            $capacitacion = $capacitacionModel->find($idCapacitacion);
+            
+            if (!$capacitacion) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Capacitación no encontrada'
+                ]);
+            }
+
+            // Verificar que no tenga inscritos
+            $totalInscritos = $capacitacionModel->contarInscritos($idCapacitacion);
+            if ($totalInscritos > 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se puede eliminar una capacitación que tiene inscritos'
+                ]);
+            }
+
+            // Verificar que no esté en curso o finalizada
+            if (in_array($capacitacion['estado'], ['EN_CURSO', 'COMPLETADA'])) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se puede eliminar una capacitación en curso o finalizada'
+                ]);
+            }
+
+            if ($capacitacionModel->delete($idCapacitacion)) {
+                // Registrar log
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    session()->get('id_usuario'),
+                    'ELIMINAR_CAPACITACION',
+                    'CAPACITACIONES',
+                    "Capacitación eliminada: {$capacitacion['titulo']}"
+                );
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Capacitación eliminada correctamente'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al eliminar la capacitación'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error eliminando capacitación: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ]);
+                }
+    }
+
+    /**
+     * Generar HTML de acciones para cada capacitación
+     */
+    private function generarAccionesCapacitacion($capacitacion)
+    {
+        $idCapacitacion = $capacitacion['id_capacitacion'];
+        $estado = $capacitacion['estado'];
+        $fechaActual = time();
+        $fechaInicio = strtotime($capacitacion['fecha_inicio']);
+        
+        $acciones = '<div class="btn-group" role="group">';
+        
+        // Botón ver detalles
+        $acciones .= '<button type="button" class="btn btn-sm btn-info" onclick="verCapacitacion(' . $idCapacitacion . ')" title="Ver Detalles">
+                        <i class="fas fa-eye"></i>
+                      </button>';
+        
+        // Botón editar (solo si está programada y no ha comenzado)
+        if ($estado === 'PROGRAMADA' && $fechaActual < $fechaInicio) {
+            $acciones .= '<button type="button" class="btn btn-sm btn-primary" onclick="editarCapacitacion(' . $idCapacitacion . ')" title="Editar">
+                            <i class="fas fa-edit"></i>
+                          </button>';
+        }
+        
+        // Botón cancelar (solo si está programada)
+        if ($estado === 'PROGRAMADA') {
+            $acciones .= '<button type="button" class="btn btn-sm btn-warning" onclick="cancelarCapacitacion(' . $idCapacitacion . ')" title="Cancelar">
+                            <i class="fas fa-times"></i>
+                          </button>';
+        }
+        
+        // Botón ver inscritos
+        $acciones .= '<button type="button" class="btn btn-sm btn-success" onclick="verInscritos(' . $idCapacitacion . ')" title="Ver Inscritos">
+                        <i class="fas fa-users"></i>
+                      </button>';
+        
+        $acciones .= '</div>';
+        
+        return $acciones;
+    }
+
+    // ==================== GESTIÓN DE TÍTULOS ACADÉMICOS ====================
+
+    /**
+     * Obtener títulos académicos para DataTable
+     */
+    public function obtenerTitulosAcademicos()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $tituloModel = new TituloAcademicoModel();
+            $titulos = $tituloModel->getTitulosConEstadisticas();
+
+            $data = [];
+            foreach ($titulos as $titulo) {
+                $data[] = [
+                    'id_titulo' => $titulo['id_titulo'],
+                    'nombre_titulo' => $titulo['nombre_titulo'],
+                    'nivel_academico' => $titulo['nivel_academico'],
+                    'institucion' => $titulo['institucion'],
+                    'descripcion' => $titulo['descripcion'] ?? 'Sin descripción',
+                    'total_empleados' => $titulo['total_empleados'] ?? 0,
+                    'activo' => $titulo['activo'] ? 'Activo' : 'Inactivo',
+                    'acciones' => $this->generarAccionesTitulo($titulo)
+                ];
+            }
+
+            return $this->response->setJSON([
+                'data' => $data
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error obteniendo títulos académicos: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'error' => 'Error al obtener títulos académicos'
+            ]);
+        }
+    }
+
+    /**
+     * Obtener título académico específico
+     */
+    public function obtenerTituloAcademico($idTitulo)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $tituloModel = new TituloAcademicoModel();
+            $titulo = $tituloModel->find($idTitulo);
+
+            if (!$titulo) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Título académico no encontrado'
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'titulo' => $titulo
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error obteniendo título académico: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al obtener el título académico'
+            ]);
+        }
+    }
+
+    /**
+     * Crear nuevo título académico
+     */
+    public function crearTituloAcademico()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $rules = [
+                'nombre_titulo' => 'required|min_length[3]|max_length[200]|is_unique[catalogo_titulos_academicos.nombre_titulo]',
+                'nivel_academico' => 'required|in_list[TECNICO,LICENCIATURA,MAESTRIA,DOCTORADO]',
+                'institucion' => 'required|min_length[3]|max_length[200]',
+                'descripcion' => 'permit_empty|max_length[500]'
+            ];
+
+            if (!$this->validate($rules)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Datos de entrada inválidos',
+                    'errors' => $this->validator->getErrors()
+                ]);
+            }
+
+            $tituloModel = new TituloAcademicoModel();
+            $data = [
+                'nombre_titulo' => $this->request->getPost('nombre_titulo'),
+                'nivel_academico' => $this->request->getPost('nivel_academico'),
+                'institucion' => $this->request->getPost('institucion'),
+                'descripcion' => $this->request->getPost('descripcion'),
+                'activo' => 1
+            ];
+
+            if ($tituloModel->insert($data)) {
+                // Registrar log
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    session()->get('id_usuario'),
+                    'CREAR_TITULO_ACADEMICO',
+                    'TITULOS_ACADEMICOS',
+                    "Título académico creado: {$data['nombre_titulo']}"
+                );
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Título académico creado correctamente'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al crear el título académico'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error creando título académico: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ]);
+        }
+    }
+
+    /**
+     * Editar título académico
+     */
+    public function editarTituloAcademico()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $idTitulo = $this->request->getPost('id_titulo');
+            
+            $rules = [
+                'id_titulo' => 'required|integer',
+                'nombre_titulo' => "required|min_length[3]|max_length[200]|is_unique[catalogo_titulos_academicos.nombre_titulo,id_titulo,{$idTitulo}]",
+                'nivel_academico' => 'required|in_list[TECNICO,LICENCIATURA,MAESTRIA,DOCTORADO]',
+                'institucion' => 'required|min_length[3]|max_length[200]',
+                'descripcion' => 'permit_empty|max_length[500]'
+            ];
+
+            if (!$this->validate($rules)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Datos de entrada inválidos',
+                    'errors' => $this->validator->getErrors()
+                ]);
+            }
+
+            $tituloModel = new TituloAcademicoModel();
+            $titulo = $tituloModel->find($idTitulo);
+            
+            if (!$titulo) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Título académico no encontrado'
+                ]);
+            }
+
+            $data = [
+                'nombre_titulo' => $this->request->getPost('nombre_titulo'),
+                'nivel_academico' => $this->request->getPost('nivel_academico'),
+                'institucion' => $this->request->getPost('institucion'),
+                'descripcion' => $this->request->getPost('descripcion')
+            ];
+
+            if ($tituloModel->update($idTitulo, $data)) {
+                // Registrar log
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    session()->get('id_usuario'),
+                    'EDITAR_TITULO_ACADEMICO',
+                    'TITULOS_ACADEMICOS',
+                    "Título académico editado: {$data['nombre_titulo']}"
+                );
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Título académico actualizado correctamente'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al actualizar el título académico'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error editando título académico: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ]);
+        }
+    }
+
+    /**
+     * Deshabilitar título académico
+     */
+    public function deshabilitarTituloAcademico()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $idTitulo = $this->request->getPost('id_titulo');
+            $tituloModel = new TituloAcademicoModel();
+            $titulo = $tituloModel->find($idTitulo);
+            
+            if (!$titulo) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Título académico no encontrado'
+                ]);
+            }
+
+            // Verificar si hay empleados usando este título
+            $empleadosConTitulo = $tituloModel->contarEmpleadosConTitulo($idTitulo);
+            if ($empleadosConTitulo > 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => "No se puede deshabilitar el título porque tiene {$empleadosConTitulo} empleado(s) asignado(s)"
+                ]);
+            }
+
+            if ($tituloModel->update($idTitulo, ['activo' => 0])) {
+                // Registrar log
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    session()->get('id_usuario'),
+                    'DESHABILITAR_TITULO_ACADEMICO',
+                    'TITULOS_ACADEMICOS',
+                    "Título académico deshabilitado: {$titulo['nombre_titulo']}"
+                );
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Título académico deshabilitado correctamente'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al deshabilitar el título académico'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error deshabilitando título académico: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ]);
+        }
+    }
+
+    /**
+     * Habilitar título académico
+     */
+    public function habilitarTituloAcademico()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $idTitulo = $this->request->getPost('id_titulo');
+            $tituloModel = new TituloAcademicoModel();
+            
+            if ($tituloModel->update($idTitulo, ['activo' => 1])) {
+                $titulo = $tituloModel->find($idTitulo);
+                
+                // Registrar log
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    session()->get('id_usuario'),
+                    'HABILITAR_TITULO_ACADEMICO',
+                    'TITULOS_ACADEMICOS',
+                    "Título académico habilitado: {$titulo['nombre_titulo']}"
+                );
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Título académico habilitado correctamente'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al habilitar el título académico'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error habilitando título académico: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ]);
+        }
+    }
+
+    /**
+     * Generar HTML de acciones para cada título académico
+     */
+    private function generarAccionesTitulo($titulo)
+    {
+        $idTitulo = $titulo['id_titulo'];
+        $esActivo = $titulo['activo'];
+        
+        $acciones = '<div class="btn-group" role="group">';
+        
+        // Botón editar
+        $acciones .= '<button type="button" class="btn btn-sm btn-primary" onclick="editarTitulo(' . $idTitulo . ')" title="Editar">
+                        <i class="fas fa-edit"></i>
+                      </button>';
+        
+        // Botón habilitar/deshabilitar
+        if ($esActivo) {
+            $acciones .= '<button type="button" class="btn btn-sm btn-warning" onclick="deshabilitarTitulo(' . $idTitulo . ')" title="Deshabilitar">
+                            <i class="fas fa-times"></i>
+                          </button>';
+        } else {
+            $acciones .= '<button type="button" class="btn btn-sm btn-success" onclick="habilitarTitulo(' . $idTitulo . ')" title="Habilitar">
+                            <i class="fas fa-check"></i>
+                          </button>';
+        }
+        
+        // Botón ver empleados
+        $acciones .= '<button type="button" class="btn btn-sm btn-info" onclick="verEmpleadosTitulo(' . $idTitulo . ')" title="Ver Empleados">
+                        <i class="fas fa-users"></i>
+                      </button>';
+        
+        $acciones .= '</div>';
+        
+        return $acciones;
     }
 }

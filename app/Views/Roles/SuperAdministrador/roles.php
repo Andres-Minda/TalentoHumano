@@ -188,6 +188,73 @@
     </div>
 </div>
 
+<!-- Modal Editar Rol -->
+<div class="modal fade" id="modalEditarRol" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Rol</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formEditarRol">
+                <div class="modal-body">
+                    <input type="hidden" id="editRolId" name="id_rol">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre del Rol *</label>
+                        <input type="text" class="form-control" id="editNombreRol" name="nombre_rol" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" id="editDescripcionRol" name="descripcion" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nivel de Acceso *</label>
+                        <input type="number" class="form-control" id="editNivelAcceso" name="nivel_acceso" min="1" max="99" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarEdicionRol()">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ver Usuarios del Rol -->
+<div class="modal fade" id="modalUsuariosRol" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Usuarios del Rol: <span id="nombreRolUsuarios"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="tablaUsuariosRol">
+                        <thead>
+                            <tr>
+                                <th>Cédula</th>
+                                <th>Email</th>
+                                <th>Nombres</th>
+                                <th>Apellidos</th>
+                                <th>Estado</th>
+                                <th>Fecha Registro</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyUsuariosRol">
+                            <!-- Los usuarios se cargarán dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 $(document).ready(function() {
     $('#tablaRoles').DataTable({
@@ -198,27 +265,221 @@ $(document).ready(function() {
     
     $('#formNuevoRol').on('submit', function(e) {
         e.preventDefault();
-        // Aquí se enviaría la creación del rol
-        alert('Rol creado correctamente');
-        $('#modalNuevoRol').modal('hide');
+        crearNuevoRol();
     });
 });
 
+function crearNuevoRol() {
+    const formData = new FormData(document.getElementById('formNuevoRol'));
+    
+    // Agregar nivel de acceso por defecto
+    formData.append('nivel_acceso', '50');
+    
+    fetch('<?= base_url('super-admin/crear-rol') ?>', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: data.message
+            }).then(() => {
+                $('#modalNuevoRol').modal('hide');
+                document.getElementById('formNuevoRol').reset();
+                location.reload();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message || 'Error al crear el rol'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error de conexión'
+        });
+    });
+}
+
 function editarRol(idRol) {
-    // Aquí se cargaría el formulario de edición
-    alert('Editando rol ' + idRol);
+    // Obtener datos del rol
+    fetch(`<?= base_url('super-admin/obtener-rol') ?>/${idRol}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const rol = data.rol;
+                
+                // Llenar el modal de edición
+                document.getElementById('editRolId').value = rol.id_rol;
+                document.getElementById('editNombreRol').value = rol.nombre_rol;
+                document.getElementById('editDescripcionRol').value = rol.descripcion || '';
+                document.getElementById('editNivelAcceso').value = rol.nivel_acceso || 50;
+                
+                // Mostrar modal
+                $('#modalEditarRol').modal('show');
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Error al obtener datos del rol'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error de conexión'
+            });
+        });
+}
+
+function guardarEdicionRol() {
+    const formData = new FormData(document.getElementById('formEditarRol'));
+    
+    fetch('<?= base_url('super-admin/editar-rol') ?>', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: data.message
+            }).then(() => {
+                $('#modalEditarRol').modal('hide');
+                location.reload();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message || 'Error al actualizar el rol'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error de conexión'
+        });
+    });
 }
 
 function verUsuariosRol(idRol) {
-    // Aquí se mostrarían los usuarios del rol
-    alert('Usuarios del rol ' + idRol);
+    // Obtener usuarios del rol
+    fetch(`<?= base_url('super-admin/usuarios/obtener') ?>`, {
+        method: 'GET'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.data) {
+            const usuarios = data.data.filter(usuario => usuario.id_rol == idRol);
+            const rol = data.data.find(usuario => usuario.id_rol == idRol);
+            
+            // Llenar la tabla de usuarios
+            const tbody = document.getElementById('tbodyUsuariosRol');
+            tbody.innerHTML = '';
+            
+            if (usuarios.length > 0) {
+                usuarios.forEach(usuario => {
+                    const row = `
+                        <tr>
+                            <td>${usuario.cedula}</td>
+                            <td>${usuario.email}</td>
+                            <td>${usuario.nombres || 'N/A'}</td>
+                            <td>${usuario.apellidos || 'N/A'}</td>
+                            <td>
+                                <span class="badge ${usuario.activo === 'Activo' ? 'bg-success' : 'bg-danger'}">
+                                    ${usuario.activo}
+                                </span>
+                            </td>
+                            <td>${usuario.fecha_registro}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+                
+                document.getElementById('nombreRolUsuarios').textContent = rol ? rol.nombre_rol : 'N/A';
+                $('#modalUsuariosRol').modal('show');
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Información',
+                    text: 'Este rol no tiene usuarios asignados'
+                });
+            }
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error al obtener usuarios del rol'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error de conexión'
+        });
+    });
 }
 
 function eliminarRol(idRol) {
-    if (confirm('¿Está seguro de eliminar este rol?')) {
-        // Aquí se eliminaría el rol
-        alert('Rol eliminado correctamente');
-    }
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: "Esta acción no se puede deshacer",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // En lugar de eliminar, deshabilitar
+            const formData = new FormData();
+            formData.append('id_rol', idRol);
+            
+            fetch('<?= base_url('super-admin/deshabilitar-rol') ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Éxito',
+                        text: data.message
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'Error al deshabilitar el rol'
+                    });
+                }
+            });
+        }
+    });
 }
 </script>
 
