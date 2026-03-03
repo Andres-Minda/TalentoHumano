@@ -4,20 +4,19 @@ namespace App\Controllers;
 
 use App\Models\PuestoModel;
 use App\Models\PostulanteModel;
-use App\Models\UsuarioModel;
+use Google\Client;
+use Google\Service\Drive;
 use CodeIgniter\Controller;
 
 class PostulacionController extends Controller
 {
     protected $puestoModel;
     protected $postulanteModel;
-    protected $usuarioModel;
 
     public function __construct()
     {
         $this->puestoModel = new PuestoModel();
         $this->postulanteModel = new PostulanteModel();
-        $this->usuarioModel = new UsuarioModel();
     }
 
     /**
@@ -96,16 +95,19 @@ class PostulacionController extends Controller
     }
 
     /**
-     * Procesar postulación
+     * Procesar postulación completa: subir CV a Drive + guardar datos en BD
      */
     public function procesarPostulacion()
     {
         if (!$this->request->is('post')) {
-            return redirect()->back()->with('error', 'Método no permitido');
+            return $this->response->setJSON(['success' => false, 'message' => 'Método no permitido']);
         }
+
+        $db = \Config\Database::connect();
 
         try {
             $datos = $this->request->getPost();
+            $idPuesto = $datos['id_puesto'] ?? null;
             $urlPostulacion = $datos['url_postulacion'] ?? '';
             
             // Validar datos requeridos
@@ -117,14 +119,20 @@ class PostulacionController extends Controller
 
             foreach ($camposRequeridos as $campo) {
                 if (empty($datos[$campo])) {
-                    return redirect()->back()->with('error', "El campo $campo es obligatorio");
+                    return $this->response->setJSON(['success' => false, 'message' => "El campo $campo es obligatorio"]);
                 }
             }
 
-            // Buscar el puesto
-            $puesto = $this->puestoModel->getPuestoPorUrl($urlPostulacion);
+            // Buscar el puesto por ID o por URL
+            $puesto = null;
+            if ($idPuesto) {
+                $puesto = $this->puestoModel->find($idPuesto);
+            }
+            if (!$puesto && $urlPostulacion) {
+                $puesto = $this->puestoModel->getPuestoPorUrl($urlPostulacion);
+            }
             if (!$puesto) {
-                return redirect()->back()->with('error', 'Oferta de trabajo no válida');
+                return $this->response->setJSON(['success' => false, 'message' => 'Oferta de trabajo no válida']);
             }
 
             // Verificar si ya se postuló con esta cédula
@@ -133,42 +141,98 @@ class PostulacionController extends Controller
                                                          ->first();
             
             if ($postulacionExistente) {
-                return redirect()->back()->with('error', 'Ya se ha postulado a esta oferta con esta cédula');
+                return $this->response->setJSON(['success' => false, 'message' => 'Ya se ha postulado a esta oferta con esta cédula']);
             }
 
-            // Crear o buscar usuario
-            $usuario = $this->usuarioModel->where('cedula', $datos['cedula'])->first();
+            // ===== PASO 1: Subir CV a Google Drive (OAuth2 con token del usuario) =====
+            $cvPath = '';
+            $file = $this->request->getFile('cv');
             
-            if (!$usuario) {
-                // Crear nuevo usuario
-                $emailUsuario = $datos['cedula'] . '@postulante.itsi.edu.ec';
-                $passwordUsuario = '123456'; // Contraseña por defecto
+            if ($file && $file->isValid() && $file->getError() === UPLOAD_ERR_OK) {
+                // Validar tipo de archivo
+                $allowedTypes = ['pdf', 'doc', 'docx'];
+                $extension = strtolower($file->getExtension());
                 
-                $usuarioData = [
-                    'cedula' => $datos['cedula'],
-                    'email' => $emailUsuario,
-                    'password' => password_hash($passwordUsuario, PASSWORD_DEFAULT),
-                    'id_rol' => 10, // Rol de postulante
-                    'activo' => 1,
-                    'password_changed' => 0
-                ];
-                
-                $this->usuarioModel->insert($usuarioData);
-                $idUsuario = $this->usuarioModel->insertID;
-                
-                // Guardar credenciales para mostrar al usuario
-                $credenciales = [
-                    'email' => $emailUsuario,
-                    'password' => $passwordUsuario
-                ];
-            } else {
-                $idUsuario = $usuario['id_usuario'];
-                $credenciales = null;
+                if (!in_array($extension, $allowedTypes)) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Solo se permiten archivos PDF, DOC o DOCX']);
+                }
+
+                // Validar tamaño (máximo 5MB)
+                if ($file->getSize() > 5 * 1024 * 1024) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'El archivo no puede exceder 5MB']);
+                }
+
+                // Generar nombre único para el archivo
+                $nombreFinalPDF = 'cv_' . $datos['cedula'] . '_' . date('Ymd_His') . '.' . $extension;
+
+                // Verificar archivos de credenciales OAuth2
+                $clientSecretsPath = WRITEPATH . 'client_secrets.json';
+                $tokenPath = WRITEPATH . 'token.json';
+
+                if (!file_exists($clientSecretsPath)) {
+                    throw new \Exception('No se encontró client_secrets.json en writable/');
+                }
+                if (!file_exists($tokenPath)) {
+                    throw new \Exception('Google Drive no está conectado. El administrador debe autorizar la cuenta desde el panel de Puestos de Trabajo.');
+                }
+
+                // Configurar Google Client con OAuth2
+                $client = new \Google\Client();
+                $client->setAuthConfig($clientSecretsPath);
+                $client->addScope(\Google\Service\Drive::DRIVE_FILE);
+
+                // Cargar token guardado
+                $accessToken = json_decode(file_get_contents($tokenPath), true);
+                $client->setAccessToken($accessToken);
+
+                // Si el token expiró, renovar automáticamente con refresh_token
+                if ($client->isAccessTokenExpired()) {
+                    if ($client->getRefreshToken()) {
+                        $newToken = $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+                        // Guardar el token renovado
+                        file_put_contents($tokenPath, json_encode($client->getAccessToken()));
+                        log_message('info', 'Token de Google Drive renovado automáticamente.');
+                    } else {
+                        throw new \Exception('El token de Google Drive expiró y no tiene refresh_token. El administrador debe reconectar desde el panel.');
+                    }
+                }
+
+                $driveService = new \Google\Service\Drive($client);
+
+                // Metadatos del archivo especificando la carpeta PADRE
+                $fileMetadata = new \Google\Service\Drive\DriveFile([
+                    'name'    => $nombreFinalPDF,
+                    'parents' => ['1WBBRZjMLvRd0PctXRKM0F6_TIEKIEz8B']
+                ]);
+
+                // Leer el contenido del archivo temporal
+                $content = file_get_contents($file->getTempName());
+
+                // EJECUTAR LA SUBIDA (FORZANDO MULTIPART)
+                $uploadedFile = $driveService->files->create($fileMetadata, [
+                    'data'       => $content,
+                    'mimeType'   => 'application/pdf',
+                    'uploadType' => 'multipart',
+                    'fields'     => 'id, webViewLink'
+                ]);
+
+                // Hacer el archivo público (lectura para cualquiera)
+                $permission = new \Google\Service\Drive\Permission([
+                    'role' => 'reader',
+                    'type' => 'anyone'
+                ]);
+                $driveService->permissions->create($uploadedFile->id, $permission);
+
+                // Guardar el webViewLink para insertar en BD
+                $cvPath = $uploadedFile->webViewLink;
+
+                log_message('info', 'CV subido a Drive exitosamente (OAuth2): ' . $cvPath);
             }
 
-            // Preparar datos de postulación
+            // ===== PASO 2: Guardar postulante en BD (DESPUÉS de Drive) =====
+            $db->transStart();
+
             $postulacionData = [
-                'id_usuario' => $idUsuario,
                 'id_puesto' => $puesto['id_puesto'],
                 'nombres' => $datos['nombres'],
                 'apellidos' => $datos['apellidos'],
@@ -185,7 +249,7 @@ class PostulacionController extends Controller
                 'nacionalidad' => $datos['nacionalidad'],
                 'estado_postulacion' => 'Pendiente',
                 'fecha_postulacion' => date('Y-m-d'),
-                'cv_path' => $datos['cv_path'] ?? '',
+                'cv_path' => $cvPath,
                 'carta_motivacion' => $datos['carta_motivacion'] ?? '',
                 'experiencia_laboral' => $datos['experiencia_laboral'] ?? '',
                 'educacion' => $datos['educacion'] ?? '',
@@ -199,78 +263,32 @@ class PostulacionController extends Controller
                 'activo' => 1
             ];
 
-            // Guardar postulación
             $this->postulanteModel->insert($postulacionData);
 
             // Reducir vacantes disponibles
             $this->puestoModel->actualizarVacantes($puesto['id_puesto'], 1);
 
-            // Mostrar confirmación con credenciales si es nuevo usuario
-            $data = [
-                'titulo' => 'Postulación Exitosa',
-                'puesto' => $puesto,
-                'postulacion' => $postulacionData,
-                'credenciales' => $credenciales
-            ];
+            $db->transComplete();
 
-            return view('postulacion/confirmacion', $data);
-
-        } catch (\Exception $e) {
-            log_message('error', 'Error al procesar postulación: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Error al procesar la postulación. Por favor, intente nuevamente.');
-        }
-    }
-
-    /**
-     * Subir archivo CV
-     */
-    public function subirCV()
-    {
-        if (!$this->request->is('post')) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Método no permitido']);
-        }
-
-        try {
-            $file = $this->request->getFile('cv');
-            
-            if (!$file->isValid() || $file->getError() !== UPLOAD_ERR_OK) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Error al subir el archivo']);
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al guardar la postulación. La operación fue revertida.'
+                ]);
             }
 
-            // Validar tipo de archivo
-            $allowedTypes = ['pdf', 'doc', 'docx'];
-            $extension = $file->getExtension();
-            
-            if (!in_array(strtolower($extension), $allowedTypes)) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Solo se permiten archivos PDF, DOC o DOCX']);
-            }
-
-            // Validar tamaño (máximo 5MB)
-            if ($file->getSize() > 5 * 1024 * 1024) {
-                return $this->response->setJSON(['success' => false, 'message' => 'El archivo no puede exceder 5MB']);
-            }
-
-            // Generar nombre único
-            $newName = 'cv_' . time() . '_' . $file->getRandomName();
-            
-            // Mover archivo a carpeta de uploads
-            $uploadPath = FCPATH . 'public/uploads/cv/';
-            if (!is_dir($uploadPath)) {
-                mkdir($uploadPath, 0755, true);
-            }
-            
-            $file->move($uploadPath, $newName);
-            
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Archivo subido exitosamente',
-                'filename' => $newName,
-                'path' => 'uploads/cv/' . $newName
+                'message' => '¡Postulación enviada con éxito! Su CV ha sido recibido.'
             ]);
 
         } catch (\Exception $e) {
-            log_message('error', 'Error al subir CV: ' . $e->getMessage());
-            return $this->response->setJSON(['success' => false, 'message' => 'Error al subir el archivo']);
+            $db->transRollback();
+            log_message('error', 'Error al procesar postulación: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error Drive: ' . $e->getMessage()
+            ]);
         }
     }
 

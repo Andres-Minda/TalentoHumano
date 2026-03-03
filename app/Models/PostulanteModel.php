@@ -50,7 +50,7 @@ class PostulanteModel extends Model
 
     // Validaciones
     protected $validationRules = [
-        'id_usuario'              => 'required|integer',
+        'id_usuario'              => 'permit_empty|integer',
         'id_puesto'               => 'required|integer',
         'nombres'                 => 'required|min_length[2]|max_length[100]',
         'apellidos'               => 'required|min_length[2]|max_length[100]',
@@ -83,7 +83,6 @@ class PostulanteModel extends Model
 
     protected $validationMessages = [
         'id_usuario' => [
-            'required' => 'El ID de usuario es obligatorio',
             'integer'  => 'El ID de usuario debe ser un número entero'
         ],
         'id_puesto' => [

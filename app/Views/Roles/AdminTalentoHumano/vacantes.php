@@ -136,6 +136,9 @@
                                                 <button type="button" class="btn btn-sm btn-outline-info" onclick="verCandidatos(<?= $vacante['id_vacante'] ?>)">
                                                     <i class="bi bi-people"></i>
                                                 </button>
+                                                <button type="button" class="btn btn-sm btn-outline-success" onclick="generarAnuncio(<?= $vacante['id_vacante'] ?>, '<?= addslashes($vacante['puesto_nombre'] ?? 'Puesto') ?>', '<?= addslashes($vacante['departamento_nombre'] ?? 'Sin asignar') ?>', '<?= addslashes($vacante['descripcion'] ?? '') ?>')" title="Generar Anuncio">
+                                                    <i class="bi bi-megaphone"></i>
+                                                </button>
                                                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarVacante(<?= $vacante['id_vacante'] ?>)">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
@@ -253,9 +256,81 @@
     </div>
 </div>
 
+<!-- Modal para Generar Anuncio / Flyer -->
+<div class="modal fade" id="modalFlyer" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-megaphone me-2"></i>Generar Anuncio de Vacante</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <!-- Contenido del Flyer (se captura con html2canvas) -->
+                <div id="flyerContainer" style="background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1a365d 100%); padding: 40px; color: white; position: relative; overflow: hidden;">
+                    <!-- Patrón decorativo -->
+                    <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; border-radius: 50%; background: rgba(255,255,255,0.05);"></div>
+                    <div style="position: absolute; bottom: -80px; left: -80px; width: 300px; height: 300px; border-radius: 50%; background: rgba(255,255,255,0.03);"></div>
+                    
+                    <!-- Header con Logo -->
+                    <div class="text-center mb-4">
+                        <img src="<?= base_url('assets/images/logos/logo.png') ?>" alt="Logo Instituto" style="max-height: 80px; margin-bottom: 15px;" onerror="this.style.display='none'">
+                        <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 3px; opacity: 0.8;">Instituto Tecnológico Superior ITSI</div>
+                    </div>
+                    
+                    <!-- Badge -->
+                    <div class="text-center mb-3">
+                        <span style="background: #e53e3e; color: white; padding: 6px 20px; border-radius: 20px; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">¡Estamos Contratando!</span>
+                    </div>
+                    
+                    <!-- Título del Puesto -->
+                    <div class="text-center mb-3">
+                        <h2 id="flyerTitulo" style="font-size: 28px; font-weight: 800; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.3);"></h2>
+                    </div>
+                    
+                    <!-- Departamento -->
+                    <div class="text-center mb-4">
+                        <span id="flyerDepartamento" style="background: rgba(255,255,255,0.15); padding: 6px 18px; border-radius: 15px; font-size: 14px;"></span>
+                    </div>
+                    
+                    <!-- Descripción -->
+                    <div id="flyerDescripcion" style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; margin-bottom: 25px; font-size: 14px; line-height: 1.6; text-align: center; backdrop-filter: blur(10px);"></div>
+                    
+                    <!-- QR y CTA -->
+                    <div class="row align-items-center">
+                        <div class="col-7 text-center">
+                            <p style="font-size: 16px; font-weight: 600; margin-bottom: 5px;"><i class="bi bi-arrow-right-circle me-2"></i>Escanea el código QR para postularte</p>
+                            <p style="font-size: 12px; opacity: 0.7;">O visita nuestra página web</p>
+                        </div>
+                        <div class="col-5 text-center">
+                            <div style="background: white; padding: 12px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                                <div id="flyerQRCode"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="text-center mt-4" style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px;">
+                        <p style="font-size: 11px; opacity: 0.6; margin: 0;">Síguenos en nuestras redes sociales · www.itsi.edu.ec</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-success" id="btnDescargarFlyer" onclick="descargarFlyer()">
+                    <i class="bi bi-download me-1"></i> Descargar Imagen
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<!-- CDN: QRCode.js para generar códigos QR -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<!-- CDN: html2canvas para capturar el DOM como imagen -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
 $(document).ready(function() {
     // Inicializar DataTable
@@ -438,6 +513,75 @@ function eliminarVacante(id) {
                 }
             });
         }
+    });
+}
+
+// ===== Generador de Anuncio / Flyer =====
+function generarAnuncio(id, titulo, departamento, descripcion) {
+    // Limpiar QR anterior
+    const qrContainer = document.getElementById('flyerQRCode');
+    qrContainer.innerHTML = '';
+    
+    // Llenar datos del flyer
+    document.getElementById('flyerTitulo').textContent = titulo;
+    document.getElementById('flyerDepartamento').textContent = '📍 Departamento: ' + departamento;
+    document.getElementById('flyerDescripcion').innerHTML = descripcion 
+        ? descripcion.replace(/\n/g, '<br>') 
+        : 'Buscamos un profesional comprometido para unirse a nuestro equipo. ¡Envía tu postulación escaneando el código QR!';
+    
+    // Generar QR con la URL pública de postulación
+    const urlPostulacion = '<?= base_url('postularse/') ?>' + id;
+    new QRCode(qrContainer, {
+        text: urlPostulacion,
+        width: 150,
+        height: 150,
+        colorDark: '#1e3a5f',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+    });
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('modalFlyer'));
+    modal.show();
+}
+
+function descargarFlyer() {
+    const btn = document.getElementById('btnDescargarFlyer');
+    const textoOriginal = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Generando...';
+    btn.disabled = true;
+    
+    const flyerElement = document.getElementById('flyerContainer');
+    
+    html2canvas(flyerElement, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null
+    }).then(canvas => {
+        const link = document.createElement('a');
+        const titulo = document.getElementById('flyerTitulo').textContent || 'vacante';
+        link.download = 'Anuncio_' + titulo.replace(/\s+/g, '_') + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+        Swal.fire({
+            icon: 'success',
+            title: '¡Imagen descargada!',
+            text: 'El anuncio se ha descargado como imagen PNG.',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }).catch(error => {
+        console.error('Error al generar imagen:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo generar la imagen del anuncio.'
+        });
+    }).finally(() => {
+        btn.innerHTML = textoOriginal;
+        btn.disabled = false;
     });
 }
 </script>

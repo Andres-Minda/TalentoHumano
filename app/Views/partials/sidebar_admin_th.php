@@ -50,6 +50,10 @@
                         <span class="hide-menu">Departamentos</span>
                     </a>
                 </li>
+                <li class="nav-small-cap">
+                    <i class="ti ti-dots nav-small-cap-icon fs-6"></i>
+                    <span class="hide-menu">RECLUTAMIENTO</span>
+                </li>
                 <li class="sidebar-item">
                     <a class="sidebar-link" href="<?= base_url('index.php/admin-th/puestos') ?>" aria-expanded="false">
                         <span><i class="bi bi-briefcase"></i></span>
@@ -62,6 +66,7 @@
                         <span class="hide-menu">Gestión de Postulantes</span>
                     </a>
                 </li>
+
                 <li class="nav-small-cap">
                     <i class="ti ti-dots nav-small-cap-icon fs-6"></i>
                     <span class="hide-menu">CAPACITACIONES</span>

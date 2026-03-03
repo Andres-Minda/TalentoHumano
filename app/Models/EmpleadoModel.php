@@ -165,7 +165,8 @@ class EmpleadoModel extends Model
             e.activo,
             u.cedula,
             u.email,
-            u.id_usuario
+            u.id_usuario,
+            u.id_rol
         ');
         $builder->join('usuarios u', 'u.id_usuario = e.id_usuario');
         
@@ -299,6 +300,7 @@ class EmpleadoModel extends Model
             e.activo,
             e.fecha_ingreso,
             e.salario,
+            e.telefono,
             u.cedula,
             u.email,
             u.id_usuario

@@ -245,25 +245,43 @@ class AdminTHController extends Controller
     }
 
     /**
-     * Obtener credenciales originales del empleado
+     * Obtener credenciales del empleado en tiempo real desde la BD
      */
     public function obtenerCredenciales($id)
     {
         try {
-            $empleado = $this->empleadoModel->getEmpleadoConUsuario($id);
+            $db = \Config\Database::connect();
+
+            // Consulta fresca a la BD con datos en tiempo real
+            $resultado = $db->table('empleados e')
+                ->select('e.nombres, e.apellidos, u.email, u.cedula, u.activo, u.password_changed, r.nombre_rol')
+                ->join('usuarios u', 'u.id_usuario = e.id_usuario')
+                ->join('roles r', 'r.id_rol = u.id_rol', 'left')
+                ->where('e.id_empleado', $id)
+                ->get()
+                ->getRowArray();
             
-            if (!$empleado) {
+            if (!$resultado) {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Empleado no encontrado'
+                    'message' => 'Empleado no encontrado o sin usuario vinculado'
                 ]);
             }
             
-            // Obtener credenciales originales (email y contraseña por defecto)
+            // Determinar estado de la contraseña
+            $estadoPassword = $resultado['password_changed'] 
+                ? 'El usuario ya cambió su contraseña' 
+                : 'Contraseña por defecto (cédula)';
+
             $credenciales = [
-                'email' => $empleado['cedula'] . '@itsi.edu.ec',
-                'password' => '123456',
-                'mensaje' => 'Estas son las credenciales originales de creación de cuenta. Si el empleado ya cambió su contraseña, estas credenciales ya no son válidas.'
+                'nombre_completo' => $resultado['nombres'] . ' ' . $resultado['apellidos'],
+                'email' => $resultado['email'],
+                'cedula' => $resultado['cedula'],
+                'rol' => $resultado['nombre_rol'] ?? 'Empleado',
+                'password' => 'Contraseña encriptada por seguridad',
+                'estado_password' => $estadoPassword,
+                'activo' => $resultado['activo'] ? 'Activo' : 'Inactivo',
+                'mensaje' => 'Datos extraídos en tiempo real de la base de datos.'
             ];
             
             return $this->response->setJSON([
@@ -294,7 +312,7 @@ class AdminTHController extends Controller
             $datos = $this->request->getPost();
             
             // Validar datos requeridos
-            if (empty($datos['nombres']) || empty($datos['apellidos']) || empty($datos['cedula']) || empty($datos['tipo_empleado'])) {
+            if (empty($datos['nombres']) || empty($datos['apellidos']) || empty($datos['cedula']) || empty($datos['tipo_empleado']) || empty($datos['email'])) {
                 return $this->response->setJSON(['success' => false, 'message' => 'Todos los campos marcados con * son obligatorios']);
             }
 
@@ -316,7 +334,7 @@ class AdminTHController extends Controller
                 
                 // Obtener el empleado actual para verificar si cambió la cédula
                 $empleadoActual = $db->table('empleados e')
-                    ->select('e.id_usuario, u.cedula as cedula_actual')
+                    ->select('e.id_usuario, u.cedula as cedula_actual, u.email as email_actual')
                     ->join('usuarios u', 'u.id_usuario = e.id_usuario')
                     ->where('e.id_empleado', $idEmpleado)
                     ->get()
@@ -335,15 +353,22 @@ class AdminTHController extends Controller
                     if ($cedulaExiste) {
                         return $this->response->setJSON(['success' => false, 'message' => 'La cédula ' . $datos['cedula'] . ' ya está registrada por otro usuario']);
                     }
-                    
-                    // Actualizar cédula y email en usuarios
-                    $db->table('usuarios')->where('id_usuario', $idUsuario)->update([
-                        'cedula' => $datos['cedula'],
-                        'email' => $datos['cedula'] . '@itsi.edu.ec'
-                    ]);
+                }
+
+                // Verificar email duplicado
+                $emailExiste = $db->table('usuarios')->where('email', $datos['email'])->where('id_usuario !=', $idUsuario)->get()->getRowArray();
+                if ($emailExiste) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'El correo electrónico ' . $datos['email'] . ' ya está registrado por otro usuario']);
                 }
                 
+                // Actualizar cédula y email en usuarios
+                $db->table('usuarios')->where('id_usuario', $idUsuario)->update([
+                    'cedula' => $datos['cedula'],
+                    'email' => $datos['email']
+                ]);
+                
                 // Actualizar empleado
+                $estado = strtoupper($datos['estado'] ?? 'ACTIVO');
                 $empleadoData = [
                     'nombres' => $datos['nombres'],
                     'apellidos' => $datos['apellidos'],
@@ -351,10 +376,15 @@ class AdminTHController extends Controller
                     'departamento' => $datos['departamento'] ?? 'Sin asignar',
                     'fecha_ingreso' => $datos['fecha_ingreso'] ?? date('Y-m-d'),
                     'salario' => $datos['salario'] ?? 0.00,
-                    'estado' => $datos['estado'] ?? 'Activo'
+                    'estado' => $estado,
+                    'telefono' => $datos['celular'] ?? ''
                 ];
                 
                 $db->table('empleados')->where('id_empleado', $idEmpleado)->update($empleadoData);
+
+                // Sincronizar usuarios.activo según el nuevo estado
+                $activoUsuario = ($estado === 'ACTIVO') ? 1 : 0;
+                $db->table('usuarios')->where('id_usuario', $idUsuario)->update(['activo' => $activoUsuario]);
                 
                 return $this->response->setJSON([
                     'success' => true,
@@ -370,21 +400,30 @@ class AdminTHController extends Controller
                 if ($cedulaExiste) {
                     return $this->response->setJSON(['success' => false, 'message' => 'La cédula ' . $datos['cedula'] . ' ya está registrada']);
                 }
+
+                // Verificar que el email no exista
+                $emailExiste = $db->table('usuarios')->where('email', $datos['email'])->get()->getRowArray();
+                if ($emailExiste) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'El correo electrónico ' . $datos['email'] . ' ya está registrado']);
+                }
                 
-                // Crear usuario primero
+                // Usar transacción para crear usuario + empleado de forma atómica
+                $db->transStart();
+
+                // 1. Crear usuario con la cédula como contraseña por defecto
                 $usuarioData = [
                     'cedula' => $datos['cedula'],
-                    'email' => $datos['cedula'] . '@itsi.edu.ec',
-                    'password_hash' => password_hash('123456', PASSWORD_DEFAULT),
-                    'id_rol' => 3,
-                    'activo' => 1
+                    'email' => $datos['email'],
+                    'password_hash' => password_hash($datos['cedula'], PASSWORD_DEFAULT),
+                    'id_rol' => 3, // Rol Empleado
+                    'activo' => 1,
+                    'password_changed' => 0
                 ];
 
-                // Insertar usuario y obtener ID
                 $db->table('usuarios')->insert($usuarioData);
                 $idUsuario = $db->insertID();
 
-                // Crear empleado
+                // 2. Crear empleado vinculado al usuario
                 $empleadoData = [
                     'id_usuario' => $idUsuario,
                     'nombres' => $datos['nombres'],
@@ -398,21 +437,30 @@ class AdminTHController extends Controller
                     'genero' => 'No especificado',
                     'estado_civil' => 'Soltero',
                     'direccion' => 'Por definir',
-                    'telefono' => 'Por definir',
+                    'telefono' => $datos['celular'] ?? '',
                     'activo' => 1
                 ];
 
-                // Insertar empleado
                 $db->table('empleados')->insert($empleadoData);
+
+                $db->transComplete();
+
+                // Verificar que la transacción fue exitosa
+                if ($db->transStatus() === false) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Error al crear el empleado. La operación fue revertida.'
+                    ]);
+                }
 
                 return $this->response->setJSON([
                     'success' => true, 
-                    'message' => 'Empleado creado exitosamente. Credenciales de acceso: Email: ' . $datos['cedula'] . '@itsi.edu.ec, Contraseña: 123456',
+                    'message' => 'Empleado creado exitosamente. Se han generado las credenciales de acceso.',
                     'id_usuario' => $idUsuario,
                     'tipo' => 'creacion',
                     'credenciales' => [
-                        'email' => $datos['cedula'] . '@itsi.edu.ec',
-                        'password' => '123456'
+                        'email' => $datos['email'],
+                        'password' => $datos['cedula']
                     ]
                 ]);
             }
@@ -629,11 +677,11 @@ class AdminTHController extends Controller
     public function obtenerDepartamentosActivos()
     {
         try {
-            $departamentos = $this->departamentoModel->getDepartamentosParaDropdown();
+            $departamentos = $this->departamentoModel->getDepartamentosActivos();
             
             return $this->response->setJSON([
                 'success' => true,
-                'departamentos' => $departamentos
+                'data' => $departamentos
             ]);
         } catch (\Exception $e) {
             log_message('error', 'Error al obtener departamentos activos: ' . $e->getMessage());
@@ -721,7 +769,7 @@ class AdminTHController extends Controller
         }
 
         try {
-            $datos = $this->request->getPost();
+            $datos = $this->request->getJSON(true);
             
             if (empty($datos['titulo'])) {
                 return $this->response->setJSON(['success' => false, 'message' => 'El título del puesto es obligatorio']);
@@ -1030,6 +1078,119 @@ class AdminTHController extends Controller
         ];
 
         return view('Roles/AdminTH/postulantes', $data);
+    }
+
+    /**
+     * Eliminar postulante
+     */
+    public function eliminarPostulante()
+    {
+        if (!$this->request->is('post')) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        try {
+            $id = $this->request->getPost('id_postulante');
+            
+            if (!$id) {
+                return $this->response->setJSON(['success' => false, 'message' => 'ID de postulante no proporcionado']);
+            }
+
+            $postulanteModel = new \App\Models\PostulanteModel();
+            $postulante = $postulanteModel->find($id);
+
+            if (!$postulante) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Postulante no encontrado']);
+            }
+
+            $postulanteModel->delete($id);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Postulante eliminado correctamente'
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error al eliminar postulante: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al eliminar: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Exportar lista de CVs desde Google Drive
+     */
+    public function exportarCVsDrive()
+    {
+        try {
+            $clientSecretsPath = WRITEPATH . 'client_secrets.json';
+            $tokenPath = WRITEPATH . 'token.json';
+
+            if (!file_exists($clientSecretsPath) || !file_exists($tokenPath)) {
+                return view('postulacion/error', [
+                    'titulo' => 'Drive no conectado',
+                    'mensaje' => 'Google Drive no está conectado. Ve a Puestos de Trabajo y haz clic en "Conectar Google Drive".'
+                ]);
+            }
+
+            $client = new \Google\Client();
+            $client->setAuthConfig($clientSecretsPath);
+            $client->addScope(\Google\Service\Drive::DRIVE_FILE);
+
+            $accessToken = json_decode(file_get_contents($tokenPath), true);
+            $client->setAccessToken($accessToken);
+
+            // Renovar token si expiró
+            if ($client->isAccessTokenExpired()) {
+                if ($client->getRefreshToken()) {
+                    $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+                    file_put_contents($tokenPath, json_encode($client->getAccessToken()));
+                } else {
+                    return view('postulacion/error', [
+                        'titulo' => 'Token expirado',
+                        'mensaje' => 'El token de Google Drive expiró. Reconecta desde el panel de Puestos.'
+                    ]);
+                }
+            }
+
+            $driveService = new \Google\Service\Drive($client);
+
+            // Listar archivos en la carpeta de CVs
+            $folderId = '1WBBRZjMLvRd0PctXRKM0F6_TIEKIEz8B';
+            $results = $driveService->files->listFiles([
+                'q' => "'" . $folderId . "' in parents and trashed = false",
+                'fields' => 'files(id, name, webViewLink, createdTime, size)',
+                'orderBy' => 'createdTime desc',
+                'pageSize' => 100
+            ]);
+
+            $archivos = [];
+            foreach ($results->getFiles() as $file) {
+                $archivos[] = [
+                    'id' => $file->getId(),
+                    'nombre' => $file->getName(),
+                    'enlace' => $file->getWebViewLink(),
+                    'fecha' => $file->getCreatedTime(),
+                    'tamano' => $file->getSize()
+                ];
+            }
+
+            $data = [
+                'titulo' => 'CVs en Google Drive',
+                'archivos' => $archivos
+            ];
+
+            return view('Roles/AdminTH/exportar_drive', $data);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error al listar CVs de Drive: ' . $e->getMessage());
+            return view('postulacion/error', [
+                'titulo' => 'Error de Drive',
+                'mensaje' => 'Error al conectar con Google Drive: ' . $e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -1472,6 +1633,16 @@ class AdminTHController extends Controller
                 ]);
             }
 
+            // Protección: no se puede deshabilitar al Administrador de Talento Humano
+            $db = \Config\Database::connect();
+            $usuario = $db->table('usuarios')->where('id_usuario', $empleado['id_usuario'])->get()->getRowArray();
+            if ($usuario && $usuario['id_rol'] == 2) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Acción denegada: No se puede alterar al perfil de Administrador principal.'
+                ]);
+            }
+
             // Actualizar estado del empleado
             $dataEmpleado = [
                 'estado' => 'INACTIVO',
@@ -1544,6 +1715,16 @@ class AdminTHController extends Controller
                 ]);
             }
 
+            // Protección: no se puede alterar al Administrador de Talento Humano
+            $db = \Config\Database::connect();
+            $usuario = $db->table('usuarios')->where('id_usuario', $empleado['id_usuario'])->get()->getRowArray();
+            if ($usuario && $usuario['id_rol'] == 2) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Acción denegada: No se puede alterar al perfil de Administrador principal.'
+                ]);
+            }
+
             // Actualizar estado del empleado
             $dataEmpleado = [
                 'estado' => 'ACTIVO',
@@ -1580,6 +1761,90 @@ class AdminTHController extends Controller
 
         } catch (\Exception $e) {
             log_message('error', 'Error habilitando empleado: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ]);
+        }
+    }
+
+    /**
+     * Eliminar empleado y su usuario vinculado
+     */
+    public function eliminarEmpleado()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $idEmpleado = $this->request->getPost('id_empleado');
+            
+            if (!$idEmpleado) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'ID de empleado requerido'
+                ]);
+            }
+
+            // Obtener empleado
+            $empleado = $this->empleadoModel->find($idEmpleado);
+            if (!$empleado) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Empleado no encontrado'
+                ]);
+            }
+
+            // Protección: no se puede eliminar al Administrador de Talento Humano
+            $db = \Config\Database::connect();
+            $usuario = $db->table('usuarios')->where('id_usuario', $empleado['id_usuario'])->get()->getRowArray();
+            if ($usuario && $usuario['id_rol'] == 2) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Acción denegada: No se puede eliminar al perfil de Administrador principal.'
+                ]);
+            }
+
+            $idUsuario = $empleado['id_usuario'];
+            $nombreCompleto = $empleado['nombres'] . ' ' . $empleado['apellidos'];
+
+            // Usar transacción para eliminar empleado + usuario
+            $db->transStart();
+
+            // 1. Eliminar empleado
+            $db->table('empleados')->where('id_empleado', $idEmpleado)->delete();
+
+            // 2. Eliminar usuario vinculado
+            if ($idUsuario) {
+                $db->table('usuarios')->where('id_usuario', $idUsuario)->delete();
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al eliminar el empleado. La operación fue revertida.'
+                ]);
+            }
+
+            // Registrar log
+            $logModel = new LogSistemaModel();
+            $logModel->registrarLog(
+                session()->get('id_usuario'),
+                'ELIMINAR_EMPLEADO',
+                'EMPLEADOS',
+                "Empleado eliminado: {$nombreCompleto}"
+            );
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Empleado y sus credenciales eliminados correctamente'
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error eliminando empleado: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Error interno del servidor'
@@ -2615,5 +2880,63 @@ class AdminTHController extends Controller
         $acciones .= '</div>';
         
         return $acciones;
+    }
+
+    /**
+     * Conectar Google Drive via OAuth2
+     * Genera URL de auth o intercambia código por token
+     */
+    public function conectarGoogle()
+    {
+        try {
+            $clientSecretsPath = WRITEPATH . 'client_secrets.json';
+            
+            if (!file_exists($clientSecretsPath)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se encontró el archivo client_secrets.json en writable/'
+                ]);
+            }
+
+            $client = new \Google\Client();
+            $client->setAuthConfig($clientSecretsPath);
+            $client->setAccessType('offline');
+            $client->setPrompt('select_account consent');
+            $client->addScope(\Google\Service\Drive::DRIVE_FILE);
+            $client->setRedirectUri(base_url('admin-th/conectar-google'));
+
+            // Si hay código de Google, intercambiar por token
+            $code = $this->request->getGet('code');
+            
+            if ($code) {
+                $accessToken = $client->fetchAccessTokenWithAuthCode($code);
+                
+                if (isset($accessToken['error'])) {
+                    return view('postulacion/error', [
+                        'titulo' => 'Error de Autorización',
+                        'mensaje' => 'Error al obtener token: ' . ($accessToken['error_description'] ?? $accessToken['error'])
+                    ]);
+                }
+
+                // Guardar token
+                $tokenPath = WRITEPATH . 'token.json';
+                file_put_contents($tokenPath, json_encode($accessToken));
+
+                // Redirigir al panel de puestos con mensaje de éxito
+                return redirect()->to(base_url('admin-th/puestos'))
+                    ->with('success', '¡Google Drive conectado exitosamente! Ya puedes recibir CVs.');
+            }
+
+            // Si no hay código, redirigir a Google para autorización
+            $authUrl = $client->createAuthUrl();
+            return redirect()->to($authUrl);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error al conectar Google: ' . $e->getMessage());
+            return view('postulacion/error', [
+                'titulo' => 'Error de Conexión',
+                'mensaje' => 'Error al conectar con Google: ' . $e->getMessage()
+            ]);
+        }
     }
 }

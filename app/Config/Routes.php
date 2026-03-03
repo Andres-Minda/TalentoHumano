@@ -29,6 +29,7 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->get('empleados/estadisticas', 'AdminTH\AdminTHController::obtenerEstadisticasEmpleados');
     $routes->post('empleados/deshabilitar', 'AdminTH\AdminTHController::deshabilitarEmpleado');
     $routes->post('empleados/habilitar', 'AdminTH\AdminTHController::habilitarEmpleado');
+    $routes->post('empleados/eliminar', 'AdminTH\AdminTHController::eliminarEmpleado');
     $routes->get('empleados/historial/(:num)', 'AdminTH\AdminTHController::obtenerHistorialEmpleado/$1');
     $routes->get('empleados/reporte-inactivos', 'AdminTH\AdminTHController::reporteEmpleadosInactivos');
     $routes->get('empleados/exportar-inactivos', 'AdminTH\AdminTHController::exportarEmpleadosInactivos');
@@ -51,12 +52,17 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->post('puestos/generar-url', 'AdminTH\AdminTHController::generarUrlPostulacion');
     $routes->get('puestos/(:num)/postulantes', 'AdminTH\AdminTHController::obtenerPostulantesPuesto/$1');
     
+    // Conexión OAuth2 Google Drive
+    $routes->get('conectar-google', 'AdminTH\\AdminTHController::conectarGoogle');
+    
     // Gestión de postulantes
     $routes->get('postulantes', 'AdminTH\AdminTHController::postulantes');
     $routes->get('postulantes/(:num)', 'AdminTH\AdminTHController::verPostulante/$1');
     $routes->get('postulantes/(:num)/cv', 'AdminTH\AdminTHController::descargarCV/$1');
     $routes->get('postulantes/exportar', 'AdminTH\AdminTHController::exportarPostulantes');
     $routes->post('postulaciones/cambiar-estado', 'AdminTH\AdminTHController::cambiarEstadoPostulacion');
+    $routes->post('postulantes/eliminar', 'AdminTH\AdminTHController::eliminarPostulante');
+    $routes->get('postulantes/exportar-drive', 'AdminTH\AdminTHController::exportarCVsDrive');
     
     // Gestión de capacitaciones
     $routes->get('capacitaciones', 'AdminTH\AdminTHController::capacitaciones');
@@ -213,6 +219,7 @@ if (ENVIRONMENT === 'development') {
 }
 
 // Rutas para postulaciones públicas (deben ir al final para no interferir con otras rutas)
+$routes->get('postularse/(:num)', 'PostulacionController::mostrarFormulario/$1');
 $routes->get('postulacion-([0-9]+)-(.+)', 'PostulacionController::mostrarFormulario/$1/$2');
 $routes->get('admin-th/postulacion-([0-9]+)-(.+)', 'PostulacionController::mostrarFormulario/$1/$2');
 $routes->post('postulacion/procesar', 'PostulacionController::procesarPostulacion');

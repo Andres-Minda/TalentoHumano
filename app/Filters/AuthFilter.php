@@ -35,6 +35,18 @@ class AuthFilter implements FilterInterface
             session()->destroy();
             return redirect()->to('/login')->with('error', 'Su sesión ha expirado. Por favor, inicie sesión nuevamente.');
         }
+
+        // Verificar en tiempo real si el usuario sigue activo en la BD
+        $idUsuario = session()->get('id_usuario');
+        if ($idUsuario) {
+            $db = \Config\Database::connect();
+            $usuario = $db->table('usuarios')->select('activo')->where('id_usuario', $idUsuario)->get()->getRowArray();
+            
+            if (!$usuario || $usuario['activo'] != 1) {
+                session()->destroy();
+                return redirect()->to('/login')->with('error', 'Su perfil está inactivo. Contacte con el administrador.');
+            }
+        }
     }
 
     /**

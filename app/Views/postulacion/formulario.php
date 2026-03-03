@@ -371,6 +371,8 @@
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -428,13 +430,13 @@
                 // Validar tipo de archivo
                 const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
                 if (!allowedTypes.includes(file.type)) {
-                    alert('Solo se permiten archivos PDF, DOC o DOCX');
+                    Swal.fire('Error', 'Solo se permiten archivos PDF, DOC o DOCX', 'error');
                     return;
                 }
                 
                 // Validar tamaño (5MB)
                 if (file.size > 5 * 1024 * 1024) {
-                    alert('El archivo no puede exceder 5MB');
+                    Swal.fire('Error', 'El archivo no puede exceder 5MB', 'error');
                     return;
                 }
                 
@@ -442,8 +444,8 @@
                 fileInfo.classList.remove('d-none');
             }
             
-            // Validación del formulario
-            form.addEventListener('submit', function(e) {
+            // Envío del formulario vía AJAX
+            form.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
                 const requiredFields = form.querySelectorAll('[required]');
@@ -458,16 +460,58 @@
                     }
                 });
                 
-                if (isValid) {
-                    // Mostrar indicador de envío
-                    const btnSubmit = document.getElementById('btnSubmit');
-                    btnSubmit.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Enviando...';
-                    btnSubmit.disabled = true;
+                if (!isValid) {
+                    Swal.fire('Campos incompletos', 'Por favor, complete todos los campos obligatorios.', 'warning');
+                    return;
+                }
+                
+                // Mostrar indicador de envío
+                const btnSubmit = document.getElementById('btnSubmit');
+                const textoOriginal = btnSubmit.innerHTML;
+                btnSubmit.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Enviando...';
+                btnSubmit.disabled = true;
+                
+                try {
+                    // Enviar formulario completo (datos + archivo CV) en una sola petición
+                    btnSubmit.innerHTML = '<i class="bi bi-cloud-upload me-2"></i>Enviando postulación...';
                     
-                    // Enviar formulario
-                    form.submit();
-                } else {
-                    alert('Por favor, complete todos los campos obligatorios.');
+                    const formData = new FormData(form);
+                    formData.set('id_puesto', '<?= $puesto['id_puesto'] ?? '' ?>');
+                    
+                    const response = await fetch('<?= base_url('postulacion/procesar') ?>', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Postulación enviada correctamente!',
+                            text: result.message,
+                            confirmButtonText: 'Aceptar',
+                            confirmButtonColor: '#667eea',
+                            allowOutsideClick: false
+                        }).then(() => {
+                            form.reset();
+                            fileInfo.classList.add('d-none');
+                            updateProgress();
+                        });
+                    } else {
+                        throw new Error(result.message || 'Error al procesar la postulación');
+                    }
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: error.message || 'Ocurrió un error al enviar la postulación. Intente nuevamente.',
+                        confirmButtonColor: '#667eea'
+                    });
+                } finally {
+                    btnSubmit.innerHTML = textoOriginal;
+                    btnSubmit.disabled = false;
                 }
             });
             

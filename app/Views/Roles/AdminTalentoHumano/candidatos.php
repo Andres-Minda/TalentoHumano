@@ -397,8 +397,29 @@ function verCV(id) {
         type: 'GET',
         success: function(response) {
             if (response.success) {
-                $('#contenidoCV').html(response.html);
-                $('#modalCV').modal('show');
+                const cvPath = response.cv_path || response.html || '';
+                
+                // Si es un enlace de Google Drive o URL externa, abrir en nueva pestaña
+                if (cvPath.startsWith('http://') || cvPath.startsWith('https://')) {
+                    window.open(cvPath, '_blank');
+                } else if (cvPath) {
+                    // Si es un archivo local, mostrar en modal con iframe
+                    $('#contenidoCV').html(`
+                        <iframe src="/${cvPath}" style="width:100%; height:600px; border:none;"></iframe>
+                        <div class="text-center mt-3">
+                            <a href="/${cvPath}" target="_blank" class="btn btn-primary">
+                                <i class="bi bi-box-arrow-up-right me-1"></i> Abrir en nueva pestaña
+                            </a>
+                        </div>
+                    `);
+                    $('#modalCV').modal('show');
+                } else {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Sin CV',
+                        text: 'Este candidato no tiene un CV cargado.'
+                    });
+                }
             } else {
                 Swal.fire({
                     icon: 'error',

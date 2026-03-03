@@ -4,6 +4,31 @@
 
 <div class="page-wrapper">
     <div class="page-content">
+        <?php if (!file_exists(WRITEPATH . 'token.json')): ?>
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="alert alert-warning d-flex align-items-center justify-content-between" role="alert">
+                    <div>
+                        <i class="ti ti-cloud-off me-2"></i>
+                        <strong>Google Drive no conectado.</strong> Los CVs no se pueden recibir hasta que conectes tu cuenta.
+                    </div>
+                    <a href="<?= base_url('admin-th/conectar-google') ?>" class="btn btn-warning btn-sm">
+                        <i class="ti ti-brand-google-drive me-1"></i> Conectar Google Drive
+                    </a>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+        <?php if (session()->getFlashdata('success')): ?>
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="ti ti-check me-2"></i><?= session()->getFlashdata('success') ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
         <div class="row">
             <div class="col-12">
                 <div class="card">
@@ -134,12 +159,12 @@
                             <div class="mb-3">
                                 <label for="nivel_experiencia" class="form-label">Nivel de Experiencia *</label>
                                 <select class="form-select" id="nivel_experiencia" name="nivel_experiencia" required>
-                                    <option value="">Seleccionar nivel</option>
-                                    <option value="Sin Experiencia">Sin Experiencia</option>
-                                    <option value="Junior (1-2 años)">Junior (1-2 años)</option>
-                                    <option value="Semi-Senior (3-5 años)">Semi-Senior (3-5 años)</option>
-                                    <option value="Senior (5+ años)">Senior (5+ años)</option>
-                                    <option value="Experto (8+ años)">Experto (8+ años)</option>
+                                    <option value="" disabled selected>Seleccionar nivel...</option>
+                                    <option value="Sin experiencia">Sin experiencia</option>
+                                    <option value="Menos de 1 año">Menos de 1 año</option>
+                                    <option value="1 a 3 años">1 a 3 años</option>
+                                    <option value="3 a 5 años">3 a 5 años</option>
+                                    <option value="Más de 5 años">Más de 5 años</option>
                                 </select>
                             </div>
                         </div>
@@ -376,9 +401,67 @@
     </div>
 </div>
 
+<!-- Modal para Generar Anuncio / Flyer -->
+<div class="modal fade" id="modalFlyer" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="ti ti-speakerphone me-2"></i>Generar Anuncio del Puesto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="flyerContainer" style="background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1a365d 100%); padding: 40px; color: white; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; border-radius: 50%; background: rgba(255,255,255,0.05);"></div>
+                    <div style="position: absolute; bottom: -80px; left: -80px; width: 300px; height: 300px; border-radius: 50%; background: rgba(255,255,255,0.03);"></div>
+                    <div class="text-center mb-4">
+                        <img src="<?= base_url('sistema/assets/images/logos/logo_instituto.png') ?>" alt="Logo Instituto" style="max-height: 80px; margin-bottom: 15px;" onerror="this.style.display='none'">
+                        <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 3px; opacity: 0.8;">Instituto Tecnológico Superior ITSI</div>
+                    </div>
+                    <div class="text-center mb-3">
+                        <span style="background: #e53e3e; color: white; padding: 6px 20px; border-radius: 20px; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">¡Estamos Contratando!</span>
+                    </div>
+                    <div class="text-center mb-3">
+                        <h2 id="flyerTitulo" style="font-size: 28px; font-weight: 800; margin: 0; color: white !important; text-shadow: 0 2px 4px rgba(0,0,0,0.3);"></h2>
+                    </div>
+                    <div class="text-center mb-4">
+                        <span id="flyerDepartamento" style="background: rgba(255,255,255,0.15); padding: 6px 18px; border-radius: 15px; font-size: 14px;"></span>
+                    </div>
+                    <div id="flyerDescripcion" style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; margin-bottom: 25px; font-size: 14px; line-height: 1.6; text-align: center;"></div>
+                    <div class="row align-items-center">
+                        <div class="col-7 text-center">
+                            <p style="font-size: 16px; font-weight: 600; margin-bottom: 5px;">Escanea el código QR para postularte</p>
+                            <p style="font-size: 12px; opacity: 0.7;">O visita nuestra página web</p>
+                        </div>
+                        <div class="col-5 text-center">
+                            <div style="background: white; padding: 12px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                                <div id="flyerQRCode"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3">
+                        <p style="font-size: 13px; font-weight: 500; margin-bottom: 3px;">Postúlate en:</p>
+                        <p id="flyerUrlTexto" style="font-size: 12px; opacity: 0.85; word-break: break-all; background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 8px; display: inline-block; margin: 0;"></p>
+                    </div>
+                    <div class="text-center mt-4" style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px;">
+                        <p style="font-size: 11px; opacity: 0.6; margin: 0;">Síguenos en nuestras redes sociales · www.itsi.edu.ec</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-success" id="btnDescargarFlyer" onclick="descargarFlyer()">
+                    <i class="ti ti-download me-1"></i> Descargar Imagen
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
 let puestosData = [];
 let postulantesData = [];
@@ -419,7 +502,7 @@ function cargarDepartamentos() {
                 data.data.forEach(departamento => {
                     const option = document.createElement('option');
                     option.value = departamento.id_departamento;
-                    option.textContent = departamento.titulo;
+                    option.textContent = departamento.nombre;
                     select.appendChild(option);
                 });
             }
@@ -473,8 +556,8 @@ function renderizarTablaPuestos() {
                     <button type="button" class="btn btn-sm btn-outline-success" onclick="verPostulantes(${puesto.id_puesto})" title="Ver Postulantes">
                         <i class="ti ti-users"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="generarUrl(${puesto.id_puesto})" title="Generar URL">
-                        <i class="ti ti-link"></i>
+                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="generarAnuncio(${puesto.id_puesto}, '${(puesto.titulo || '').replace(/'/g, "\\'")  }', '${(puesto.nombre_departamento || 'Sin asignar').replace(/'/g, "\\'")}', '${(puesto.descripcion || '').replace(/'/g, "\\'")}')" title="Generar Anuncio">
+                        <i class="ti ti-speakerphone"></i>
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarPuesto(${puesto.id_puesto})" title="Eliminar">
                         <i class="ti ti-trash"></i>
@@ -614,44 +697,66 @@ function eliminarPuesto(idPuesto) {
     );
 }
 
-// Función para generar URL
-function generarUrl(idPuesto) {
-    const puesto = puestosData.find(p => p.id_puesto == idPuesto);
-    if (!puesto) return;
-
-    if (puesto.url_postulacion) {
-        mostrarConfirmacion(
-            'URL ya existe',
-            `El puesto "${puesto.titulo}" ya tiene una URL de postulación. ¿Deseas generar una nueva?`,
-            () => generarNuevaUrl(idPuesto)
-        );
-    } else {
-        generarNuevaUrl(idPuesto);
-    }
+// ===== Generador de Anuncio / Flyer =====
+function generarAnuncio(id, titulo, departamento, descripcion) {
+    const qrContainer = document.getElementById('flyerQRCode');
+    qrContainer.innerHTML = '';
+    
+    document.getElementById('flyerTitulo').textContent = titulo;
+    document.getElementById('flyerDepartamento').textContent = '📍 Departamento: ' + departamento;
+    document.getElementById('flyerDescripcion').innerHTML = descripcion 
+        ? descripcion.replace(/\n/g, '<br>') 
+        : 'Buscamos un profesional comprometido para unirse a nuestro equipo. ¡Envía tu postulación escaneando el código QR!';
+    
+    const urlPostulacion = '<?= base_url('postularse/') ?>' + id;
+    document.getElementById('flyerUrlTexto').textContent = urlPostulacion;
+    new QRCode(qrContainer, {
+        text: urlPostulacion,
+        width: 150,
+        height: 150,
+        colorDark: '#1e3a5f',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+    });
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalFlyer'));
+    modal.show();
 }
 
-// Función para generar nueva URL
-function generarNuevaUrl(idPuesto) {
-    fetch('<?= base_url('admin-th/puestos/generar-url') ?>', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id_puesto: idPuesto })
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            mostrarModalExito('URL generada exitosamente');
-            cargarPuestos();
-        } else {
-            mostrarAlerta('Error', 'Error al generar URL: ' + result.message, 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        mostrarAlerta('Error', 'Error al generar URL', 'danger');
-    });
+function descargarFlyer() {
+    const btn = document.getElementById('btnDescargarFlyer');
+    const textoOriginal = btn.innerHTML;
+    btn.innerHTML = '<i class="ti ti-loader ti-spin me-1"></i> Generando...';
+    btn.disabled = true;
+    
+    // Esperar a que el QR se renderice completamente
+    setTimeout(() => {
+        const container = document.getElementById('flyerContainer');
+        html2canvas(container, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: null,
+            logging: false,
+            width: container.scrollWidth,
+            height: container.scrollHeight,
+            scrollX: 0,
+            scrollY: 0
+        }).then(canvas => {
+            const link = document.createElement('a');
+            const titulo = document.getElementById('flyerTitulo').textContent || 'puesto';
+            link.download = 'Anuncio_' + titulo.replace(/\s+/g, '_') + '.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            mostrarModalExito('Anuncio descargado como imagen PNG.');
+        }).catch(error => {
+            console.error('Error:', error);
+            mostrarAlerta('Error', 'No se pudo generar la imagen del anuncio.', 'danger');
+        }).finally(() => {
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+        });
+    }, 2000);
 }
 
 // Función para ver detalles del puesto

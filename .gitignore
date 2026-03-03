@@ -121,6 +121,8 @@ _modules/*
 
 # Visual Studio Code
 .vscode/
-
+/writable/google_credentials.json
+/writable/token.json
+/writable/client_secrets.json
 /results/
 /phpunit*.xml

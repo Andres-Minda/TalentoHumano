@@ -27,9 +27,12 @@
                                 <h4 class="card-title mb-1">Gestión de Postulantes</h4>
                                 <p class="card-subtitle mb-0">Administra todas las postulaciones recibidas</p>
                             </div>
-                            <div>
+                            <div class="d-flex gap-2">
                                 <a href="<?= base_url('index.php/admin-th/postulantes/exportar') ?>" class="btn btn-success">
                                     <i class="bi bi-download me-2"></i>Exportar CSV
+                                </a>
+                                <a href="<?= base_url('index.php/admin-th/postulantes/exportar-drive') ?>" class="btn btn-outline-primary" target="_blank">
+                                    <i class="bi bi-cloud me-2"></i>CVs en Drive
                                 </a>
                             </div>
                         </div>
@@ -197,100 +200,93 @@
             </div>
         </div>
 
-        <!-- Tabla de Postulantes -->
+        <!-- Tarjetas de Postulantes -->
         <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Lista de Postulantes</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Postulante</th>
-                                        <th>Puesto</th>
-                                        <th>Departamento</th>
-                                        <th>Estado</th>
-                                        <th>Fecha</th>
-                                        <th>CV</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if (empty($postulantes)): ?>
-                                        <tr>
-                                            <td colspan="8" class="text-center text-muted py-4">
-                                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                                No se encontraron postulantes
-                                            </td>
-                                        </tr>
-                                    <?php else: ?>
-                                        <?php foreach ($postulantes as $postulante): ?>
-                                            <tr>
-                                                <td><?= $postulante['id_postulante'] ?></td>
-                                                <td>
-                                                    <div>
-                                                        <strong><?= $postulante['nombres'] ?> <?= $postulante['apellidos'] ?></strong>
-                                                        <br>
-                                                        <small class="text-muted">
-                                                            <?= $postulante['email'] ?><br>
-                                                            <?= $postulante['cedula'] ?>
-                                                        </small>
-                                                    </div>
-                                                </td>
-                                                <td><?= $postulante['titulo_puesto'] ?? 'N/A' ?></td>
-                                                <td><?= $postulante['nombre_departamento'] ?? 'N/A' ?></td>
-                                                <td>
-                                                    <?php
-                                                    $badgeClass = match($postulante['estado_postulacion']) {
-                                                        'Pendiente' => 'bg-warning',
-                                                        'En revisión' => 'bg-info',
-                                                        'Aprobada' => 'bg-success',
-                                                        'Rechazada' => 'bg-danger',
-                                                        'Contratado' => 'bg-dark',
-                                                        default => 'bg-secondary'
-                                                    };
-                                                    ?>
-                                                    <span class="badge <?= $badgeClass ?>">
-                                                        <?= $postulante['estado_postulacion'] ?>
-                                                    </span>
-                                                </td>
-                                                <td><?= date('d/m/Y', strtotime($postulante['fecha_postulacion'])) ?></td>
-                                                <td>
-                                                    <?php if ($postulante['cv_path']): ?>
-                                                        <a href="<?= base_url('index.php/admin-th/postulantes/' . $postulante['id_postulante'] . '/cv') ?>" 
-                                                           class="btn btn-sm btn-outline-primary" title="Descargar CV">
-                                                            <i class="bi bi-download"></i>
-                                                        </a>
-                                                    <?php else: ?>
-                                                        <span class="text-muted">Sin CV</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <div class="btn-group" role="group">
-                                                        <a href="<?= base_url('index.php/admin-th/postulantes/' . $postulante['id_postulante']) ?>" 
-                                                           class="btn btn-sm btn-outline-info" title="Ver detalles">
-                                                            <i class="bi bi-eye"></i>
-                                                        </a>
-                                                        <button type="button" class="btn btn-sm btn-outline-warning" 
-                                                                onclick="cambiarEstado(<?= $postulante['id_postulante'] ?>, '<?= $postulante['estado_postulacion'] ?>')"
-                                                                title="Cambiar estado">
-                                                            <i class="bi bi-pencil"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
+            <?php if (empty($postulantes)): ?>
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center py-5">
+                            <i class="bi bi-inbox fs-1 d-block mb-3 text-muted"></i>
+                            <h5 class="text-muted">No se encontraron postulantes</h5>
+                            <p class="text-muted">Ajusta los filtros o espera nuevas postulaciones.</p>
                         </div>
                     </div>
                 </div>
-            </div>
+            <?php else: ?>
+                <?php foreach ($postulantes as $postulante): ?>
+                    <?php
+                    $badgeClass = match($postulante['estado_postulacion']) {
+                        'Pendiente' => 'bg-warning',
+                        'En revisión' => 'bg-info',
+                        'Aprobada' => 'bg-success',
+                        'Rechazada' => 'bg-danger',
+                        'Contratado' => 'bg-dark',
+                        default => 'bg-secondary'
+                    };
+                    ?>
+                    <div class="col-xl-4 col-md-6 col-12 mb-3">
+                        <div class="card h-100 border-start border-4 border-primary shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="card-title mb-0">
+                                            <?= $postulante['nombres'] ?> <?= $postulante['apellidos'] ?>
+                                        </h6>
+                                        <small class="text-muted"><?= $postulante['cedula'] ?></small>
+                                    </div>
+                                    <span class="badge <?= $badgeClass ?>"><?= $postulante['estado_postulacion'] ?></span>
+                                </div>
+
+                                <div class="mb-2">
+                                    <small class="d-block"><i class="bi bi-envelope me-1"></i><?= $postulante['email'] ?></small>
+                                    <small class="d-block"><i class="bi bi-telephone me-1"></i><?= $postulante['telefono'] ?? 'N/A' ?></small>
+                                </div>
+
+                                <div class="mb-2">
+                                    <span class="badge bg-light text-dark me-1">
+                                        <i class="bi bi-briefcase me-1"></i><?= $postulante['titulo_puesto'] ?? 'N/A' ?>
+                                    </span>
+                                    <span class="badge bg-light text-dark">
+                                        <i class="bi bi-building me-1"></i><?= $postulante['nombre_departamento'] ?? 'N/A' ?>
+                                    </span>
+                                </div>
+
+                                <small class="text-muted d-block mb-3">
+                                    <i class="bi bi-calendar me-1"></i>Postulación: <?= date('d/m/Y', strtotime($postulante['fecha_postulacion'])) ?>
+                                </small>
+
+                                <div class="d-flex gap-2">
+                                    <?php if (!empty($postulante['cv_path']) && str_starts_with($postulante['cv_path'], 'http')): ?>
+                                        <a href="<?= $postulante['cv_path'] ?>" target="_blank" class="btn btn-primary btn-sm flex-grow-1">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i>Ver CV
+                                        </a>
+                                    <?php elseif (!empty($postulante['cv_path'])): ?>
+                                        <a href="<?= base_url('index.php/admin-th/postulantes/' . $postulante['id_postulante'] . '/cv') ?>" class="btn btn-primary btn-sm flex-grow-1">
+                                            <i class="bi bi-download me-1"></i>Descargar CV
+                                        </a>
+                                    <?php else: ?>
+                                        <button class="btn btn-outline-secondary btn-sm flex-grow-1" disabled>
+                                            <i class="bi bi-file-earmark-x me-1"></i>Sin CV
+                                        </button>
+                                    <?php endif; ?>
+
+                                    <button type="button" class="btn btn-outline-warning btn-sm"
+                                            onclick="cambiarEstado(<?= $postulante['id_postulante'] ?>, '<?= $postulante['estado_postulacion'] ?>')"
+                                            title="Cambiar estado">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+
+                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                            onclick="eliminarPostulante(<?= $postulante['id_postulante'] ?>, '<?= esc($postulante['nombres'] . ' ' . $postulante['apellidos']) ?>')"
+                                            title="Eliminar postulante">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -349,6 +345,42 @@
 </div>
 
 <script>
+function eliminarPostulante(id, nombre) {
+    Swal.fire({
+        title: '¿Eliminar postulante?',
+        text: `¿Estás seguro de eliminar a ${nombre}? Esta acción no se puede deshacer.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const formData = new FormData();
+            formData.append('id_postulante', id);
+
+            fetch('<?= base_url('index.php/admin-th/postulantes/eliminar') ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('¡Eliminado!', data.message, 'success').then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                Swal.fire('Error', 'Error al procesar la solicitud', 'error');
+            });
+        }
+    });
+}
+
 function cambiarEstado(idPostulante, estadoActual) {
     document.getElementById('idPostulante').value = idPostulante;
     document.getElementById('nuevoEstado').value = estadoActual;

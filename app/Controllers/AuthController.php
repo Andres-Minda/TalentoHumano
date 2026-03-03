@@ -41,7 +41,6 @@ class AuthController extends Controller
             $builder->where('u.cedula', $identifier);
             $builder->orWhere('u.email', $identifier);
             $builder->groupEnd();
-            $builder->where('u.activo', 1);
             
             $user = $builder->get()->getRowArray();
             
@@ -75,9 +74,11 @@ class AuthController extends Controller
 
             // 5. Verificar credenciales
             if ($user && password_verify($password, $user['password_hash'])) {
-                // Verificar si el usuario está activo
+
+                // 5.1. Verificar si el usuario está activo (DESPUÉS de comprobar contraseña)
                 if ($user['activo'] != 1) {
-                    return redirect()->back()->with('error', 'Su cuenta ha sido desactivada. Contacte al administrador.');
+                    session()->destroy();
+                    return redirect()->to('/login')->with('error', 'Su perfil está inactivo. Contacte con el administrador.');
                 }
 
                 // 6. Establecer sesión

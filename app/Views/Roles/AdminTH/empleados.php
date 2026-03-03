@@ -149,6 +149,20 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
+                                        <label for="email" class="form-label fw-bold">Correo Electrónico *</label>
+                                        <input type="email" class="form-control form-control-lg" id="email" name="email" placeholder="ejemplo@correo.com" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="celular" class="form-label fw-bold">Número de Celular</label>
+                                        <input type="tel" class="form-control form-control-lg" id="celular" name="celular" placeholder="09XXXXXXXX">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
                                         <label for="tipo_empleado" class="form-label fw-bold">Tipo de Empleado *</label>
                                         <select class="form-select form-select-lg" id="tipo_empleado" name="tipo_empleado" required onchange="toggleTipoPersonalizado()">
                                             <option value="">Seleccionar...</option>
@@ -182,15 +196,15 @@
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="departamento" class="form-label fw-bold">Departamento *</label>
-                                <select class="form-select form-select-lg" id="departamento" name="departamento" required>
-                                    <option value="">Seleccionar departamento...</option>
-                                    <!-- Los departamentos se cargarán dinámicamente -->
-                                </select>
-                            </div>
-                        </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="departamento" class="form-label fw-bold">Departamento *</label>
+                                        <select class="form-select form-select-lg" id="departamento" name="departamento" required>
+                                            <option value="">Seleccionar departamento...</option>
+                                            <!-- Los departamentos se cargarán dinámicamente -->
+                                        </select>
+                                    </div>
+                                </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="fecha_ingreso" class="form-label fw-bold">Fecha de Ingreso *</label>
@@ -253,8 +267,9 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body py-4">
-                <div class="text-center mb-4">
+                <div class="text-center mb-3">
                     <i class="ti ti-user-check text-info" style="font-size: 3rem;"></i>
+                    <h6 class="mt-2" id="nombreCredenciales"></h6>
                 </div>
                 
                 <div class="alert alert-info border-0">
@@ -265,34 +280,41 @@
                 <div class="card border-info">
                     <div class="card-header bg-info text-white">
                         <h6 class="mb-0">
-                            <i class="ti ti-credentials me-2"></i>
-                            Datos de Acceso
+                            <i class="ti ti-shield-check me-2"></i>
+                            Datos de Acceso (Tiempo Real)
                         </h6>
                     </div>
                     <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-info">Correo Electrónico:</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="emailCredenciales" readonly>
+                                <button class="btn btn-outline-info" type="button" onclick="copiarAlPortapapeles('emailCredenciales')">
+                                    <i class="ti ti-copy"></i>
+                                </button>
+                            </div>
+                        </div>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold text-info">Email:</label>
-                                    <div class="input-group input-group-lg">
-                                        <input type="text" class="form-control" id="emailCredenciales" readonly>
-                                        <button class="btn btn-outline-info" type="button" onclick="copiarAlPortapapeles('emailCredenciales')">
-                                            <i class="ti ti-copy"></i>
-                                        </button>
-                                    </div>
+                                    <label class="form-label fw-bold text-info">Rol:</label>
+                                    <input type="text" class="form-control" id="rolCredenciales" readonly>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold text-info">Contraseña:</label>
-                                    <div class="input-group input-group-lg">
-                                        <input type="text" class="form-control" id="passwordCredenciales" readonly>
-                                        <button class="btn btn-outline-info" type="button" onclick="copiarAlPortapapeles('passwordCredenciales')">
-                                            <i class="ti ti-copy"></i>
-                                        </button>
-                                    </div>
+                                    <label class="form-label fw-bold text-info">Estado:</label>
+                                    <input type="text" class="form-control" id="estadoCredenciales" readonly>
                                 </div>
                             </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-info">Contraseña:</label>
+                            <input type="text" class="form-control" id="passwordCredenciales" readonly>
+                        </div>
+                        <div class="alert alert-warning mb-0 py-2">
+                            <i class="ti ti-lock me-1"></i>
+                            <small id="estadoPasswordCredenciales"></small>
                         </div>
                     </div>
                 </div>
@@ -332,25 +354,36 @@ function cargarEmpleados() {
             
             empleados.forEach(empleado => {
                 const row = document.createElement('tr');
+                const idEmp = empleado.id_empleado || empleado.id;
+                const esAdmin = empleado.id_rol == 2;
+                const estadoClase = (empleado.estado === 'Activo' || empleado.estado === 'ACTIVO') ? 'bg-success' : 'bg-danger';
+                const estadoTexto = (empleado.estado === 'Activo' || empleado.estado === 'ACTIVO') ? 'Activo' : 'Inactivo';
+
+                let botonesAccion = `
+                    <button class="btn btn-sm btn-outline-primary" onclick="editarEmpleado(${idEmp})" title="Editar">
+                        <i class="ti ti-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-info" onclick="verCredenciales(${idEmp})" title="Ver Credenciales">
+                        <i class="ti ti-key"></i>
+                    </button>`;
+
+                // Ocultar botones de eliminar/inactivar para Admin TH
+                if (!esAdmin) {
+                    botonesAccion += `
+                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarEmpleado(${idEmp})" title="Eliminar">
+                        <i class="ti ti-trash"></i>
+                    </button>`;
+                }
+
                 row.innerHTML = `
-                    <td>${empleado.id_empleado || empleado.id}</td>
+                    <td>${idEmp}</td>
                     <td>${empleado.nombres || ''}</td>
                     <td>${empleado.apellidos || ''}</td>
                     <td>${empleado.cedula || ''}</td>
                     <td><span class="badge bg-primary">${empleado.tipo_empleado || ''}</span></td>
                     <td>${empleado.departamento || ''}</td>
-                    <td><span class="badge bg-success">${empleado.estado || 'Activo'}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="editarEmpleado(${empleado.id_empleado || empleado.id})" title="Editar">
-                            <i class="ti ti-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-info" onclick="verCredenciales(${empleado.id_empleado || empleado.id})" title="Ver Credenciales">
-                            <i class="ti ti-key"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarEmpleado(${empleado.id_empleado || empleado.id})" title="Eliminar">
-                            <i class="ti ti-trash"></i>
-                        </button>
-                    </td>
+                    <td><span class="badge ${estadoClase} text-white">${estadoTexto}</span></td>
+                    <td>${botonesAccion}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -417,6 +450,8 @@ function editarEmpleado(id) {
                 document.getElementById('nombres').value = empleado.nombres || '';
                 document.getElementById('apellidos').value = empleado.apellidos || '';
                 document.getElementById('cedula').value = empleado.cedula || '';
+                document.getElementById('email').value = empleado.email || '';
+                document.getElementById('celular').value = empleado.telefono || '';
                 document.getElementById('departamento').value = empleado.departamento || '';
                 document.getElementById('fecha_ingreso').value = empleado.fecha_ingreso || '';
                 document.getElementById('salario').value = empleado.salario || '';
@@ -473,9 +508,13 @@ function verCredenciales(id) {
         if (data.success) {
             const credenciales = data.credenciales;
             
-            // Llenar modal con credenciales
+            // Llenar modal con credenciales en tiempo real
+            document.getElementById('nombreCredenciales').textContent = credenciales.nombre_completo || '';
             document.getElementById('emailCredenciales').value = credenciales.email;
+            document.getElementById('rolCredenciales').value = credenciales.rol || 'Empleado';
+            document.getElementById('estadoCredenciales').value = credenciales.activo || '';
             document.getElementById('passwordCredenciales').value = credenciales.password;
+            document.getElementById('estadoPasswordCredenciales').textContent = credenciales.estado_password || '';
             document.getElementById('mensajeCredenciales').innerHTML = credenciales.mensaje;
             
             // Mostrar modal
@@ -533,10 +572,11 @@ function guardarEmpleado() {
     const nombres = document.getElementById('nombres').value.trim();
     const apellidos = document.getElementById('apellidos').value.trim();
     const cedula = document.getElementById('cedula').value.trim();
+    const email = document.getElementById('email').value.trim();
     const departamento = document.getElementById('departamento').value.trim();
     const fechaIngreso = document.getElementById('fecha_ingreso').value;
     
-    if (!nombres || !apellidos || !cedula || !departamento || !fechaIngreso) {
+    if (!nombres || !apellidos || !cedula || !email || !departamento || !fechaIngreso) {
         mostrarAlerta('warning', 'Por favor, complete todos los campos obligatorios.');
         return;
     }
@@ -594,14 +634,33 @@ function guardarEmpleado() {
 
 function eliminarEmpleado(id) {
     mostrarConfirmacion(
-        '¿Estás seguro de que quieres eliminar este empleado?',
-        'Esta acción no se puede deshacer.',
+        '¿Está seguro de eliminar este empleado y sus credenciales?',
+        'Esta acción no se puede deshacer. Se eliminarán tanto los datos del empleado como su cuenta de acceso.',
         'Eliminar Empleado',
         'Eliminar',
         'btn-danger',
         () => {
-            // Aquí implementarías la lógica para eliminar
-            mostrarAlerta('info', 'Funcionalidad de eliminación en desarrollo');
+            const formData = new FormData();
+            formData.append('id_empleado', id);
+
+            fetch('<?= site_url('admin-th/empleados/eliminar') ?>', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    mostrarAlerta('success', data.message);
+                    cargarEmpleados();
+                } else {
+                    mostrarAlerta('error', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarAlerta('error', 'Error de conexión. Por favor, intente nuevamente.');
+            });
         }
     );
 }
@@ -797,25 +856,25 @@ function cargarDepartamentosDropdown() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                const departamentos = data.departamentos;
+                const departamentos = data.data || [];
                 
                 // Agregar opciones al select
-                Object.entries(departamentos).forEach(([id, nombre]) => {
+                departamentos.forEach(dept => {
                     const option = document.createElement('option');
-                    option.value = nombre; // Usar el nombre como valor para mantener compatibilidad
-                    option.textContent = nombre;
+                    option.value = dept.nombre;
+                    option.textContent = dept.nombre;
                     selectDepartamento.appendChild(option);
                 });
                 
                 resolve();
             } else {
                 console.error('Error al cargar departamentos:', data.message);
-                reject(new Error(data.message));
+                resolve(); // Resolver de todas formas para no bloquear el modal
             }
         })
         .catch(error => {
             console.error('Error de conexión al cargar departamentos:', error);
-            reject(error);
+            resolve(); // Resolver de todas formas para no bloquear el modal
         });
     });
 }
