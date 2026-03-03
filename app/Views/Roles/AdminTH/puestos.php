@@ -286,7 +286,6 @@
                                 <th>Teléfono</th>
                                 <th>Estado</th>
                                 <th>Fecha Postulación</th>
-                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -302,45 +301,7 @@
     </div>
 </div>
 
-<!-- Modal Cambiar Estado Postulación -->
-<div class="modal fade" id="modalCambiarEstado" tabindex="-1" aria-labelledby="modalCambiarEstadoLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalCambiarEstadoLabel">Cambiar Estado de Postulación</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="formCambiarEstado">
-                <div class="modal-body">
-                    <input type="hidden" id="id_postulante_estado" name="id_postulante">
-                    <input type="hidden" id="id_puesto_estado" name="id_puesto">
-                    
-                    <div class="mb-3">
-                        <label for="nuevo_estado" class="form-label">Nuevo Estado *</label>
-                        <select class="form-select" id="nuevo_estado" name="nuevo_estado" required>
-                            <option value="">Seleccionar estado</option>
-                            <option value="Pendiente">Pendiente</option>
-                            <option value="En Revisión">En Revisión</option>
-                            <option value="Aprobado">Aprobado</option>
-                            <option value="Rechazado">Rechazado</option>
-                            <option value="Entrevista">Entrevista</option>
-                            <option value="Contratado">Contratado</option>
-                        </select>
-                    </div>
 
-                    <div class="mb-3">
-                        <label for="notas_admin" class="form-label">Notas Administrativas</label>
-                        <textarea class="form-control" id="notas_admin" name="notas_admin" rows="3" placeholder="Agregar notas sobre la postulación..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Actualizar Estado</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 <!-- Modal de Confirmación -->
 <div class="modal fade" id="modalConfirmacion" tabindex="-1" aria-hidden="true">
@@ -559,9 +520,9 @@ function renderizarTablaPuestos() {
                     <button type="button" class="btn btn-sm btn-outline-warning" onclick="generarAnuncio(${puesto.id_puesto}, '${(puesto.titulo || '').replace(/'/g, "\\'")  }', '${(puesto.nombre_departamento || 'Sin asignar').replace(/'/g, "\\'")}', '${(puesto.descripcion || '').replace(/'/g, "\\'")}')" title="Generar Anuncio">
                         <i class="ti ti-speakerphone"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarPuesto(${puesto.id_puesto})" title="Eliminar">
+                    ${puesto.estado === 'Cerrado' ? `<button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarPuesto(${puesto.id_puesto})" title="Eliminar">
                         <i class="ti ti-trash"></i>
-                    </button>
+                    </button>` : ''}
                 </div>
             </td>
         `;
@@ -669,32 +630,40 @@ function eliminarPuesto(idPuesto) {
     const puesto = puestosData.find(p => p.id_puesto == idPuesto);
     if (!puesto) return;
 
-    mostrarConfirmacion(
-        '¿Estás seguro?',
-        `¿Deseas eliminar el puesto "${puesto.titulo}"? Esta acción no se puede deshacer.`,
-        () => {
+    Swal.fire({
+        title: '¿Eliminar puesto?',
+        text: `¿Deseas eliminar el puesto "${puesto.titulo}"? Esta acción no se puede deshacer.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const formData = new FormData();
+            formData.append('id_puesto', idPuesto);
+
             fetch('<?= base_url('admin-th/puestos/eliminar') ?>', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id_puesto: idPuesto })
+                body: formData
             })
             .then(response => response.json())
             .then(result => {
                 if (result.success) {
-                    mostrarModalExito('Puesto eliminado exitosamente');
-                    cargarPuestos();
+                    Swal.fire('¡Eliminado!', 'Puesto eliminado exitosamente', 'success').then(() => {
+                        cargarPuestos();
+                    });
                 } else {
-                    mostrarAlerta('Error', 'Error al eliminar el puesto: ' + result.message, 'danger');
+                    Swal.fire('Error', 'Error al eliminar el puesto: ' + result.message, 'error');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                mostrarAlerta('Error', 'Error al eliminar el puesto', 'danger');
+                Swal.fire('Error', 'Error al eliminar el puesto', 'error');
             });
         }
-    );
+    });
 }
 
 // ===== Generador de Anuncio / Flyer =====
@@ -882,11 +851,6 @@ function renderizarTablaPostulantes() {
             <td>${postulante.telefono || 'N/A'}</td>
             <td><span class="badge ${getBadgeClassPostulacion(postulante.estado_postulacion)}">${postulante.estado_postulacion}</span></td>
             <td>${formatearFecha(postulante.fecha_postulacion)}</td>
-            <td>
-                <button type="button" class="btn btn-sm btn-outline-warning" onclick="cambiarEstadoPostulacion(${postulante.id_postulante}, ${postulante.id_puesto})" title="Cambiar Estado">
-                    <i class="ti ti-edit"></i>
-                </button>
-            </td>
         `;
         tbody.appendChild(row);
     });

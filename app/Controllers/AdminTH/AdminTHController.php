@@ -971,34 +971,39 @@ class AdminTHController extends Controller
         }
 
         try {
-            // Obtener datos JSON del request
-            $jsonData = $this->request->getJSON(true);
-            $idPostulante = $jsonData['id_postulante'] ?? null;
-            $nuevoEstado = $jsonData['nuevo_estado'] ?? null;
+            $idPostulante = $this->request->getPost('id_postulante');
+            $nuevoEstado = $this->request->getPost('nuevo_estado');
+            $notas = $this->request->getPost('notas') ?? '';
             
             if (empty($idPostulante) || empty($nuevoEstado)) {
                 return $this->response->setJSON(['success' => false, 'message' => 'ID de postulante y nuevo estado son requeridos']);
             }
 
-            $resultado = $this->postulanteModel->cambiarEstadoPostulacion($idPostulante, $nuevoEstado);
-            
-            if ($resultado) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Estado de postulación actualizado exitosamente'
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'No se pudo actualizar el estado de la postulación'
-                ]);
+            // Validar que el estado sea uno de los permitidos
+            $estadosPermitidos = ['Pendiente', 'Aprobada', 'Rechazada', 'Contratado'];
+            if (!in_array($nuevoEstado, $estadosPermitidos)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Estado no válido']);
             }
+
+            // Actualizar estado y notas
+            $data = [
+                'estado_postulacion' => $nuevoEstado,
+                'notas_admin' => $notas
+            ];
+
+            $this->postulanteModel->update($idPostulante, $data);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Estado de postulación actualizado exitosamente',
+                'is_contratado' => ($nuevoEstado === 'Contratado')
+            ]);
 
         } catch (\Exception $e) {
             log_message('error', 'Error al cambiar estado de postulación: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error al cambiar estado de postulación: ' . $e->getMessage()
+                'message' => 'Error al cambiar estado: ' . $e->getMessage()
             ]);
         }
     }
@@ -1024,7 +1029,7 @@ class AdminTHController extends Controller
         $busqueda = $this->request->getGet('busqueda') ?? '';
 
         // Obtener datos para los filtros
-        $estados = ['Pendiente', 'En revisión', 'Aprobada', 'Rechazada', 'Contratado'];
+        $estados = ['Pendiente', 'Aprobada', 'Rechazada', 'Contratado'];
         $puestos = $puestoModel->findAll();
         $departamentos = $departamentoModel->findAll();
 
@@ -1065,6 +1070,7 @@ class AdminTHController extends Controller
         $data = [
             'titulo' => 'Gestión de Postulantes',
             'postulantes' => array_values($postulantes), // Reindexar array
+            'totalPostulantes' => $postulanteModel->countAll(),
             'estados' => $estados,
             'puestos' => $puestos,
             'departamentos' => $departamentos,
@@ -1074,7 +1080,8 @@ class AdminTHController extends Controller
                 'departamento' => $departamento,
                 'busqueda' => $busqueda
             ],
-            'estadisticas' => $estadisticas
+            'estadisticas' => $estadisticas,
+            'soloLectura' => $this->request->getGet('soloLectura') ? true : false
         ];
 
         return view('Roles/AdminTH/postulantes', $data);

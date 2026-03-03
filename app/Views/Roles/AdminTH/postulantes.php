@@ -27,14 +27,20 @@
                                 <h4 class="card-title mb-1">Gestión de Postulantes</h4>
                                 <p class="card-subtitle mb-0">Administra todas las postulaciones recibidas</p>
                             </div>
-                            <div class="d-flex gap-2">
-                                <a href="<?= base_url('index.php/admin-th/postulantes/exportar') ?>" class="btn btn-success">
-                                    <i class="bi bi-download me-2"></i>Exportar CSV
-                                </a>
+                            <?php if (!isset($soloLectura) || !$soloLectura): ?>
+                            <div class="d-flex gap-2 align-items-center">
+                                <span class="badge bg-primary fs-6 px-3 py-2">
+                                    <i class="bi bi-people me-1"></i>Total: <?= $totalPostulantes ?? count($postulantes) ?>
+                                </span>
                                 <a href="<?= base_url('index.php/admin-th/postulantes/exportar-drive') ?>" class="btn btn-outline-primary" target="_blank">
                                     <i class="bi bi-cloud me-2"></i>CVs en Drive
                                 </a>
                             </div>
+                            <?php else: ?>
+                            <span class="badge bg-secondary fs-6 px-3 py-2">
+                                <i class="bi bi-eye me-1"></i>Solo lectura
+                            </span>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -73,21 +79,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="card radius-10 bg-info">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <i class="bi bi-search fs-1 text-white"></i>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h4 class="mb-0 text-white"><?= $estadisticas['en_revision'] ?? 0 ?></h4>
-                                <p class="mb-0 text-white-50">En Revisión</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
             <div class="col-xl-2 col-md-4 col-sm-6">
                 <div class="card radius-10 bg-success">
                     <div class="card-body">
@@ -217,7 +209,6 @@
                     <?php
                     $badgeClass = match($postulante['estado_postulacion']) {
                         'Pendiente' => 'bg-warning',
-                        'En revisión' => 'bg-info',
                         'Aprobada' => 'bg-success',
                         'Rechazada' => 'bg-danger',
                         'Contratado' => 'bg-dark',
@@ -234,7 +225,7 @@
                                         </h6>
                                         <small class="text-muted"><?= $postulante['cedula'] ?></small>
                                     </div>
-                                    <span class="badge <?= $badgeClass ?>"><?= $postulante['estado_postulacion'] ?></span>
+                                    <span class="badge <?= $badgeClass ?>" data-badge-id="<?= $postulante['id_postulante'] ?>"><?= $postulante['estado_postulacion'] ?></span>
                                 </div>
 
                                 <div class="mb-2">
@@ -270,6 +261,7 @@
                                         </button>
                                     <?php endif; ?>
 
+                                    <?php if (!isset($soloLectura) || !$soloLectura): ?>
                                     <button type="button" class="btn btn-outline-warning btn-sm"
                                             onclick="cambiarEstado(<?= $postulante['id_postulante'] ?>, '<?= $postulante['estado_postulacion'] ?>')"
                                             title="Cambiar estado">
@@ -281,6 +273,7 @@
                                             title="Eliminar postulante">
                                         <i class="bi bi-trash"></i>
                                     </button>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -323,7 +316,6 @@
                         <select class="form-select" id="nuevoEstado" name="nuevo_estado" required>
                             <option value="">Seleccionar estado...</option>
                             <option value="Pendiente">Pendiente</option>
-                            <option value="En revisión">En revisión</option>
                             <option value="Aprobada">Aprobada</option>
                             <option value="Rechazada">Rechazada</option>
                             <option value="Contratado">Contratado</option>
@@ -393,6 +385,8 @@ document.getElementById('formCambiarEstado').addEventListener('submit', function
     e.preventDefault();
     
     const formData = new FormData(this);
+    const nuevoEstado = formData.get('nuevo_estado');
+    const idPostulante = formData.get('id_postulante');
     
     fetch('<?= base_url('index.php/admin-th/postulaciones/cambiar-estado') ?>', {
         method: 'POST',
@@ -401,19 +395,48 @@ document.getElementById('formCambiarEstado').addEventListener('submit', function
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Mostrar mensaje de éxito
-            Swal.fire({
-                icon: 'success',
-                title: '¡Éxito!',
-                text: data.message,
-                timer: 2000,
-                showConfirmButton: false
-            }).then(() => {
-                // Recargar la página
-                window.location.reload();
-            });
+            // Cerrar modal
+            bootstrap.Modal.getInstance(document.getElementById('modalCambiarEstado')).hide();
+            
+            // Actualizar badge dinámicamente sin recargar
+            const badgeMap = {
+                'Pendiente': 'bg-warning',
+                'Aprobada': 'bg-success',
+                'Rechazada': 'bg-danger',
+                'Contratado': 'bg-dark'
+            };
+            const badge = document.querySelector(`[data-badge-id="${idPostulante}"]`);
+            if (badge) {
+                badge.className = 'badge ' + (badgeMap[nuevoEstado] || 'bg-secondary');
+                badge.textContent = nuevoEstado;
+            }
+            
+            // Si es Contratado, ofrecer crear credenciales
+            if (data.is_contratado) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '\u00a1Postulante Contratado!',
+                    text: '\u00bfDesea crear las credenciales de acceso al sistema para este nuevo empleado ahora?',
+                    showCancelButton: true,
+                    confirmButtonColor: '#198754',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="bi bi-person-plus me-1"></i> S\u00ed, crear credenciales',
+                    cancelButtonText: 'Ahora no'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '<?= base_url('index.php/admin-th/empleados') ?>?postulante_id=' + idPostulante;
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'success',
+                    title: '\u00a1\u00c9xito!',
+                    text: data.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
         } else {
-            // Mostrar mensaje de error
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
@@ -426,7 +449,7 @@ document.getElementById('formCambiarEstado').addEventListener('submit', function
         Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'Ocurrió un error al procesar la solicitud'
+            text: 'Ocurri\u00f3 un error al procesar la solicitud'
         });
     });
 });
@@ -456,10 +479,9 @@ function inicializarGraficoPostulantes() {
     const estadisticas = <?= json_encode($estadisticas) ?>;
     
     // Preparar datos para el gráfico
-    const labels = ['Pendientes', 'En Revisión', 'Aprobadas', 'Rechazadas', 'Contratados'];
+    const labels = ['Pendientes', 'Aprobadas', 'Rechazadas', 'Contratados'];
     const data = [
         estadisticas.pendientes || 0,
-        estadisticas.en_revision || 0,
         estadisticas.aprobadas || 0,
         estadisticas.rechazadas || 0,
         estadisticas.contratados || 0
@@ -468,7 +490,6 @@ function inicializarGraficoPostulantes() {
     // Colores para cada estado
     const colors = [
         '#ffc107', // Pendientes - Amarillo
-        '#17a2b8', // En Revisión - Azul
         '#28a745', // Aprobadas - Verde
         '#dc3545', // Rechazadas - Rojo
         '#343a40'  // Contratados - Negro

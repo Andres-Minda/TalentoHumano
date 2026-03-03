@@ -63,7 +63,6 @@
                                 <span class="badge fs-6 p-2 <?= 
                                     match($postulante['estado_postulacion']) {
                                         'Pendiente' => 'bg-warning',
-                                        'En revisión' => 'bg-info',
                                         'Aprobada' => 'bg-success',
                                         'Rechazada' => 'bg-danger',
                                         'Contratado' => 'bg-dark',
@@ -381,7 +380,6 @@
                         <select class="form-select" id="nuevoEstado" name="nuevo_estado" required>
                             <option value="">Seleccionar estado...</option>
                             <option value="Pendiente" <?= $postulante['estado_postulacion'] === 'Pendiente' ? 'selected' : '' ?>>Pendiente</option>
-                            <option value="En revisión" <?= $postulante['estado_postulacion'] === 'En revisión' ? 'selected' : '' ?>>En revisión</option>
                             <option value="Aprobada" <?= $postulante['estado_postulacion'] === 'Aprobada' ? 'selected' : '' ?>>Aprobada</option>
                             <option value="Rechazada" <?= $postulante['estado_postulacion'] === 'Rechazada' ? 'selected' : '' ?>>Rechazada</option>
                             <option value="Contratado" <?= $postulante['estado_postulacion'] === 'Contratado' ? 'selected' : '' ?>>Contratado</option>

@@ -91,7 +91,7 @@ class PostulanteController extends BaseController
         }
         
         // Verificar que la postulación esté en estado editable
-        if (!in_array($postulacion['estado_postulacion'], ['Pendiente', 'En revisión'])) {
+        if ($postulacion['estado_postulacion'] !== 'Pendiente') {
             return redirect()->to('postulante/dashboard')->with('error', 'Esta postulación no se puede editar');
         }
         

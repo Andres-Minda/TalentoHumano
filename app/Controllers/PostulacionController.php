@@ -135,6 +135,11 @@ class PostulacionController extends Controller
                 return $this->response->setJSON(['success' => false, 'message' => 'Oferta de trabajo no válida']);
             }
 
+            // Bloquear POST si el puesto no está Abierto
+            if ($puesto['estado'] !== 'Abierto' || ($puesto['activo'] ?? 1) != 1) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Este puesto no acepta postulaciones en este momento.']);
+            }
+
             // Verificar si ya se postuló con esta cédula
             $postulacionExistente = $this->postulanteModel->where('cedula', $datos['cedula'])
                                                          ->where('id_puesto', $puesto['id_puesto'])
@@ -162,8 +167,10 @@ class PostulacionController extends Controller
                     return $this->response->setJSON(['success' => false, 'message' => 'El archivo no puede exceder 5MB']);
                 }
 
-                // Generar nombre único para el archivo
-                $nombreFinalPDF = 'cv_' . $datos['cedula'] . '_' . date('Ymd_His') . '.' . $extension;
+                // Generar nombre con el nombre del candidato
+                $nombreCompleto = ($datos['nombres'] ?? 'Sin') . ' ' . ($datos['apellidos'] ?? 'Nombre');
+                $nombreLimpio = preg_replace('/[^A-Za-z0-9_]/', '_', $nombreCompleto);
+                $nombreFinalPDF = 'CV_' . $nombreLimpio . '_' . date('Ymd_His') . '.' . $extension;
 
                 // Verificar archivos de credenciales OAuth2
                 $clientSecretsPath = WRITEPATH . 'client_secrets.json';
@@ -233,6 +240,7 @@ class PostulacionController extends Controller
             $db->transStart();
 
             $postulacionData = [
+                'id_usuario' => null,
                 'id_puesto' => $puesto['id_puesto'],
                 'nombres' => $datos['nombres'],
                 'apellidos' => $datos['apellidos'],
@@ -263,11 +271,21 @@ class PostulacionController extends Controller
                 'activo' => 1
             ];
 
-            $this->postulanteModel->insert($postulacionData);
+            $insertResult = $this->postulanteModel->insert($postulacionData);
+
+            // Verificar si el insert falló por validación del modelo
+            if ($insertResult === false) {
+                $errores = $this->postulanteModel->errors();
+                $db->transRollback();
+                log_message('error', 'Validación falló al insertar postulante: ' . json_encode($errores));
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error de validación: ' . implode(', ', $errores)
+                ]);
+            }
 
             // Reducir vacantes disponibles
             $this->puestoModel->actualizarVacantes($puesto['id_puesto'], 1);
-
             $db->transComplete();
 
             if ($db->transStatus() === false) {
