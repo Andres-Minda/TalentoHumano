@@ -13,80 +13,35 @@ class EvaluacionModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'id_empleado', 'id_periodo_academico', 'tipo_evaluacion', 'fecha_inicio',
-        'fecha_fin', 'estado', 'puntaje_total', 'observaciones'
+        'nombre', 'descripcion', 'tipo_evaluacion',
+        'fecha_inicio', 'fecha_fin', 'estado'
     ];
 
-    // Dates
-    protected $useTimestamps = true;
-    protected $dateFormat    = 'datetime';
+    protected $useTimestamps = false;
     protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
 
-    // Validation
-    protected $validationRules      = [
-        'id_empleado' => 'required|integer',
-        'id_periodo_academico' => 'required|integer',
-        'tipo_evaluacion' => 'required|in_list[AUTOEVALUACION,COORDINADOR,PARES,ESTUDIANTES,SUPERVISOR]',
-        'fecha_inicio' => 'required|valid_date',
-        'fecha_fin' => 'required|valid_date',
-        'estado' => 'required|in_list[PENDIENTE,EN_PROGRESO,COMPLETADA,CANCELADA]',
-        'puntaje_total' => 'permit_empty|decimal',
-        'observaciones' => 'permit_empty|max_length[1000]'
-    ];
-
-    protected $validationMessages = [
-        'id_empleado' => [
-            'required' => 'El empleado es obligatorio',
-            'integer' => 'El empleado debe ser un número entero'
-        ],
-        'id_periodo_academico' => [
-            'required' => 'El periodo académico es obligatorio',
-            'integer' => 'El periodo académico debe ser un número entero'
-        ],
-        'tipo_evaluacion' => [
-            'required' => 'El tipo de evaluación es obligatorio',
-            'in_list' => 'El tipo debe ser AUTOEVALUACION, COORDINADOR, PARES, ESTUDIANTES o SUPERVISOR'
-        ],
-        'fecha_inicio' => [
-            'required' => 'La fecha de inicio es obligatoria',
-            'valid_date' => 'La fecha de inicio debe ser una fecha válida'
-        ],
-        'fecha_fin' => [
-            'required' => 'La fecha de fin es obligatoria',
-            'valid_date' => 'La fecha de fin debe ser una fecha válida'
-        ],
-        'estado' => [
-            'required' => 'El estado es obligatorio',
-            'in_list' => 'El estado debe ser PENDIENTE, EN_PROGRESO, COMPLETADA o CANCELADA'
-        ]
-    ];
-
-    protected $skipValidation       = false;
-    protected $cleanValidationRules = true;
-
-    // Callbacks
-    protected $allowCallbacks = true;
-    protected $beforeInsert   = [];
-    protected $afterInsert    = [];
-    protected $beforeUpdate   = [];
-    protected $afterUpdate    = [];
-    protected $beforeFind     = [];
-    protected $afterFind      = [];
-    protected $beforeDelete   = [];
-    protected $afterDelete    = [];
+    protected $skipValidation = true;
 
     /**
-     * Obtiene evaluaciones completas con información de empleado
+     * Obtener todas las evaluaciones (tabla evaluaciones)
+     */
+    public function getEvaluacionesLista()
+    {
+        return $this->orderBy('created_at', 'DESC')->findAll();
+    }
+
+    /**
+     * Obtener evaluaciones con datos de evaluaciones_empleados (completas)
      */
     public function getEvaluacionesCompletas()
     {
         return $this->db->table('evaluaciones_empleados ee')
-            ->select('ee.*, e.nombre as evaluacion_nombre, e.descripcion as evaluacion_descripcion, emp.nombres as empleado_nombres, emp.apellidos as empleado_apellidos, u.cedula, 
-                     CONCAT(evaluador.nombres, " ", evaluador.apellidos) as evaluador_nombres, evaluador.apellidos as evaluador_apellidos')
+            ->select('ee.*, e.nombre as evaluacion_nombre, e.descripcion as evaluacion_descripcion,
+                      e.tipo_evaluacion, e.estado as evaluacion_estado,
+                      emp.nombres as empleado_nombres, emp.apellidos as empleado_apellidos,
+                      CONCAT(evaluador.nombres, " ", evaluador.apellidos) as evaluador_nombre')
             ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
             ->join('empleados emp', 'emp.id_empleado = ee.id_empleado', 'left')
-            ->join('usuarios u', 'u.id_usuario = emp.id_usuario', 'left')
             ->join('empleados evaluador', 'evaluador.id_empleado = ee.id_evaluador', 'left')
             ->orderBy('ee.fecha_evaluacion', 'DESC')
             ->get()
@@ -94,89 +49,62 @@ class EvaluacionModel extends Model
     }
 
     /**
-     * Obtiene evaluaciones por empleado
+     * Obtener evaluaciones por empleado
      */
     public function getEvaluacionesPorEmpleado($idEmpleado)
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table('evaluaciones_empleados ee');
-        $builder->select('ee.*, e.nombre as nombre_evaluacion, 
-                         CONCAT(evaluador.nombres, " ", evaluador.apellidos) as evaluador_nombre');
-        $builder->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion');
-        $builder->join('empleados evaluador', 'evaluador.id_empleado = ee.id_evaluador');
-        $builder->where('ee.id_empleado', $idEmpleado);
-        $builder->orderBy('ee.fecha_evaluacion', 'DESC');
-        return $builder->get()->getResultArray();
-    }
-
-    /**
-     * Obtiene evaluaciones por tipo
-     */
-    public function getEvaluacionesPorTipo($tipo)
-    {
-        return $this->where('tipo_evaluacion', $tipo)
-            ->orderBy('fecha_inicio', 'DESC')
-            ->findAll();
-    }
-
-    /**
-     * Obtiene evaluaciones por estado
-     */
-    public function getEvaluacionesPorEstado($estado)
-    {
         return $this->db->table('evaluaciones_empleados ee')
-            ->select('ee.*, e.nombre as evaluacion_nombre, e.descripcion as evaluacion_descripcion')
-            ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
-            ->where('e.estado', $estado)
+            ->select('ee.*, e.nombre as nombre_evaluacion,
+                      CONCAT(evaluador.nombres, " ", evaluador.apellidos) as evaluador_nombre')
+            ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion')
+            ->join('empleados evaluador', 'evaluador.id_empleado = ee.id_evaluador')
+            ->where('ee.id_empleado', $idEmpleado)
             ->orderBy('ee.fecha_evaluacion', 'DESC')
             ->get()
             ->getResultArray();
     }
 
     /**
-     * Obtiene evaluaciones pendientes
-     */
-    public function getEvaluacionesPendientes()
-    {
-        return $this->db->table('evaluaciones_empleados ee')
-            ->select('ee.*, e.nombre as evaluacion_nombre, e.descripcion as evaluacion_descripcion')
-            ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
-            ->where('e.estado', 'En curso')
-            ->where('e.fecha_fin >=', date('Y-m-d'))
-            ->orderBy('e.fecha_fin', 'ASC')
-            ->get()
-            ->getResultArray();
-    }
-
-    /**
-     * Obtiene evaluaciones por periodo académico
-     */
-    public function getEvaluacionesPorPeriodo($periodoId)
-    {
-        return $this->db->table('evaluaciones_empleados ee')
-            ->select('ee.*, e.nombre as evaluacion_nombre, e.descripcion as evaluacion_descripcion')
-            ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
-            ->where('e.periodo_academico_id', $periodoId)
-            ->orderBy('e.fecha_inicio', 'DESC')
-            ->get()
-            ->getResultArray();
-    }
-
-    /**
-     * Obtiene estadísticas de evaluaciones
+     * Obtener estadísticas de evaluaciones
      */
     public function getEstadisticasEvaluaciones()
     {
         $db = $this->db;
-        
-        $totalEvaluaciones = $db->table('evaluaciones')->countAllResults();
-        $evaluacionesPendientes = $db->table('evaluaciones')->where('estado', 'Planificada')->countAllResults();
-        $evaluacionesCompletadas = $db->table('evaluaciones')->where('estado', 'En curso')->countAllResults();
-        
+
+        $total = $db->table('evaluaciones')->countAllResults();
+        $activas = $db->table('evaluaciones')->where('estado', 'ACTIVA')->countAllResults();
+        $completadas = $db->table('evaluaciones')->where('estado', 'COMPLETADA')->countAllResults();
+
         return [
-            'total' => $totalEvaluaciones,
-            'pendientes' => $evaluacionesPendientes,
-            'completadas' => $evaluacionesCompletadas
+            'total' => $total,
+            'activas' => $activas,
+            'completadas' => $completadas
         ];
     }
-} 
+
+    /**
+     * Insertar en evaluaciones_empleados (evaluación individual)
+     */
+    public function insertarEvaluacionEmpleado($data)
+    {
+        return $this->db->table('evaluaciones_empleados')->insert($data);
+    }
+
+    /**
+     * Obtener una evaluación_empleado con JOINs
+     */
+    public function getEvaluacionEmpleadoCompleta($id)
+    {
+        return $this->db->table('evaluaciones_empleados ee')
+            ->select('ee.*, e.nombre as evaluacion_nombre, e.descripcion as evaluacion_descripcion,
+                      e.tipo_evaluacion, e.estado as evaluacion_estado,
+                      emp.nombres as empleado_nombres, emp.apellidos as empleado_apellidos,
+                      CONCAT(evaluador.nombres, " ", evaluador.apellidos) as evaluador_nombre')
+            ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
+            ->join('empleados emp', 'emp.id_empleado = ee.id_empleado', 'left')
+            ->join('empleados evaluador', 'evaluador.id_empleado = ee.id_evaluador', 'left')
+            ->where('ee.id_evaluacion_empleado', $id)
+            ->get()
+            ->getRowArray();
+    }
+}

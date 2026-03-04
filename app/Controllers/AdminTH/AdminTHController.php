@@ -15,6 +15,7 @@ use App\Models\PostulanteModel;
 use App\Models\UsuarioModel;
 use App\Models\LogSistemaModel;
 use App\Models\NotificacionModel;
+use App\Models\EvaluacionParModel;
 use CodeIgniter\Controller;
 
 class AdminTHController extends Controller
@@ -993,10 +994,15 @@ class AdminTHController extends Controller
 
             $this->postulanteModel->update($idPostulante, $data);
             
+            // Obtener datos del postulante para la respuesta
+            $postulante = $this->postulanteModel->find($idPostulante);
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'Estado de postulación actualizado exitosamente',
-                'is_contratado' => ($nuevoEstado === 'Contratado')
+                'is_contratado' => ($nuevoEstado === 'Contratado'),
+                'telefono' => $postulante['telefono'] ?? '',
+                'nuevo_estado' => $nuevoEstado
             ]);
 
         } catch (\Exception $e) {
@@ -1371,6 +1377,128 @@ class AdminTHController extends Controller
         ];
 
         return view('Roles/AdminTH/inasistencias/dashboard', $data);
+    }
+
+    /**
+     * Vista del formulario para registrar nueva inasistencia
+     */
+    public function registrarInasistencia()
+    {
+        $empleadoModel = new EmpleadoModel();
+
+        $data = [
+            'titulo' => 'Registrar Nueva Inasistencia',
+            'usuario' => [
+                'nombres' => session()->get('nombres'),
+                'apellidos' => session()->get('apellidos'),
+                'rol' => session()->get('nombre_rol')
+            ],
+            'empleados' => $empleadoModel->where('estado', 'Activo')->orderBy('apellidos', 'ASC')->findAll()
+        ];
+
+        return view('Roles/AdminTH/inasistencias/registrar', $data);
+    }
+
+    /**
+     * Guardar nueva inasistencia (AJAX - POST)
+     */
+    public function guardarInasistencia()
+    {
+        try {
+            $empleadoId       = $this->request->getPost('empleado_id');
+            $fechaInasistencia = $this->request->getPost('fecha_inasistencia');
+            $horaInasistencia  = $this->request->getPost('hora_inasistencia');
+            $tipoInasistencia  = $this->request->getPost('tipo_inasistencia');
+            $motivo            = $this->request->getPost('motivo');
+
+            // Validaciones básicas
+            if (!$empleadoId || !$fechaInasistencia || !$motivo) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Empleado, fecha e motivo son obligatorios'
+                ]);
+            }
+
+            if (strlen(trim($motivo)) < 5) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'El motivo debe tener al menos 5 caracteres'
+                ]);
+            }
+
+            $inasistenciaModel = new \App\Models\InasistenciaModel();
+
+            $data = [
+                'empleado_id'        => $empleadoId,
+                'fecha_inasistencia' => $fechaInasistencia,
+                'hora_inasistencia'  => $horaInasistencia ?: null,
+                'motivo'             => trim($motivo),
+                'tipo_inasistencia'  => $tipoInasistencia ?: 'Injustificada',
+                'justificada'        => ($tipoInasistencia === 'Justificada') ? 1 : 0,
+                'registrado_por'     => session()->get('id_usuario')
+            ];
+
+            $inasistenciaModel->insert($data);
+
+            // Obtener total acumulado del empleado
+            $totalAcumulado = $inasistenciaModel->obtenerTotalInasistencias($empleadoId);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Inasistencia registrada correctamente. Total acumulado del empleado: ' . $totalAcumulado,
+                'total_acumulado' => $totalAcumulado
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al guardar: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Listar inasistencias con acumulado (AJAX - JSON) - Req 4
+     */
+    public function listarInasistenciasJSON()
+    {
+        try {
+            $inasistenciaModel = new \App\Models\InasistenciaModel();
+            $inasistencias = $inasistenciaModel->obtenerInasistenciasConAcumulado();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data'    => $inasistencias,
+                'total'   => count($inasistencias)
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Obtener total histórico de inasistencias de un empleado (AJAX - JSON) - Req 4
+     */
+    public function totalInasistenciasJSON($empleadoId)
+    {
+        try {
+            $inasistenciaModel = new \App\Models\InasistenciaModel();
+            $total = $inasistenciaModel->obtenerTotalInasistencias($empleadoId);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'empleado_id' => $empleadoId,
+                'total_inasistencias' => $total
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -2007,41 +2135,24 @@ class AdminTHController extends Controller
     // ==================== GESTIÓN DE CAPACITACIONES ====================
 
     /**
-     * Obtener capacitaciones para DataTable
+     * Obtener capacitaciones para la tabla
      */
     public function obtenerCapacitaciones()
     {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
         try {
             $capacitacionModel = new CapacitacionModel();
             $capacitaciones = $capacitacionModel->getCapacitacionesConEstadisticas();
 
-            $data = [];
-            foreach ($capacitaciones as $capacitacion) {
-                $data[] = [
-                    'id_capacitacion' => $capacitacion['id_capacitacion'],
-                    'titulo' => $capacitacion['titulo'],
-                    'descripcion' => $capacitacion['descripcion'] ?? 'Sin descripción',
-                    'fecha_inicio' => date('d/m/Y', strtotime($capacitacion['fecha_inicio'])),
-                    'fecha_fin' => date('d/m/Y', strtotime($capacitacion['fecha_fin'])),
-                    'cupo_maximo' => $capacitacion['cupo_maximo'],
-                    'inscritos' => $capacitacion['total_inscritos'] ?? 0,
-                    'estado' => $this->obtenerEstadoCapacitacion($capacitacion),
-                    'acciones' => $this->generarAccionesCapacitacion($capacitacion)
-                ];
-            }
-
             return $this->response->setJSON([
-                'data' => $data
+                'success' => true,
+                'capacitaciones' => $capacitaciones
             ]);
 
         } catch (\Exception $e) {
             log_message('error', 'Error obteniendo capacitaciones: ' . $e->getMessage());
             return $this->response->setJSON([
-                'error' => 'Error al obtener capacitaciones'
+                'success' => false,
+                'message' => 'Error al obtener capacitaciones: ' . $e->getMessage()
             ]);
         }
     }
@@ -2051,13 +2162,9 @@ class AdminTHController extends Controller
      */
     public function obtenerCapacitacion($idCapacitacion)
     {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
         try {
             $capacitacionModel = new CapacitacionModel();
-            $capacitacion = $capacitacionModel->getCapacitacionCompleta($idCapacitacion);
+            $capacitacion = $capacitacionModel->find($idCapacitacion);
 
             if (!$capacitacion) {
                 return $this->response->setJSON([
@@ -2065,6 +2172,9 @@ class AdminTHController extends Controller
                     'message' => 'Capacitación no encontrada'
                 ]);
             }
+
+            // Agregar conteo de inscritos
+            $capacitacion['total_inscritos'] = $capacitacionModel->contarInscritos($idCapacitacion);
 
             return $this->response->setJSON([
                 'success' => true,
@@ -2075,7 +2185,7 @@ class AdminTHController extends Controller
             log_message('error', 'Error obteniendo capacitación: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error al obtener la capacitación'
+                'message' => 'Error al obtener la capacitación: ' . $e->getMessage()
             ]);
         }
     }
@@ -2085,35 +2195,23 @@ class AdminTHController extends Controller
      */
     public function crearCapacitacion()
     {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
         try {
-            $rules = [
-                'titulo' => 'required|min_length[5]|max_length[200]',
-                'descripcion' => 'permit_empty|max_length[1000]',
-                'fecha_inicio' => 'required|valid_date',
-                'fecha_fin' => 'required|valid_date',
-                'cupo_maximo' => 'required|integer|greater_than[0]',
-                'instructor' => 'required|min_length[3]|max_length[100]',
-                'lugar' => 'required|min_length[3]|max_length[200]',
-                'horario' => 'required|min_length[5]|max_length[100]'
-            ];
+            $nombre = $this->request->getPost('nombre');
+            $duracion = $this->request->getPost('duracion');
+            $modalidad = $this->request->getPost('modalidad');
 
-            if (!$this->validate($rules)) {
+            if (empty($nombre) || empty($duracion) || empty($modalidad)) {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Datos de entrada inválidos',
-                    'errors' => $this->validator->getErrors()
+                    'message' => 'Los campos Nombre, Duración y Modalidad son obligatorios'
                 ]);
             }
 
-            // Validar que fecha_fin sea posterior a fecha_inicio
-            $fechaInicio = strtotime($this->request->getPost('fecha_inicio'));
-            $fechaFin = strtotime($this->request->getPost('fecha_fin'));
+            // Validar fechas si se proporcionan
+            $fechaInicio = $this->request->getPost('fecha_inicio');
+            $fechaFin = $this->request->getPost('fecha_fin');
             
-            if ($fechaFin <= $fechaInicio) {
+            if ($fechaInicio && $fechaFin && strtotime($fechaFin) <= strtotime($fechaInicio)) {
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'La fecha de fin debe ser posterior a la fecha de inicio'
@@ -2121,28 +2219,27 @@ class AdminTHController extends Controller
             }
 
             $capacitacionModel = new CapacitacionModel();
+            
             $data = [
-                'titulo' => $this->request->getPost('titulo'),
-                'descripcion' => $this->request->getPost('descripcion'),
-                'fecha_inicio' => $this->request->getPost('fecha_inicio'),
-                'fecha_fin' => $this->request->getPost('fecha_fin'),
-                'cupo_maximo' => $this->request->getPost('cupo_maximo'),
-                'instructor' => $this->request->getPost('instructor'),
-                'lugar' => $this->request->getPost('lugar'),
-                'horario' => $this->request->getPost('horario'),
-                'estado' => 'PROGRAMADA',
-                'creado_por' => session()->get('id_usuario'),
-                'fecha_creacion' => date('Y-m-d H:i:s')
+                'nombre' => $nombre,
+                'descripcion' => $this->request->getPost('descripcion') ?? '',
+                'duracion_horas' => (int) $duracion,
+                'modalidad' => $modalidad,
+                'estado' => $this->request->getPost('estado') ?? 'ACTIVA',
+                'fecha_inicio' => $fechaInicio ?: date('Y-m-d'),
+                'fecha_fin' => $fechaFin ?: null,
+                'cupo_maximo' => $this->request->getPost('cupo_maximo') ?: 20,
+                'creado_por' => session()->get('id_usuario')
             ];
 
-            if ($capacitacionModel->insert($data)) {
+            if ($capacitacionModel->insert($data, false)) {
                 // Registrar log
                 $logModel = new LogSistemaModel();
                 $logModel->registrarLog(
                     session()->get('id_usuario'),
                     'CREAR_CAPACITACION',
                     'CAPACITACIONES',
-                    "Capacitación creada: {$data['titulo']}"
+                    "Capacitación creada: {$data['nombre']}"
                 );
 
                 return $this->response->setJSON([
@@ -2150,9 +2247,10 @@ class AdminTHController extends Controller
                     'message' => 'Capacitación creada correctamente'
                 ]);
             } else {
+                $errors = $capacitacionModel->errors();
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Error al crear la capacitación'
+                    'message' => 'Error al crear la capacitación: ' . implode(', ', $errors)
                 ]);
             }
 
@@ -2160,7 +2258,7 @@ class AdminTHController extends Controller
             log_message('error', 'Error creando capacitación: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error interno del servidor'
+                'message' => 'Error al crear capacitación: ' . $e->getMessage()
             ]);
         }
     }
@@ -2170,38 +2268,24 @@ class AdminTHController extends Controller
      */
     public function actualizarCapacitacion()
     {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
         try {
             $idCapacitacion = $this->request->getPost('id_capacitacion');
-            
-            $rules = [
-                'id_capacitacion' => 'required|integer',
-                'titulo' => 'required|min_length[5]|max_length[200]',
-                'descripcion' => 'permit_empty|max_length[1000]',
-                'fecha_inicio' => 'required|valid_date',
-                'fecha_fin' => 'required|valid_date',
-                'cupo_maximo' => 'required|integer|greater_than[0]',
-                'instructor' => 'required|min_length[3]|max_length[100]',
-                'lugar' => 'required|min_length[3]|max_length[200]',
-                'horario' => 'required|min_length[5]|max_length[100]'
-            ];
+            $nombre = $this->request->getPost('nombre');
+            $duracion = $this->request->getPost('duracion');
+            $modalidad = $this->request->getPost('modalidad');
 
-            if (!$this->validate($rules)) {
+            if (empty($idCapacitacion) || empty($nombre) || empty($duracion) || empty($modalidad)) {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Datos de entrada inválidos',
-                    'errors' => $this->validator->getErrors()
+                    'message' => 'Los campos ID, Nombre, Duración y Modalidad son obligatorios'
                 ]);
             }
 
-            // Validar que fecha_fin sea posterior a fecha_inicio
-            $fechaInicio = strtotime($this->request->getPost('fecha_inicio'));
-            $fechaFin = strtotime($this->request->getPost('fecha_fin'));
+            // Validar fechas si se proporcionan
+            $fechaInicio = $this->request->getPost('fecha_inicio');
+            $fechaFin = $this->request->getPost('fecha_fin');
             
-            if ($fechaFin <= $fechaInicio) {
+            if ($fechaInicio && $fechaFin && strtotime($fechaFin) <= strtotime($fechaInicio)) {
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'La fecha de fin debe ser posterior a la fecha de inicio'
@@ -2218,24 +2302,15 @@ class AdminTHController extends Controller
                 ]);
             }
 
-            // Verificar que no se pueda editar si ya tiene inscritos
-            $totalInscritos = $capacitacionModel->contarInscritos($idCapacitacion);
-            if ($totalInscritos > 0) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'No se puede editar una capacitación que ya tiene inscritos'
-                ]);
-            }
-
             $data = [
-                'titulo' => $this->request->getPost('titulo'),
-                'descripcion' => $this->request->getPost('descripcion'),
-                'fecha_inicio' => $this->request->getPost('fecha_inicio'),
-                'fecha_fin' => $this->request->getPost('fecha_fin'),
-                'cupo_maximo' => $this->request->getPost('cupo_maximo'),
-                'instructor' => $this->request->getPost('instructor'),
-                'lugar' => $this->request->getPost('lugar'),
-                'horario' => $this->request->getPost('horario')
+                'nombre' => $nombre,
+                'descripcion' => $this->request->getPost('descripcion') ?? '',
+                'duracion_horas' => (int) $duracion,
+                'modalidad' => $modalidad,
+                'estado' => $this->request->getPost('estado') ?? $capacitacion['estado'],
+                'fecha_inicio' => $fechaInicio ?: null,
+                'fecha_fin' => $fechaFin ?: null,
+                'cupo_maximo' => $this->request->getPost('cupo_maximo') ?: $capacitacion['cupo_maximo']
             ];
 
             if ($capacitacionModel->update($idCapacitacion, $data)) {
@@ -2245,7 +2320,7 @@ class AdminTHController extends Controller
                     session()->get('id_usuario'),
                     'EDITAR_CAPACITACION',
                     'CAPACITACIONES',
-                    "Capacitación editada: {$data['titulo']}"
+                    "Capacitación editada: {$data['nombre']}"
                 );
 
                 return $this->response->setJSON([
@@ -2253,9 +2328,10 @@ class AdminTHController extends Controller
                     'message' => 'Capacitación actualizada correctamente'
                 ]);
             } else {
+                $errors = $capacitacionModel->errors();
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Error al actualizar la capacitación'
+                    'message' => 'Error al actualizar: ' . implode(', ', $errors)
                 ]);
             }
 
@@ -2263,7 +2339,7 @@ class AdminTHController extends Controller
             log_message('error', 'Error editando capacitación: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error interno del servidor'
+                'message' => 'Error al actualizar: ' . $e->getMessage()
             ]);
         }
     }
@@ -2367,20 +2443,16 @@ class AdminTHController extends Controller
      */
     public function cambiarEstadoCapacitacion()
     {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
         try {
             $idCapacitacion = $this->request->getPost('id_capacitacion');
             $nuevoEstado = $this->request->getPost('estado');
 
-            $estadosValidos = ['PROGRAMADA', 'EN_CURSO', 'COMPLETADA', 'CANCELADA', 'INACTIVA'];
+            $estadosValidos = ['ACTIVA', 'INACTIVA', 'EN_CURSO', 'COMPLETADA', 'CANCELADA'];
             
             if (!in_array($nuevoEstado, $estadosValidos)) {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Estado no válido'
+                    'message' => 'Estado no válido. Estados permitidos: ' . implode(', ', $estadosValidos)
                 ]);
             }
 
@@ -2401,12 +2473,12 @@ class AdminTHController extends Controller
                     session()->get('id_usuario'),
                     'CAMBIAR_ESTADO_CAPACITACION',
                     'CAPACITACIONES',
-                    "Estado cambiado a {$nuevoEstado} para capacitación: {$capacitacion['titulo']}"
+                    "Estado cambiado a {$nuevoEstado} para capacitación: {$capacitacion['nombre']}"
                 );
 
                 return $this->response->setJSON([
                     'success' => true,
-                    'message' => 'Estado de capacitación actualizado correctamente'
+                    'message' => 'Estado de capacitación actualizado a ' . $nuevoEstado
                 ]);
             } else {
                 return $this->response->setJSON([
@@ -2419,20 +2491,16 @@ class AdminTHController extends Controller
             log_message('error', 'Error cambiando estado de capacitación: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error interno del servidor'
+                'message' => 'Error al cambiar estado: ' . $e->getMessage()
             ]);
         }
     }
 
     /**
-     * Eliminar capacitación
+     * Eliminar capacitación (solo si es INACTIVA)
      */
     public function eliminarCapacitacion()
     {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
         try {
             $idCapacitacion = $this->request->getPost('id_capacitacion');
 
@@ -2446,20 +2514,11 @@ class AdminTHController extends Controller
                 ]);
             }
 
-            // Verificar que no tenga inscritos
-            $totalInscritos = $capacitacionModel->contarInscritos($idCapacitacion);
-            if ($totalInscritos > 0) {
+            // Solo se pueden borrar capacitaciones INACTIVAS
+            if ($capacitacion['estado'] !== 'INACTIVA') {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'No se puede eliminar una capacitación que tiene inscritos'
-                ]);
-            }
-
-            // Verificar que no esté en curso o finalizada
-            if (in_array($capacitacion['estado'], ['EN_CURSO', 'COMPLETADA'])) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'No se puede eliminar una capacitación en curso o finalizada'
+                    'message' => 'Solo se pueden borrar capacitaciones inactivas. Estado actual: ' . $capacitacion['estado']
                 ]);
             }
 
@@ -2470,7 +2529,7 @@ class AdminTHController extends Controller
                     session()->get('id_usuario'),
                     'ELIMINAR_CAPACITACION',
                     'CAPACITACIONES',
-                    "Capacitación eliminada: {$capacitacion['titulo']}"
+                    "Capacitación eliminada: {$capacitacion['nombre']}"
                 );
 
                 return $this->response->setJSON([
@@ -2488,9 +2547,9 @@ class AdminTHController extends Controller
             log_message('error', 'Error eliminando capacitación: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error interno del servidor'
+                'message' => 'Error al eliminar: ' . $e->getMessage()
             ]);
-                }
+        }
     }
 
     /**
@@ -2944,6 +3003,556 @@ class AdminTHController extends Controller
                 'titulo' => 'Error de Conexión',
                 'mensaje' => 'Error al conectar con Google: ' . $e->getMessage()
             ]);
+        }
+    }
+
+    // ==================== EVALUACIONES ENTRE PARES ====================
+
+    /**
+     * Vista principal de evaluaciones entre pares
+     */
+    public function evaluacionesPares()
+    {
+        return view('Roles/AdminTH/evaluaciones_pares');
+    }
+
+    /**
+     * Obtener docentes para los selects
+     */
+    public function obtenerDocentes()
+    {
+        try {
+            $empleadoModel = new EmpleadoModel();
+            $docentes = $empleadoModel
+                ->where('tipo_empleado', 'DOCENTE')
+                ->where('activo', 1)
+                ->select('id_empleado, nombres, apellidos, departamento')
+                ->findAll();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'docentes' => $docentes
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al obtener docentes: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Obtener todas las evaluaciones entre pares
+     */
+    public function obtenerEvaluacionesPares()
+    {
+        try {
+            $model = new EvaluacionParModel();
+            $evaluaciones = $model->getTodasConNombres();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'evaluaciones' => $evaluaciones
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Asignar una evaluación entre pares
+     */
+    public function asignarEvaluacionPar()
+    {
+        try {
+            $evaluadorId = $this->request->getPost('evaluador_id');
+            $evaluadoId  = $this->request->getPost('evaluado_id');
+
+            if (empty($evaluadorId) || empty($evaluadoId)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Debe seleccionar evaluador y evaluado'
+                ]);
+            }
+
+            // Validación: no puede evaluarse a sí mismo
+            if ($evaluadorId == $evaluadoId) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Un docente no puede evaluarse a sí mismo'
+                ]);
+            }
+
+            // Validar que ambos sean docentes activos
+            $empleadoModel = new EmpleadoModel();
+            $evaluador = $empleadoModel->where('id_empleado', $evaluadorId)->where('tipo_empleado', 'DOCENTE')->first();
+            $evaluado  = $empleadoModel->where('id_empleado', $evaluadoId)->where('tipo_empleado', 'DOCENTE')->first();
+
+            if (!$evaluador || !$evaluado) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Ambos participantes deben ser docentes activos'
+                ]);
+            }
+
+            $model = new EvaluacionParModel();
+            $data = [
+                'evaluador_id'     => $evaluadorId,
+                'evaluado_id'      => $evaluadoId,
+                'estado'           => 'pendiente',
+                'fecha_asignacion' => date('Y-m-d H:i:s')
+            ];
+
+            if ($model->insert($data)) {
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    session()->get('id_usuario'),
+                    'ASIGNAR_EVALUACION_PAR',
+                    'EVALUACIONES_PARES',
+                    "Evaluación asignada: {$evaluador['nombres']} {$evaluador['apellidos']} evalúa a {$evaluado['nombres']} {$evaluado['apellidos']}"
+                );
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Evaluación entre pares asignada correctamente'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al asignar la evaluación'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Eliminar una evaluación entre pares (solo si está pendiente)
+     */
+    public function eliminarEvaluacionPar()
+    {
+        try {
+            $id = $this->request->getPost('id');
+            $model = new EvaluacionParModel();
+            $eval = $model->find($id);
+
+            if (!$eval) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Evaluación no encontrada']);
+            }
+
+            if ($eval['estado'] !== 'pendiente') {
+                return $this->response->setJSON(['success' => false, 'message' => 'Solo se pueden eliminar evaluaciones pendientes']);
+            }
+
+            $model->delete($id);
+            return $this->response->setJSON(['success' => true, 'message' => 'Evaluación eliminada correctamente']);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    // ==================== GESTIÓN DE EVALUACIONES ====================
+
+    /**
+     * Obtener todas las evaluaciones (AJAX)
+     */
+    public function obtenerEvaluaciones()
+    {
+        try {
+            $db = \Config\Database::connect();
+
+            // Traer evaluaciones de evaluaciones_empleados con JOINs
+            $evaluaciones = $db->table('evaluaciones_empleados ee')
+                ->select('ee.id_evaluacion_empleado as id, ee.id_evaluacion, ee.id_empleado, ee.id_evaluador,
+                          ee.fecha_evaluacion, ee.puntaje_total, ee.observaciones,
+                          e.nombre as nombre_evaluacion, e.tipo_evaluacion, e.estado,
+                          emp.nombres as nombres_empleado, emp.apellidos as apellidos_empleado,
+                          CONCAT(evaluador.nombres, " ", evaluador.apellidos) as nombre_evaluador')
+                ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
+                ->join('empleados emp', 'emp.id_empleado = ee.id_empleado', 'left')
+                ->join('empleados evaluador', 'evaluador.id_empleado = ee.id_evaluador', 'left')
+                ->orderBy('ee.fecha_evaluacion', 'DESC')
+                ->get()
+                ->getResultArray();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'evaluaciones' => $evaluaciones
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al cargar evaluaciones: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Obtener una evaluación específica (AJAX)
+     */
+    public function obtenerEvaluacion2($id)
+    {
+        try {
+            $db = \Config\Database::connect();
+            $eval = $db->table('evaluaciones_empleados ee')
+                ->select('ee.*, e.nombre as nombre_evaluacion, e.tipo_evaluacion, e.estado as evaluacion_estado,
+                          emp.nombres as nombres_empleado, emp.apellidos as apellidos_empleado,
+                          CONCAT(evaluador.nombres, " ", evaluador.apellidos) as nombre_evaluador')
+                ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
+                ->join('empleados emp', 'emp.id_empleado = ee.id_empleado', 'left')
+                ->join('empleados evaluador', 'evaluador.id_empleado = ee.id_evaluador', 'left')
+                ->where('ee.id_evaluacion_empleado', $id)
+                ->get()
+                ->getRowArray();
+
+            if (!$eval) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Evaluación no encontrada']);
+            }
+
+            return $this->response->setJSON(['success' => true, 'evaluacion' => $eval]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Crear una evaluación (AJAX) - Unificado para general y entre pares
+     */
+    public function crearEvaluacion()
+    {
+        try {
+            $tipo = $this->request->getPost('tipo_evaluacion');
+            $empleadoId = $this->request->getPost('empleado_id');
+            $fecha = $this->request->getPost('fecha_evaluacion') ?: date('Y-m-d');
+            $observaciones = $this->request->getPost('observaciones');
+
+            if (empty($tipo) || empty($empleadoId)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Tipo de evaluación y empleado son obligatorios']);
+            }
+
+            $db = \Config\Database::connect();
+            $evalModel = new EvaluacionModel();
+            $empleadoModel = new EmpleadoModel();
+
+            // ========================
+            // AUTOEVALUACIÓN
+            // ========================
+            if ($tipo === 'Autoevaluación') {
+                // 1. Crear evaluación padre con estado válido
+                $idEvaluacion = $evalModel->insert([
+                    'nombre'          => 'Autoevaluación',
+                    'descripcion'     => 'Autoevaluación del empleado',
+                    'tipo_evaluacion' => 'Autoevaluación',
+                    'fecha_inicio'    => $fecha,
+                    'fecha_fin'       => $fecha,
+                    'estado'          => 'Planificada'
+                ]);
+
+                if (!$idEvaluacion) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Error al crear la evaluación']);
+                }
+
+                // 2. Insertar registro: evaluador = evaluado (se evalúa a sí mismo)
+                $db->table('evaluaciones_empleados')->insert([
+                    'id_evaluacion'    => $idEvaluacion,
+                    'id_empleado'      => $empleadoId,
+                    'id_evaluador'     => $empleadoId,
+                    'fecha_evaluacion' => $fecha,
+                    'puntaje_total'    => null,
+                    'observaciones'    => $observaciones ?: null
+                ]);
+
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    session()->get('id_usuario'),
+                    'CREAR_AUTOEVALUACION',
+                    'EVALUACIONES',
+                    'Autoevaluación creada para empleado ID ' . $empleadoId
+                );
+
+                return $this->response->setJSON(['success' => true, 'message' => 'Autoevaluación creada correctamente']);
+            }
+
+            // ========================
+            // EVALUACIÓN 360°
+            // ========================
+            if ($tipo === 'Evaluación 360') {
+                // Obtener TODOS los empleados activos EXCEPTO el evaluado
+                $evaluadores = $empleadoModel
+                    ->where('id_empleado !=', $empleadoId)
+                    ->where('activo', 1)
+                    ->findAll();
+
+                if (empty($evaluadores)) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'No hay otros empleados activos para asignar como evaluadores']);
+                }
+
+                // 1. Crear evaluación padre con estado válido
+                $idEvaluacion = $evalModel->insert([
+                    'nombre'          => 'Evaluación 360°',
+                    'descripcion'     => 'Evaluación 360 - Todos los empleados evalúan',
+                    'tipo_evaluacion' => 'Evaluación 360',
+                    'fecha_inicio'    => $fecha,
+                    'fecha_fin'       => $fecha,
+                    'estado'          => 'Planificada'
+                ]);
+
+                if (!$idEvaluacion) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Error al crear la evaluación padre']);
+                }
+
+                // 2. insertBatch: un registro por cada evaluador
+                $batchData = [];
+                foreach ($evaluadores as $evaluador) {
+                    $batchData[] = [
+                        'id_evaluacion'    => $idEvaluacion,
+                        'id_empleado'      => $empleadoId,
+                        'id_evaluador'     => $evaluador['id_empleado'],
+                        'fecha_evaluacion' => $fecha,
+                        'puntaje_total'    => null,
+                        'observaciones'    => $observaciones ?: null
+                    ];
+                }
+                $db->table('evaluaciones_empleados')->insertBatch($batchData);
+
+                $total = count($batchData);
+
+                $logModel = new LogSistemaModel();
+                $logModel->registrarLog(
+                    session()->get('id_usuario'),
+                    'CREAR_EVALUACION_360',
+                    'EVALUACIONES',
+                    "Evaluación 360° creada con {$total} evaluadores"
+                );
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => "Evaluación 360° creada exitosamente. Se generaron {$total} evaluaciones."
+                ]);
+            }
+
+            return $this->response->setJSON(['success' => false, 'message' => 'Tipo de evaluación no válido. Use Autoevaluación o Evaluación 360.']);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error SQL: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Actualizar evaluación (AJAX)
+     */
+    public function actualizarEvaluacion2()
+    {
+        try {
+            $id = $this->request->getPost('id');
+            $db = \Config\Database::connect();
+
+            $data = [
+                'puntaje_total' => $this->request->getPost('puntaje_total'),
+                'observaciones' => $this->request->getPost('observaciones'),
+                'fecha_evaluacion' => $this->request->getPost('fecha_evaluacion') ?: date('Y-m-d')
+            ];
+
+            $db->table('evaluaciones_empleados')->where('id_evaluacion_empleado', $id)->update($data);
+
+            return $this->response->setJSON(['success' => true, 'message' => 'Evaluación actualizada']);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Cambiar estado de evaluación (AJAX)
+     */
+    public function cambiarEstadoEvaluacion2()
+    {
+        try {
+            $id = $this->request->getPost('id_evaluacion');
+            $estado = $this->request->getPost('estado');
+
+            // Validar que el estado sea uno de los permitidos por la BD
+            $estadosValidos = ['Planificada', 'En curso', 'Finalizada'];
+            if (!in_array($estado, $estadosValidos)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Estado no válido. Use: ' . implode(', ', $estadosValidos)
+                ]);
+            }
+
+            $db = \Config\Database::connect();
+            $ee = $db->table('evaluaciones_empleados')->where('id_evaluacion_empleado', $id)->get()->getRowArray();
+            if ($ee) {
+                $db->table('evaluaciones')->where('id_evaluacion', $ee['id_evaluacion'])->update(['estado' => $estado]);
+            }
+
+            return $this->response->setJSON(['success' => true, 'message' => 'Estado cambiado a ' . $estado]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Eliminar evaluación (AJAX)
+     */
+    public function eliminarEvaluacion2()
+    {
+        try {
+            $id = $this->request->getPost('id_evaluacion');
+            $db = \Config\Database::connect();
+            $db->table('evaluaciones_empleados')->where('id_evaluacion_empleado', $id)->delete();
+
+            return $this->response->setJSON(['success' => true, 'message' => 'Evaluación eliminada correctamente']);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Obtener empleados para los selects (AJAX)
+     */
+    public function obtenerEmpleadosJSON()
+    {
+        try {
+            $empleadoModel = new EmpleadoModel();
+            $tipo = $this->request->getGet('tipo');
+
+            if ($tipo) {
+                $empleados = $empleadoModel->where('tipo_empleado', $tipo)->where('activo', 1)
+                    ->select('id_empleado, nombres, apellidos, tipo_empleado, departamento')->findAll();
+            } else {
+                $empleados = $empleadoModel->where('activo', 1)
+                    ->select('id_empleado, nombres, apellidos, tipo_empleado, departamento')->findAll();
+            }
+
+            return $this->response->setJSON(['success' => true, 'empleados' => $empleados]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Eliminar evaluaciones masivamente (AJAX)
+     */
+    public function eliminarEvaluacionesMasivo()
+    {
+        try {
+            $ids = $this->request->getPost('ids');
+
+            if (empty($ids) || !is_array($ids)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'No se recibieron IDs para eliminar']);
+            }
+
+            $db = \Config\Database::connect();
+            $db->table('evaluaciones_empleados')
+               ->whereIn('id_evaluacion_empleado', $ids)
+               ->delete();
+
+            $total = count($ids);
+
+            $logModel = new LogSistemaModel();
+            $logModel->registrarLog(
+                session()->get('id_usuario'),
+                'ELIMINAR_EVALUACIONES_MASIVO',
+                'EVALUACIONES',
+                "Se eliminaron {$total} evaluaciones"
+            );
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => "{$total} evaluación(es) eliminada(s) correctamente"
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Obtener resultados globales consolidados de un empleado (AJAX)
+     * Algoritmo: Autoevaluación(/25) + Promedio360(/25) = Calificación Final(/50) → %
+     */
+    public function obtenerResultadosGlobales($empleadoId)
+    {
+        try {
+            $db = \Config\Database::connect();
+            $empleadoModel = new EmpleadoModel();
+
+            // Obtener datos del empleado
+            $empleado = $empleadoModel->find($empleadoId);
+            if (!$empleado) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Empleado no encontrado']);
+            }
+
+            $nombreEmpleado = ($empleado['nombres'] ?? '') . ' ' . ($empleado['apellidos'] ?? '');
+
+            // 1. Buscar autoevaluación completada (evaluador = evaluado)
+            $autoeval = $db->table('evaluaciones_empleados ee')
+                ->select('ee.puntaje_total')
+                ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion')
+                ->where('ee.id_empleado', $empleadoId)
+                ->where('ee.id_evaluador', $empleadoId)
+                ->where('ee.puntaje_total >', 0)
+                ->orderBy('ee.fecha_evaluacion', 'DESC')
+                ->get()
+                ->getRowArray();
+
+            $puntajeAuto = $autoeval ? floatval($autoeval['puntaje_total']) : null;
+
+            // 2. Buscar evaluaciones 360 completadas (donde es evaluado, evaluador != evaluado)
+            $eval360 = $db->table('evaluaciones_empleados ee')
+                ->select('AVG(ee.puntaje_total) as promedio, COUNT(*) as total')
+                ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion')
+                ->where('ee.id_empleado', $empleadoId)
+                ->where('ee.id_evaluador !=', $empleadoId)
+                ->where('ee.puntaje_total >', 0)
+                ->get()
+                ->getRowArray();
+
+            $promedio360 = ($eval360 && $eval360['total'] > 0) ? round(floatval($eval360['promedio']), 1) : null;
+            $total360 = $eval360 ? intval($eval360['total']) : 0;
+
+            // 3. Calificación final
+            $calAuto = $puntajeAuto ?? 0;
+            $cal360 = $promedio360 ?? 0;
+            $calificacionFinal = round($calAuto + $cal360, 1);
+            $porcentaje = round(($calificacionFinal / 50) * 100, 1);
+
+            if ($puntajeAuto === null && $promedio360 === null) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No hay evaluaciones completadas para este empleado'
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'resultados' => [
+                    'nombre_empleado'    => $nombreEmpleado,
+                    'autoevaluacion'     => $puntajeAuto,
+                    'promedio_360'       => $promedio360,
+                    'total_360'          => $total360,
+                    'calificacion_final' => $calificacionFinal,
+                    'porcentaje'         => $porcentaje
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
 }

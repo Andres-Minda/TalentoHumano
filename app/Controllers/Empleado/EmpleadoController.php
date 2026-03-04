@@ -5,6 +5,7 @@ namespace App\Controllers\Empleado;
 use App\Models\EmpleadoModel;
 use App\Models\TituloAcademicoModel;
 use App\Models\CapacitacionEmpleadoModel;
+use App\Models\CapacitacionModel;
 use App\Models\UsuarioModel;
 use App\Models\InasistenciaModel;
 use App\Models\NotificacionModel;
@@ -122,7 +123,7 @@ class EmpleadoController extends Controller
     }
 
     /**
-     * Capacitaciones del empleado
+     * Capacitaciones del empleado - Vista principal
      */
     public function capacitaciones()
     {
@@ -136,6 +137,128 @@ class EmpleadoController extends Controller
         ];
 
         return view('Roles/Empleado/capacitaciones', $data);
+    }
+
+    /**
+     * Obtener capacitaciones del empleado (AJAX) - Req 2
+     */
+    public function obtenerCapacitacionesEmpleado()
+    {
+        try {
+            $idEmpleado = session()->get('id_empleado');
+            $capModel = new CapacitacionModel();
+            
+            $misCapacitaciones = [];
+            if ($idEmpleado) {
+                $misCapacitaciones = $capModel->getCapacitacionesPorEmpleado($idEmpleado);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'capacitaciones' => $misCapacitaciones
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error obteniendo capacitaciones del empleado: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al obtener capacitaciones: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Obtener capacitaciones disponibles (ACTIVA) para inscribirse (AJAX) - Req 2+4
+     */
+    public function obtenerCapacitacionesDisponibles()
+    {
+        try {
+            $capModel = new CapacitacionModel();
+            $disponibles = $capModel->getCapacitacionesVisiblesEmpleado();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'capacitaciones' => $disponibles
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error obteniendo capacitaciones disponibles: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al obtener capacitaciones: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Inscribir empleado en una capacitación (AJAX) - Req 4
+     * Solo permite inscripción si el estado de la capacitación es ACTIVA
+     */
+    public function inscribirCapacitacion()
+    {
+        try {
+            $idCapacitacion = $this->request->getPost('id_capacitacion');
+            $idEmpleado = session()->get('id_empleado');
+
+            if (empty($idCapacitacion) || empty($idEmpleado)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Datos de inscripción incompletos'
+                ]);
+            }
+
+            $capModel = new CapacitacionModel();
+            $capacitacion = $capModel->find($idCapacitacion);
+
+            if (!$capacitacion) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Capacitación no encontrada'
+                ]);
+            }
+
+            // Validación de negocio: solo se puede inscribir si está ACTIVA
+            if ($capacitacion['estado'] !== 'ACTIVA') {
+                $mensajes = [
+                    'EN_CURSO' => 'La capacitación está en curso y las inscripciones están cerradas.',
+                    'INACTIVA' => 'La capacitación está inactiva y no acepta inscripciones.',
+                    'COMPLETADA' => 'La capacitación ya finalizó.',
+                    'CANCELADA' => 'La capacitación fue cancelada.'
+                ];
+                $msg = $mensajes[$capacitacion['estado']] ?? 'La capacitación no está disponible para inscripción.';
+                
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => $msg
+                ]);
+            }
+
+            // Verificar si ya está inscrito
+            if ($capModel->empleadoInscrito($idCapacitacion, $idEmpleado)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Ya estás inscrito en esta capacitación'
+                ]);
+            }
+
+            // Inscribir
+            if ($capModel->asignarEmpleado($idCapacitacion, $idEmpleado)) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Te has inscrito exitosamente en la capacitación'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al inscribirse en la capacitación'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error inscribiendo en capacitación: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al procesar inscripción: ' . $e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -435,6 +558,180 @@ class EmpleadoController extends Controller
         } catch (\Exception $e) {
             log_message('error', 'Error al actualizar perfil: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Error al actualizar el perfil: ' . $e->getMessage());
+        }
+    }
+
+    // ==================== EVALUACIONES - RÚBRICA ====================
+
+    /**
+     * Obtener evaluaciones asignadas al empleado actual como evaluador (AJAX)
+     */
+    public function misEvaluacionesJSON()
+    {
+        try {
+            $idEmpleado = session()->get('id_empleado');
+
+            if (!$idEmpleado) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Sesión no válida']);
+            }
+
+            $db = \Config\Database::connect();
+
+            // Evaluaciones donde el empleado es el EVALUADOR
+            $evaluaciones = $db->table('evaluaciones_empleados ee')
+                ->select('ee.id_evaluacion_empleado as id, ee.id_evaluacion, ee.id_empleado, ee.id_evaluador,
+                          ee.fecha_evaluacion, ee.puntaje_total, ee.observaciones,
+                          ee.puntaje_responsabilidad, ee.puntaje_equipo, ee.puntaje_etica,
+                          ee.puntaje_comunicacion, ee.puntaje_compromiso,
+                          e.nombre as nombre_evaluacion, e.tipo_evaluacion, e.estado,
+                          emp.nombres as nombres_evaluado, emp.apellidos as apellidos_evaluado')
+                ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
+                ->join('empleados emp', 'emp.id_empleado = ee.id_empleado', 'left')
+                ->where('ee.id_evaluador', $idEmpleado)
+                ->orderBy('ee.fecha_evaluacion', 'DESC')
+                ->get()
+                ->getResultArray();
+
+            // Clasificar: pendientes (sin puntaje) y completadas (con puntaje)
+            $pendientes = [];
+            $completadas = [];
+            foreach ($evaluaciones as $ev) {
+                if ($ev['puntaje_total'] === null || $ev['puntaje_total'] == 0) {
+                    $pendientes[] = $ev;
+                } else {
+                    $completadas[] = $ev;
+                }
+            }
+
+            return $this->response->setJSON([
+                'success'     => true,
+                'pendientes'  => $pendientes,
+                'completadas' => $completadas,
+                'total'       => count($evaluaciones),
+                'total_pendientes' => count($pendientes),
+                'total_completadas' => count($completadas)
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Obtener detalle de una evaluación específica (AJAX)
+     */
+    public function detalleEvaluacionJSON($id)
+    {
+        try {
+            $db = \Config\Database::connect();
+            $eval = $db->table('evaluaciones_empleados ee')
+                ->select('ee.*, e.nombre as nombre_evaluacion, e.tipo_evaluacion, e.estado as evaluacion_estado,
+                          emp.nombres as nombres_evaluado, emp.apellidos as apellidos_evaluado,
+                          CONCAT(evaluador.nombres, " ", evaluador.apellidos) as nombre_evaluador')
+                ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
+                ->join('empleados emp', 'emp.id_empleado = ee.id_empleado', 'left')
+                ->join('empleados evaluador', 'evaluador.id_empleado = ee.id_evaluador', 'left')
+                ->where('ee.id_evaluacion_empleado', $id)
+                ->get()
+                ->getRowArray();
+
+            if (!$eval) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Evaluación no encontrada']);
+            }
+
+            return $this->response->setJSON(['success' => true, 'evaluacion' => $eval]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Guardar rúbrica de evaluación (AJAX)
+     * Recibe 5 puntajes (1-5), los suma en puntaje_total (max 25)
+     */
+    public function guardarRubrica()
+    {
+        try {
+            $id = $this->request->getPost('id_evaluacion_empleado');
+            $pResponsabilidad = (int) $this->request->getPost('puntaje_responsabilidad');
+            $pEquipo          = (int) $this->request->getPost('puntaje_equipo');
+            $pEtica           = (int) $this->request->getPost('puntaje_etica');
+            $pComunicacion    = (int) $this->request->getPost('puntaje_comunicacion');
+            $pCompromiso      = (int) $this->request->getPost('puntaje_compromiso');
+            $observaciones    = $this->request->getPost('observaciones');
+
+            // Validar que todos los campos estén entre 1 y 5
+            $puntajes = [$pResponsabilidad, $pEquipo, $pEtica, $pComunicacion, $pCompromiso];
+            foreach ($puntajes as $p) {
+                if ($p < 1 || $p > 5) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Todos los criterios deben tener un valor entre 1 y 5'
+                    ]);
+                }
+            }
+
+            // Calcular puntaje total (suma de los 5 criterios, máximo 25)
+            $puntajeTotal = array_sum($puntajes);
+
+            $db = \Config\Database::connect();
+
+            // Verificar que la evaluación existe y pertenece al evaluador actual
+            $eval = $db->table('evaluaciones_empleados')
+                ->where('id_evaluacion_empleado', $id)
+                ->where('id_evaluador', session()->get('id_empleado'))
+                ->get()
+                ->getRowArray();
+
+            if (!$eval) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Evaluación no encontrada o no tienes permisos'
+                ]);
+            }
+
+            // Actualizar con los puntajes de la rúbrica
+            $db->table('evaluaciones_empleados')
+                ->where('id_evaluacion_empleado', $id)
+                ->update([
+                    'puntaje_responsabilidad' => $pResponsabilidad,
+                    'puntaje_equipo'          => $pEquipo,
+                    'puntaje_etica'           => $pEtica,
+                    'puntaje_comunicacion'    => $pComunicacion,
+                    'puntaje_compromiso'      => $pCompromiso,
+                    'puntaje_total'           => $puntajeTotal,
+                    'observaciones'           => $observaciones ?: null,
+                    'fecha_evaluacion'        => date('Y-m-d')
+                ]);
+
+            // Verificar si TODAS las evaluaciones de este grupo ya fueron completadas
+            $idEvaluacion = $eval['id_evaluacion'];
+            $sinCompletar = $db->table('evaluaciones_empleados')
+                ->where('id_evaluacion', $idEvaluacion)
+                ->where('puntaje_total IS NULL OR puntaje_total = 0')
+                ->countAllResults();
+
+            if ($sinCompletar == 0) {
+                // Todas completadas → marcar evaluación padre como Finalizada
+                $db->table('evaluaciones')
+                    ->where('id_evaluacion', $idEvaluacion)
+                    ->update(['estado' => 'Finalizada']);
+            } else {
+                // Al menos una completada → marcar como En curso
+                $db->table('evaluaciones')
+                    ->where('id_evaluacion', $idEvaluacion)
+                    ->update(['estado' => 'En curso']);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Evaluación completada correctamente. Puntaje total: ' . $puntajeTotal . '/25',
+                'puntaje_total' => $puntajeTotal
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
 }

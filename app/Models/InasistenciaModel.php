@@ -7,7 +7,7 @@ use CodeIgniter\Model;
 class InasistenciaModel extends Model
 {
     protected $table            = 'inasistencias';
-    protected $primaryKey       = 'id_inasistencia';
+    protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
@@ -23,11 +23,10 @@ class InasistenciaModel extends Model
         'registrado_por'
     ];
 
-    protected $useTimestamps = true;
-    protected $createdField  = 'fecha_registro';
-    protected $updatedField  = false;
+    protected $useTimestamps = false;
 
-    // Validaciones
+    // Deshabilitar validación del model para gestionar en controlador
+    protected $skipValidation = true;
     protected $validationRules = [
         'empleado_id'        => 'required|integer',
         'fecha_inasistencia' => 'required|valid_date',
@@ -71,7 +70,6 @@ class InasistenciaModel extends Model
         ]
     ];
 
-    protected $skipValidation = false;
     protected $cleanValidationRules = true;
 
     /**
@@ -213,8 +211,8 @@ class InasistenciaModel extends Model
      */
     public function verificarLimiteInasistencias($idEmpleado, $periodo = 'MENSUAL')
     {
-        $fechaInicio = date('Y-m-01'); // Primer día del mes actual
-        $fechaFin = date('Y-m-t');     // Último día del mes actual
+        $fechaInicio = date('Y-m-01');
+        $fechaFin = date('Y-m-t');
         
         if ($periodo === 'TRIMESTRAL') {
             $mes = date('n');
@@ -236,5 +234,29 @@ class InasistenciaModel extends Model
             'fecha_inicio' => $fechaInicio,
             'fecha_fin' => $fechaFin
         ];
+    }
+
+    /**
+     * Obtener total histórico de inasistencias de un empleado (Req 4)
+     */
+    public function obtenerTotalInasistencias($empleadoId)
+    {
+        return $this->where('empleado_id', $empleadoId)->countAllResults();
+    }
+
+    /**
+     * Obtener todas las inasistencias con acumulado por empleado (Req 4)
+     * Incluye subconsulta para contar el total histórico de cada empleado
+     */
+    public function obtenerInasistenciasConAcumulado()
+    {
+        return $this->db->table('inasistencias i')
+            ->select('i.*, 
+                      e.nombres, e.apellidos, e.tipo_empleado, e.departamento,
+                      (SELECT COUNT(*) FROM inasistencias i2 WHERE i2.empleado_id = i.empleado_id) as total_acumulado')
+            ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+            ->orderBy('i.created_at', 'DESC')
+            ->get()
+            ->getResultArray();
     }
 }

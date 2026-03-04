@@ -10,43 +10,58 @@
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb mb-0 p-0">
                         <li class="breadcrumb-item"><a href="<?= site_url('admin-th/dashboard') ?>">Dashboard</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Gestión de Evaluaciones</li>
+                        <li class="breadcrumb-item active">Gestión de Evaluaciones</li>
                     </ol>
                 </nav>
             </div>
         </div>
 
-        <!-- Page Header -->
+        <!-- Tabla -->
         <div class="row">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Gestión de Evaluaciones</h4>
-                        <div class="card-actions">
-                                                    <button type="button" class="btn btn-primary" onclick="nuevaEvaluacion()">
-                            <i class="bi bi-plus"></i> Nueva Evaluación
-                        </button>
-                        <button type="button" class="btn btn-info ms-2" onclick="configurarEvaluacionPares()">
-                            <i class="bi bi-people"></i> Evaluación Entre Pares
-                        </button>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="ti ti-clipboard-check me-2"></i>Gestión de Evaluaciones</h5>
+                        <div>
+                            <button type="button" class="btn btn-danger me-2 d-none" id="btnEliminarSeleccion" onclick="eliminarSeleccionados()">
+                                <i class="ti ti-trash me-1"></i> Eliminar Seleccionados (<span id="contadorSeleccion">0</span>)
+                            </button>
+                            <button type="button" class="btn btn-info me-2" onclick="mostrarSelectorGlobal()">
+                                <i class="ti ti-chart-bar me-1"></i> Resultados Globales
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="nuevaEvaluacion()">
+                                <i class="ti ti-plus me-1"></i> Nueva Evaluación
+                            </button>
                         </div>
                     </div>
                     <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="ti ti-search"></i></span>
+                                    <input type="text" class="form-control" id="filtroNombre" placeholder="Buscar por nombre de empleado..." oninput="filtrarPorNombre()">
+                                </div>
+                            </div>
+                        </div>
                         <div class="table-responsive">
-                            <table class="table table-striped" id="tablaEvaluaciones">
-                                <thead>
+                            <table class="table table-striped table-hover align-middle">
+                                <thead class="table-dark">
                                     <tr>
-                                        <th>ID</th>
-                                        <th>Empleado</th>
+                                        <th style="width:40px;"><input type="checkbox" class="form-check-input" id="checkAll" onchange="toggleAll(this)"></th>
+                                        <th>#</th>
+                                        <th>Empleado Evaluado</th>
+                                        <th>Evaluador</th>
                                         <th>Tipo</th>
                                         <th>Fecha</th>
                                         <th>Puntuación</th>
                                         <th>Estado</th>
-                                        <th>Acciones</th>
+                                        <th class="text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyEvaluaciones">
-                                    <!-- Los datos se cargarán dinámicamente -->
+                                    <tr><td colspan="9" class="text-center py-4">
+                                        <div class="spinner-border spinner-border-sm text-primary me-2"></div>Cargando evaluaciones...
+                                    </td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -57,184 +72,166 @@
     </div>
 </div>
 
-<!-- Modal para nueva/editar evaluación -->
+<!-- ========= MODAL: Nueva Evaluación ========= -->
 <div class="modal fade" id="modalEvaluacion" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Nueva Evaluación</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="ti ti-clipboard-plus me-2"></i>Nueva Evaluación</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="formEvaluacion">
+                    <!-- Tipo de Evaluación -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="empleado_id" class="form-label">Empleado *</label>
-                                <select class="form-select" id="empleado_id" name="empleado_id" required>
-                                    <option value="">Seleccionar empleado...</option>
-                                </select>
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Tipo de Evaluación <span class="text-danger">*</span></label>
+                            <select class="form-select" id="tipo_evaluacion" name="tipo_evaluacion" required onchange="onTipoChange()">
+                                <option value="">Seleccionar tipo...</option>
+                                <option value="Autoevaluación">Autoevaluación</option>
+                                <option value="Evaluación 360">Evaluación 360 (Todos evalúan)</option>
+                            </select>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="tipo_evaluacion" class="form-label">Tipo de Evaluación *</label>
-                                <select class="form-select" id="tipo_evaluacion" name="tipo_evaluacion" required>
-                                    <option value="">Seleccionar tipo...</option>
-                                    <option value="DESEMPEÑO">Desempeño</option>
-                                    <option value="COMPETENCIAS">Competencias</option>
-                                    <option value="PERIÓDICA">Periódica</option>
-                                </select>
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Fecha de Evaluación <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="fecha_evaluacion" name="fecha_evaluacion" required>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="fecha_evaluacion" class="form-label">Fecha de Evaluación *</label>
-                                <input type="date" class="form-control" id="fecha_evaluacion" name="fecha_evaluacion" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="puntuacion" class="form-label">Puntuación (1-10) *</label>
-                                <input type="number" class="form-control" id="puntuacion" name="puntuacion" min="1" max="10" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="observaciones" class="form-label">Observaciones</label>
-                        <textarea class="form-control" id="observaciones" name="observaciones" rows="3"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="guardarEvaluacion()">Guardar</button>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Modal para evaluación entre pares -->
-<div class="modal fade" id="modalEvaluacionPares" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Configurar Evaluación Entre Pares</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="formEvaluacionPares">
+                    <!-- Info dinámica del tipo -->
+                    <div class="alert alert-info d-none" id="info360">
+                        <i class="ti ti-info-circle me-1"></i>
+                        <strong>Evaluación 360°:</strong> El sistema asignará automáticamente a <strong>todos los empleados activos</strong> como evaluadores del empleado seleccionado.
+                    </div>
+                    <div class="alert alert-secondary d-none" id="infoAuto">
+                        <i class="ti ti-user me-1"></i>
+                        <strong>Autoevaluación:</strong> El empleado seleccionado se evaluará a <strong>sí mismo</strong>.
+                    </div>
+
+                    <!-- Empleado a Evaluar -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="periodo_evaluacion" class="form-label">Período de Evaluación *</label>
-                                <select class="form-select" id="periodo_evaluacion" name="periodo_evaluacion" required>
-                                    <option value="">Seleccionar período...</option>
-                                    <option value="2025-1">Primer Semestre 2025</option>
-                                    <option value="2025-2">Segundo Semestre 2025</option>
-                                    <option value="2026-1">Primer Semestre 2026</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="fecha_limite" class="form-label">Fecha Límite *</label>
-                                <input type="date" class="form-control" id="fecha_limite" name="fecha_limite" required>
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Empleado a Evaluar <span class="text-danger">*</span></label>
+                            <select class="form-select" id="empleado_id" name="empleado_id" required>
+                                <option value="">Cargando empleados...</option>
+                            </select>
                         </div>
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-12">
-                            <h6>Asignación de Evaluadores</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm" id="tablaAsignacionEvaluadores">
-                                    <thead>
-                                        <tr>
-                                            <th>Docente</th>
-                                            <th>Evaluador 1</th>
-                                            <th>Evaluador 2</th>
-                                            <th>Evaluador 3</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyAsignacionEvaluadores">
-                                        <!-- Se llenará dinámicamente -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+
+                    <!-- Observaciones -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Observaciones</label>
+                        <textarea class="form-control" id="observaciones" name="observaciones" rows="3" placeholder="Observaciones opcionales..."></textarea>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="guardarEvaluacionPares()">Guardar Configuración</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="ti ti-x me-1"></i>Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarEvaluacion()">
+                    <i class="ti ti-device-floppy me-1"></i>Guardar
+                </button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+let todosEmpleados = [];
+
 document.addEventListener('DOMContentLoaded', function() {
     cargarEvaluaciones();
-    cargarEmpleados();
+    cargarEmpleadosData();
+    document.getElementById('fecha_evaluacion').value = new Date().toISOString().split('T')[0];
 });
 
-function cargarEvaluaciones() {
-    // Mostrar loading
-    const tbody = document.getElementById('tbodyEvaluaciones');
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center"><i class="spinner-border spinner-border-sm"></i> Cargando evaluaciones...</td></tr>';
-    
-    // Obtener evaluaciones del servidor
-    fetch('<?= base_url('admin-th/evaluaciones/obtener') ?>')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                renderizarEvaluaciones(data.evaluaciones);
-            } else {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar evaluaciones</td></tr>';
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error de conexión</td></tr>';
-        });
+// ==================== CARGAR EMPLEADOS ====================
+function cargarEmpleadosData() {
+    fetch('<?= base_url('index.php/admin-th/empleados/obtener') ?>')
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            todosEmpleados = data.empleados;
+            const sel = document.getElementById('empleado_id');
+            sel.innerHTML = '<option value="">-- Seleccionar empleado --</option>';
+            todosEmpleados.forEach(e => {
+                sel.innerHTML += `<option value="${e.id_empleado}">${e.apellidos} ${e.nombres} (${e.tipo_empleado})</option>`;
+            });
+        }
+    })
+    .catch(err => console.error('Error cargando empleados:', err));
 }
 
-function renderizarEvaluaciones(evaluaciones) {
+// ==================== TIPO CHANGE ====================
+function onTipoChange() {
+    const tipo = document.getElementById('tipo_evaluacion').value;
+    document.getElementById('info360').classList.toggle('d-none', tipo !== 'Evaluación 360');
+    document.getElementById('infoAuto').classList.toggle('d-none', tipo !== 'Autoevaluación');
+}
+
+// ==================== CARGAR EVALUACIONES ====================
+function cargarEvaluaciones() {
+    const tbody = document.getElementById('tbodyEvaluaciones');
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Cargando...</td></tr>';
+    document.getElementById('checkAll').checked = false;
+    actualizarBotonEliminar();
+
+    fetch('<?= base_url('index.php/admin-th/evaluaciones/obtener') ?>')
+    .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+    })
+    .then(data => {
+        if (data.success) {
+            renderizar(data.evaluaciones);
+        } else {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-3"><i class="ti ti-alert-circle me-1"></i>${data.message || 'Error al cargar'}</td></tr>`;
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-3"><i class="ti ti-wifi-off me-1"></i>Error: ${err.message}</td></tr>`;
+    });
+}
+
+function renderizar(evals) {
     const tbody = document.getElementById('tbodyEvaluaciones');
     tbody.innerHTML = '';
 
-    if (evaluaciones.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay evaluaciones disponibles</td></tr>';
+    if (!evals || evals.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4"><i class="ti ti-inbox me-1"></i>No hay evaluaciones registradas</td></tr>';
         return;
     }
 
-    evaluaciones.forEach(evaluacion => {
+    evals.forEach((e, i) => {
+        const estadoBadges = { 'Planificada':'warning', 'En curso':'info', 'Finalizada':'success' };
+
+        // Puntuación dinámica por estado
+        let puntuacionHTML;
+        const estado = e.estado || '';
+        if (estado === 'Finalizada') {
+            const puntaje = e.puntaje_total ? parseFloat(e.puntaje_total).toFixed(1) : '0.0';
+            const pColor = parseFloat(puntaje) >= 80 ? 'success' : (parseFloat(puntaje) >= 60 ? 'primary' : 'danger');
+            puntuacionHTML = `<span class="badge bg-${pColor}">${puntaje}/100</span>`;
+        } else {
+            puntuacionHTML = '<span class="badge bg-warning text-dark"><i class="ti ti-clock me-1"></i>Pendiente</span>';
+        }
+
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${evaluacion.id_evaluacion}</td>
-            <td>${evaluacion.nombres_empleado} ${evaluacion.apellidos_empleado}</td>
-            <td><span class="badge bg-info">${evaluacion.tipo_evaluacion}</span></td>
-            <td>${formatearFecha(evaluacion.fecha_evaluacion)}</td>
-            <td><span class="badge bg-${getPuntuacionBadgeColor(evaluacion.puntuacion)}">${evaluacion.puntuacion}/10</span></td>
-            <td><span class="badge bg-${getEstadoBadgeColor(evaluacion.estado)}">${evaluacion.estado}</span></td>
-            <td>
-                <div class="btn-group" role="group">
-                    <button class="btn btn-sm btn-outline-primary" onclick="editarEvaluacion(${evaluacion.id_evaluacion})" title="Editar">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-info" onclick="verDetallesEvaluacion(${evaluacion.id_evaluacion})" title="Ver Detalles">
-                        <i class="bi bi-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-warning" onclick="cambiarEstadoEvaluacion(${evaluacion.id_evaluacion}, '${evaluacion.estado}')" title="Cambiar Estado">
-                        <i class="bi bi-toggle-on"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarEvaluacion(${evaluacion.id_evaluacion})" title="Eliminar">
-                        <i class="bi bi-trash"></i>
-                    </button>
+            <td><input type="checkbox" class="form-check-input chk-eval" value="${e.id}" onchange="actualizarBotonEliminar()"></td>
+            <td>${i+1}</td>
+            <td><strong>${esc(e.nombres_empleado || '')} ${esc(e.apellidos_empleado || '')}</strong></td>
+            <td>${esc(e.nombre_evaluador || 'N/A')}</td>
+            <td><span class="badge bg-info">${esc(e.tipo_evaluacion || '—')}</span></td>
+            <td><small>${formatFecha(e.fecha_evaluacion)}</small></td>
+            <td>${puntuacionHTML}</td>
+            <td><span class="badge bg-${estadoBadges[estado] || 'secondary'}">${estado || '—'}</span></td>
+            <td class="text-center">
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="verFormularioAdmin(${e.id})" title="Ver Formulario"><i class="ti ti-clipboard-list"></i></button>
+                    <button class="btn btn-outline-info" onclick="verDetalle(${e.id})" title="Ver Detalles"><i class="ti ti-eye"></i></button>
+                    <button class="btn btn-outline-warning" onclick="cambiarEstado(${e.id}, '${estado}')" title="Cambiar Estado"><i class="ti ti-toggle-left"></i></button>
+                    <button class="btn btn-outline-danger" onclick="eliminarEval(${e.id})" title="Eliminar"><i class="ti ti-trash"></i></button>
                 </div>
             </td>
         `;
@@ -242,415 +239,363 @@ function renderizarEvaluaciones(evaluaciones) {
     });
 }
 
-function cargarEmpleados() {
-    // Cargar empleados para el select
-    fetch('<?= base_url('admin-th/empleados/obtener') ?>')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const select = document.getElementById('empleado_id');
-                select.innerHTML = '<option value="">Seleccionar empleado...</option>';
-                
-                data.empleados.forEach(empleado => {
-                    const option = document.createElement('option');
-                    option.value = empleado.id_empleado;
-                    option.textContent = `${empleado.nombres} ${empleado.apellidos} - ${empleado.tipo_empleado}`;
-                    select.appendChild(option);
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error cargando empleados:', error);
-        });
-}
-
+// ==================== NUEVA EVALUACIÓN ====================
 function nuevaEvaluacion() {
-    document.getElementById('modalTitle').textContent = 'Nueva Evaluación';
     document.getElementById('formEvaluacion').reset();
-    document.getElementById('formEvaluacion').setAttribute('data-accion', 'crear');
-    
-    // Establecer fecha por defecto
-    const hoy = new Date().toISOString().split('T')[0];
-    document.getElementById('fecha_evaluacion').value = hoy;
-    
-    const modal = new bootstrap.Modal(document.getElementById('modalEvaluacion'));
-    modal.show();
+    document.getElementById('fecha_evaluacion').value = new Date().toISOString().split('T')[0];
+    document.getElementById('info360').classList.add('d-none');
+    document.getElementById('infoAuto').classList.add('d-none');
+    new bootstrap.Modal(document.getElementById('modalEvaluacion')).show();
 }
 
-function editarEvaluacion(id) {
-    // Obtener datos de la evaluación
-    fetch(`<?= base_url('admin-th/evaluaciones/obtener') ?>/${id}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const evaluacion = data.evaluacion;
-                
-                // Llenar el formulario
-                document.getElementById('modalTitle').textContent = 'Editar Evaluación';
-                document.getElementById('formEvaluacion').setAttribute('data-accion', 'editar');
-                document.getElementById('formEvaluacion').setAttribute('data-id', id);
-                
-                document.getElementById('empleado_id').value = evaluacion.id_empleado;
-                document.getElementById('tipo_evaluacion').value = evaluacion.tipo_evaluacion;
-                document.getElementById('fecha_evaluacion').value = evaluacion.fecha_evaluacion;
-                document.getElementById('puntuacion').value = evaluacion.puntuacion;
-                document.getElementById('observaciones').value = evaluacion.observaciones || '';
-                
-                const modal = new bootstrap.Modal(document.getElementById('modalEvaluacion'));
-                modal.show();
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: data.message || 'Error al obtener datos de la evaluación'
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Error de conexión'
-            });
-        });
-}
-
+// ==================== GUARDAR ====================
 function guardarEvaluacion() {
-    const form = document.getElementById('formEvaluacion');
-    const accion = form.getAttribute('data-accion');
-    const formData = new FormData(form);
-    
-    // Validaciones básicas
-    if (!formData.get('empleado_id') || !formData.get('tipo_evaluacion') || !formData.get('fecha_evaluacion') || !formData.get('puntuacion')) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Campos Requeridos',
-            text: 'Por favor complete todos los campos obligatorios'
-        });
+    const tipo = document.getElementById('tipo_evaluacion').value;
+    const empleadoId = document.getElementById('empleado_id').value;
+
+    if (!tipo || !empleadoId) {
+        Swal.fire({icon:'warning', title:'Campos requeridos', text:'Seleccione tipo de evaluación y empleado a evaluar'});
         return;
     }
-    
-    const url = accion === 'crear' ? 
-        '<?= base_url('admin-th/evaluaciones/crear') ?>' : 
-        '<?= base_url('admin-th/evaluaciones/actualizar') ?>';
-    
-    if (accion === 'editar') {
-        formData.append('id_evaluacion', form.getAttribute('data-id'));
+
+    // Loading para 360
+    if (tipo === 'Evaluación 360') {
+        Swal.fire({
+            title: 'Generando Evaluaciones 360°',
+            html: 'Creando evaluaciones para todos los empleados activos...',
+            allowOutsideClick: false, didOpen: () => Swal.showLoading()
+        });
     }
-    
-    fetch(url, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
+
+    const fd = new FormData(document.getElementById('formEvaluacion'));
+
+    fetch('<?= base_url('index.php/admin-th/evaluaciones/crear') ?>', { method:'POST', body: fd })
+    .then(r => r.json())
     .then(data => {
         if (data.success) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Éxito',
-                text: data.message
-            }).then(() => {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('modalEvaluacion'));
-                modal.hide();
-                cargarEvaluaciones();
-            });
+            bootstrap.Modal.getInstance(document.getElementById('modalEvaluacion')).hide();
+            Swal.fire({icon:'success', title:'¡Éxito!', text: data.message, timer:2500, showConfirmButton:false});
+            cargarEvaluaciones();
         } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data.message || 'Error al guardar la evaluación'
-            });
+            Swal.fire({icon:'error', title:'Error', text: data.message});
         }
     })
-    .catch(error => {
-        console.error('Error:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Error de conexión'
-        });
-    });
+    .catch(() => Swal.fire({icon:'error', title:'Error', text:'Error de conexión'}));
 }
 
-function verDetallesEvaluacion(id) {
-    // Obtener detalles completos de la evaluación
-    fetch(`<?= base_url('admin-th/evaluaciones/obtener') ?>/${id}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const evaluacion = data.evaluacion;
-                
-                Swal.fire({
-                    title: `Evaluación de ${evaluacion.nombres_empleado} ${evaluacion.apellidos_empleado}`,
-                    html: `
-                        <div class="text-start">
-                            <p><strong>Tipo:</strong> ${evaluacion.tipo_evaluacion}</p>
-                            <p><strong>Fecha:</strong> ${formatearFecha(evaluacion.fecha_evaluacion)}</p>
-                            <p><strong>Puntuación:</strong> ${evaluacion.puntuacion}/10</p>
-                            <p><strong>Estado:</strong> ${evaluacion.estado}</p>
-                            <p><strong>Observaciones:</strong> ${evaluacion.observaciones || 'Sin observaciones'}</p>
-                            <p><strong>Evaluador:</strong> ${evaluacion.nombres_evaluador || 'N/A'}</p>
-                            <p><strong>Fecha Creación:</strong> ${formatearFecha(evaluacion.fecha_creacion)}</p>
-                        </div>
-                    `,
-                    icon: 'info',
-                    confirmButtonText: 'Cerrar'
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: data.message || 'Error al obtener detalles'
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
+// ==================== VER DETALLE ====================
+function verDetalle(id) {
+    fetch(`<?= base_url('index.php/admin-th/evaluaciones/obtener') ?>/${id}`)
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const e = data.evaluacion;
+            const estado = e.evaluacion_estado || e.estado || '';
+            let puntajeHTML = estado === 'Finalizada'
+                ? (e.puntaje_total ? `<strong>${parseFloat(e.puntaje_total).toFixed(1)}/100</strong>` : 'Sin calificar')
+                : '<span class="badge bg-warning text-dark">Pendiente</span>';
+
             Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Error de conexión'
-            });
-        });
-}
-
-function cambiarEstadoEvaluacion(id, estadoActual) {
-    const nuevoEstado = estadoActual === 'COMPLETADA' ? 'PENDIENTE' : 'COMPLETADA';
-    
-    Swal.fire({
-        title: '¿Cambiar Estado?',
-        text: `¿Deseas cambiar el estado de la evaluación a ${nuevoEstado}?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, cambiar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const formData = new FormData();
-            formData.append('id_evaluacion', id);
-            formData.append('estado', nuevoEstado);
-            
-            fetch('<?= base_url('admin-th/evaluaciones/cambiar-estado') ?>', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Estado Cambiado',
-                        text: data.message
-                    }).then(() => {
-                        cargarEvaluaciones();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.message || 'Error al cambiar el estado'
-                    });
-                }
+                title: 'Detalle de Evaluación',
+                html: `
+                    <div class="text-start">
+                        <p><strong>Evaluado:</strong> ${esc(e.nombres_empleado)} ${esc(e.apellidos_empleado)}</p>
+                        <p><strong>Evaluador:</strong> ${esc(e.nombre_evaluador || 'N/A')}</p>
+                        <p><strong>Tipo:</strong> ${e.tipo_evaluacion || '—'}</p>
+                        <p><strong>Fecha:</strong> ${formatFecha(e.fecha_evaluacion)}</p>
+                        <p><strong>Puntuación:</strong> ${puntajeHTML}</p>
+                        <p><strong>Estado:</strong> ${estado}</p>
+                        <p><strong>Observaciones:</strong> ${esc(e.observaciones) || 'Sin observaciones'}</p>
+                    </div>
+                `, width:'500px', confirmButtonText:'Cerrar'
             });
         }
     });
 }
 
-function eliminarEvaluacion(id) {
+// ==================== CAMBIAR ESTADO ====================
+function cambiarEstado(id, estadoActual) {
+    const estados = ['Planificada', 'En curso', 'Finalizada'];
+    const idx = estados.indexOf(estadoActual);
+    const nuevo = estados[(idx + 1) % estados.length];
+
     Swal.fire({
-        title: '¿Eliminar Evaluación?',
-        text: "Esta acción no se puede deshacer",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const formData = new FormData();
-            formData.append('id_evaluacion', id);
-            
-            fetch('<?= base_url('admin-th/evaluaciones/eliminar') ?>', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
+        title: '¿Cambiar estado?', text: `Cambiar de "${estadoActual}" a "${nuevo}"`, icon:'question',
+        showCancelButton:true, confirmButtonText:'Sí, cambiar', cancelButtonText:'Cancelar'
+    }).then(r => {
+        if (r.isConfirmed) {
+            const fd = new FormData();
+            fd.append('id_evaluacion', id); fd.append('estado', nuevo);
+            fetch('<?= base_url('index.php/admin-th/evaluaciones/cambiar-estado') ?>', {method:'POST', body:fd})
+            .then(r => r.json())
             .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Eliminada',
-                        text: data.message
-                    }).then(() => {
-                        cargarEvaluaciones();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.message || 'Error al eliminar la evaluación'
-                    });
-                }
+                Swal.fire({icon: data.success?'success':'error', title: data.success?'Cambiado':'Error', text: data.message, timer:1500, showConfirmButton:false});
+                if (data.success) cargarEvaluaciones();
             });
         }
     });
 }
 
-// Funciones para evaluación entre pares
-function configurarEvaluacionPares() {
-    // Cargar docentes para la asignación
-    cargarDocentesParaEvaluacionPares();
-    
-    const modal = new bootstrap.Modal(document.getElementById('modalEvaluacionPares'));
-    modal.show();
+// ==================== ELIMINAR ====================
+function eliminarEval(id) {
+    Swal.fire({
+        title: '¿Eliminar evaluación?', text:'No se puede deshacer', icon:'warning',
+        showCancelButton:true, confirmButtonColor:'#dc3545', confirmButtonText:'Eliminar', cancelButtonText:'Cancelar'
+    }).then(r => {
+        if (r.isConfirmed) {
+            const fd = new FormData();
+            fd.append('id_evaluacion', id);
+            fetch('<?= base_url('index.php/admin-th/evaluaciones/eliminar') ?>', {method:'POST', body:fd})
+            .then(r => r.json())
+            .then(data => {
+                Swal.fire({icon: data.success?'success':'error', title: data.success?'Eliminada':'Error', text: data.message, timer:1500, showConfirmButton:false});
+                if (data.success) cargarEvaluaciones();
+            });
+        }
+    });
 }
 
-function cargarDocentesParaEvaluacionPares() {
-    // Obtener solo docentes
-    fetch('<?= base_url('admin-th/empleados/obtener') ?>?tipo=DOCENTE')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const tbody = document.getElementById('tbodyAsignacionEvaluadores');
-                tbody.innerHTML = '';
-                
-                data.empleados.forEach(docente => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${docente.nombres} ${docente.apellidos}</td>
-                        <td>
-                            <select class="form-select form-select-sm" name="evaluador1_${docente.id_empleado}">
-                                <option value="">Seleccionar...</option>
-                                ${data.empleados.map(e => `<option value="${e.id_empleado}">${e.nombres} ${e.apellidos}</option>`).join('')}
-                            </select>
-                        </td>
-                        <td>
-                            <select class="form-select form-select-sm" name="evaluador2_${docente.id_empleado}">
-                                <option value="">Seleccionar...</option>
-                                ${data.empleados.map(e => `<option value="${e.id_empleado}">${e.nombres} ${e.apellidos}</option>`).join('')}
-                            </select>
-                        </td>
-                        <td>
-                            <select class="form-select form-select-sm" name="evaluador3_${docente.id_empleado}">
-                                <option value="">Seleccionar...</option>
-                                ${data.empleados.map(e => `<option value="${e.id_empleado}">${e.nombres} ${e.apellidos}</option>`).join('')}
-                            </select>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error cargando docentes:', error);
-        });
+// ==================== HELPERS ====================
+function formatFecha(f) {
+    if (!f) return '—';
+    return new Date(f).toLocaleDateString('es-EC', {day:'2-digit', month:'short', year:'numeric'});
+}
+function esc(s) {
+    if (!s) return '';
+    const el = document.createElement('span');
+    el.textContent = s;
+    return el.innerHTML;
 }
 
-function guardarEvaluacionPares() {
-    const formData = new FormData(document.getElementById('formEvaluacionPares'));
-    
-    // Validar campos requeridos
-    if (!formData.get('periodo_evaluacion') || !formData.get('fecha_limite')) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Campos Requeridos',
-            text: 'Por favor complete todos los campos obligatorios'
-        });
-        return;
-    }
-    
-    // Recopilar asignaciones
-    const asignaciones = [];
-    const tbody = document.getElementById('tbodyAsignacionEvaluadores');
-    const filas = tbody.querySelectorAll('tr');
-    
+// ==================== FILTRO POR NOMBRE ====================
+function filtrarPorNombre() {
+    const filtro = document.getElementById('filtroNombre').value.toLowerCase().trim();
+    const filas = document.querySelectorAll('#tbodyEvaluaciones tr');
+
     filas.forEach(fila => {
         const celdas = fila.querySelectorAll('td');
-        const docente = celdas[0].textContent;
-        const evaluadores = [];
-        
-        for (let i = 1; i < celdas.length; i++) {
-            const select = celdas[i].querySelector('select');
-            if (select && select.value) {
-                evaluadores.push(select.value);
-            }
-        }
-        
-        if (evaluadores.length > 0) {
-            asignaciones.push({
-                docente: docente,
-                evaluadores: evaluadores
-            });
+        if (celdas.length < 4) return; // skip empty/loading rows
+
+        // Buscar en columna evaluado (index 2) y evaluador (index 3)
+        const evaluado = (celdas[2]?.textContent || '').toLowerCase();
+        const evaluador = (celdas[3]?.textContent || '').toLowerCase();
+
+        if (!filtro || evaluado.includes(filtro) || evaluador.includes(filtro)) {
+            fila.style.display = '';
+        } else {
+            fila.style.display = 'none';
         }
     });
-    
-    if (asignaciones.length === 0) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Sin Asignaciones',
-            text: 'Debe asignar al menos un evaluador por docente'
-        });
+}
+
+// ==================== SELECCIÓN MASIVA ====================
+function toggleAll(master) {
+    document.querySelectorAll('.chk-eval').forEach(chk => chk.checked = master.checked);
+    actualizarBotonEliminar();
+}
+
+function actualizarBotonEliminar() {
+    const seleccionados = document.querySelectorAll('.chk-eval:checked');
+    const btn = document.getElementById('btnEliminarSeleccion');
+    const contador = document.getElementById('contadorSeleccion');
+
+    if (seleccionados.length > 0) {
+        btn.classList.remove('d-none');
+        contador.textContent = seleccionados.length;
+    } else {
+        btn.classList.add('d-none');
+        contador.textContent = '0';
+    }
+
+    // Sincronizar checkAll
+    const todos = document.querySelectorAll('.chk-eval');
+    const checkAll = document.getElementById('checkAll');
+    if (todos.length > 0) {
+        checkAll.checked = seleccionados.length === todos.length;
+        checkAll.indeterminate = seleccionados.length > 0 && seleccionados.length < todos.length;
+    }
+}
+
+function eliminarSeleccionados() {
+    const ids = Array.from(document.querySelectorAll('.chk-eval:checked')).map(chk => chk.value);
+
+    if (ids.length === 0) {
+        Swal.fire({icon:'warning', title:'Sin selección', text:'Seleccione al menos una evaluación'});
         return;
     }
-    
-    // Enviar configuración
-    formData.append('asignaciones', JSON.stringify(asignaciones));
-    
-    fetch('<?= base_url('admin-th/evaluaciones/configurar-pares') ?>', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Configuración Guardada',
-                text: data.message
-            }).then(() => {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('modalEvaluacionPares'));
-                modal.hide();
-            });
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data.message || 'Error al guardar la configuración'
-            });
+
+    Swal.fire({
+        title: `¿Eliminar ${ids.length} evaluación(es)?`,
+        text: 'Esta acción no se puede deshacer.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: `Sí, eliminar ${ids.length}`,
+        cancelButtonText: 'Cancelar'
+    }).then(r => {
+        if (r.isConfirmed) {
+            Swal.fire({ title: 'Eliminando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            const fd = new FormData();
+            ids.forEach(id => fd.append('ids[]', id));
+
+            fetch('<?= base_url('index.php/admin-th/evaluaciones/eliminar-masivo') ?>', { method:'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({icon:'success', title:'Eliminadas', text: data.message, timer:2000, showConfirmButton:false});
+                    cargarEvaluaciones();
+                } else {
+                    Swal.fire({icon:'error', title:'Error', text: data.message});
+                }
+            })
+            .catch(() => Swal.fire({icon:'error', title:'Error', text:'Error de conexión'}));
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
+    });
+}
+
+// ==================== VER FORMULARIO (LECTURA - ADMIN) ====================
+function verFormularioAdmin(id) {
+    fetch(`<?= base_url('index.php/admin-th/evaluaciones/obtener') ?>/${id}`)
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) return Swal.fire({icon:'error', title:'Error', text: data.message});
+
+        const e = data.evaluacion;
+        const completada = e.puntaje_total && parseFloat(e.puntaje_total) > 0;
+
+        const criterios = [
+            { key:'puntaje_responsabilidad', nombre:'Responsabilidad', desc:'Cumple con sus funciones asignadas. Respeta horarios y compromisos. Entrega trabajos en el tiempo establecido.', color:'primary', icono:'shield-check' },
+            { key:'puntaje_equipo', nombre:'Trabajo en Equipo', desc:'Colabora con sus compañeros. Mantiene buena comunicación. Apoya cuando se le necesita.', color:'success', icono:'users' },
+            { key:'puntaje_etica', nombre:'Ética y Valores', desc:'Actúa con honestidad. Respeta normas institucionales. Muestra respeto hacia los demás.', color:'warning', icono:'heart' },
+            { key:'puntaje_comunicacion', nombre:'Comunicación', desc:'Se expresa con claridad. Escucha activamente. Maneja conflictos adecuadamente.', color:'info', icono:'message-circle' },
+            { key:'puntaje_compromiso', nombre:'Compromiso Institucional', desc:'Se identifica con la misión del instituto. Participa en actividades institucionales. Propone mejoras.', color:'danger', icono:'building' }
+        ];
+
+        const formHTML = criterios.map((c, i) => {
+            const val = e[c.key] || '';
+            let selectHTML = `<select class="form-select" disabled>`;
+            selectHTML += `<option value="">${completada ? '' : 'Sin calificar'}</option>`;
+            for (let v=1; v<=5; v++) {
+                const labels = {1:'Deficiente',2:'Insuficiente',3:'Aceptable',4:'Bueno',5:'Excelente'};
+                selectHTML += `<option value="${v}" ${val==v?'selected':''}>${v} - ${labels[v]}</option>`;
+            }
+            selectHTML += `</select>`;
+            return `
+                <div style="border-left:4px solid var(--bs-${c.color});padding:10px 15px;margin-bottom:10px;background:#f8f9fa;border-radius:4px;">
+                    <h6 style="color:var(--bs-${c.color});margin-bottom:4px;"><i class="ti ti-${c.icono} me-1"></i>${i+1}. ${c.nombre}</h6>
+                    <p style="font-size:0.8em;color:#666;margin-bottom:6px;">${c.desc}</p>
+                    ${selectHTML}
+                </div>
+            `;
+        }).join('');
+
+        const estadoLabel = completada
+            ? `<span class="badge bg-success">Completada - ${e.puntaje_total}/25</span>`
+            : `<span class="badge bg-warning text-dark">Pendiente</span>`;
+
         Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Error de conexión'
+            title: `Formulario de Evaluación`,
+            html: `
+                <div class="text-start">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <strong>Evaluado:</strong> ${esc(e.nombres_empleado || e.empleado_nombres || '')} ${esc(e.apellidos_empleado || e.empleado_apellidos || '')}<br>
+                            <strong>Evaluador:</strong> ${esc(e.nombre_evaluador || e.evaluador_nombre || 'N/A')}
+                        </div>
+                        <div>${estadoLabel}</div>
+                    </div>
+                    ${formHTML}
+                    ${e.observaciones ? `<div class="alert alert-light mt-2"><strong>Observaciones:</strong> ${esc(e.observaciones)}</div>` : ''}
+                </div>
+            `, width:'650px', confirmButtonText:'Cerrar'
         });
     });
 }
 
-function getEstadoBadgeColor(estado) {
-    switch(estado) {
-        case 'COMPLETADA': return 'success';
-        case 'PENDIENTE': return 'warning';
-        case 'CANCELADA': return 'danger';
-        case 'EN_PROCESO': return 'info';
-        default: return 'secondary';
+// ==================== RESULTADOS GLOBALES ====================
+function mostrarSelectorGlobal() {
+    // Show selector with all employees
+    let opcionesHTML = '<option value="">-- Seleccionar empleado --</option>';
+    if (todosEmpleados && todosEmpleados.length > 0) {
+        todosEmpleados.forEach(e => {
+            opcionesHTML += `<option value="${e.id_empleado}">${e.apellidos} ${e.nombres}</option>`;
+        });
     }
+
+    Swal.fire({
+        title: 'Resultados Globales de Desempeño',
+        html: `
+            <div class="text-start">
+                <label class="form-label fw-bold">Seleccione un empleado:</label>
+                <select class="form-select" id="swalSelectEmpleado">
+                    ${opcionesHTML}
+                </select>
+            </div>
+        `, width:'500px', showCancelButton:true, confirmButtonText:'Ver Resultados', cancelButtonText:'Cancelar',
+        preConfirm: () => {
+            const val = document.getElementById('swalSelectEmpleado').value;
+            if (!val) { Swal.showValidationMessage('Seleccione un empleado'); return false; }
+            return val;
+        }
+    }).then(result => {
+        if (result.isConfirmed) {
+            verResultadosGlobales(result.value);
+        }
+    });
 }
 
-function getPuntuacionBadgeColor(puntuacion) {
-    if (puntuacion >= 9) return 'success';
-    if (puntuacion >= 7) return 'warning';
-    return 'danger';
-}
+function verResultadosGlobales(empleadoId) {
+    Swal.fire({ title:'Calculando resultados...', allowOutsideClick:false, didOpen:() => Swal.showLoading() });
 
-function formatearFecha(fecha) {
-    return new Date(fecha).toLocaleDateString('es-ES');
+    fetch(`<?= base_url('index.php/admin-th/evaluaciones/resultados-globales') ?>/${empleadoId}`)
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) {
+            Swal.fire({icon:'info', title:'Sin Resultados', text: data.message});
+            return;
+        }
+
+        const d = data.resultados;
+        const porcentaje = d.porcentaje;
+        const colorPct = porcentaje >= 80 ? 'success' : (porcentaje >= 60 ? 'primary' : (porcentaje >= 40 ? 'warning' : 'danger'));
+
+        let html = `<div class="text-start">`;
+        html += `<h5 class="text-center mb-3">${esc(d.nombre_empleado)}</h5>`;
+
+        // Autoevaluación
+        html += `<div class="card mb-2"><div class="card-body py-2">`;
+        html += `<div class="d-flex justify-content-between"><span><i class="ti ti-user-check text-primary me-1"></i>Autoevaluación</span>`;
+        if (d.autoevaluacion !== null) {
+            html += `<span class="badge bg-primary">${d.autoevaluacion}/25</span>`;
+        } else {
+            html += `<span class="badge bg-secondary">No realizada</span>`;
+        }
+        html += `</div></div></div>`;
+
+        // 360
+        html += `<div class="card mb-2"><div class="card-body py-2">`;
+        html += `<div class="d-flex justify-content-between"><span><i class="ti ti-refresh text-info me-1"></i>Promedio 360° (${d.total_360} eval.)</span>`;
+        if (d.promedio_360 !== null) {
+            html += `<span class="badge bg-info">${d.promedio_360}/25</span>`;
+        } else {
+            html += `<span class="badge bg-secondary">Sin evaluaciones</span>`;
+        }
+        html += `</div></div></div>`;
+
+        // Calificación final
+        html += `<hr>`;
+        html += `<div class="text-center">`;
+        html += `<h6>Calificación Final de Desempeño</h6>`;
+        html += `<h2 class="text-${colorPct}">${d.calificacion_final}/50</h2>`;
+        html += `<div class="progress mb-2" style="height:12px;"><div class="progress-bar bg-${colorPct}" style="width:${porcentaje}%"></div></div>`;
+        html += `<span class="badge bg-${colorPct} fs-6">${porcentaje}%</span>`;
+        html += `</div>`;
+        html += `</div>`;
+
+        Swal.fire({ title:'Resultados Globales', html: html, width:'550px', confirmButtonText:'Cerrar' });
+    })
+    .catch(() => Swal.fire({icon:'error', title:'Error', text:'Error de conexión'}));
 }
 </script>
 <?= $this->endSection() ?>

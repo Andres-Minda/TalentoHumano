@@ -84,11 +84,22 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     
     // Gestión de evaluaciones
     $routes->get('evaluaciones', 'AdminTH\AdminTHController::evaluaciones');
+    $routes->get('evaluaciones/obtener', 'AdminTH\AdminTHController::obtenerEvaluaciones');
+    $routes->get('evaluaciones/obtener/(:num)', 'AdminTH\AdminTHController::obtenerEvaluacion2/$1');
+    $routes->post('evaluaciones/crear', 'AdminTH\AdminTHController::crearEvaluacion');
+    $routes->post('evaluaciones/actualizar', 'AdminTH\AdminTHController::actualizarEvaluacion2');
+    $routes->post('evaluaciones/cambiar-estado', 'AdminTH\AdminTHController::cambiarEstadoEvaluacion2');
+    $routes->post('evaluaciones/eliminar', 'AdminTH\AdminTHController::eliminarEvaluacion2');
+    $routes->post('evaluaciones/eliminar-masivo', 'AdminTH\AdminTHController::eliminarEvaluacionesMasivo');
+    $routes->get('evaluaciones/resultados-globales/(:num)', 'AdminTH\AdminTHController::obtenerResultadosGlobales/$1');
+    $routes->get('empleados/obtener', 'AdminTH\AdminTHController::obtenerEmpleadosJSON');
     
     // Gestión de inasistencias
     $routes->get('inasistencias', 'AdminTH\AdminTHController::inasistencias');
     $routes->get('inasistencias/registrar', 'AdminTH\AdminTHController::registrarInasistencia');
     $routes->post('inasistencias/guardar', 'AdminTH\AdminTHController::guardarInasistencia');
+    $routes->get('inasistencias/listar-json', 'AdminTH\AdminTHController::listarInasistenciasJSON');
+    $routes->get('inasistencias/total/(:num)', 'AdminTH\AdminTHController::totalInasistenciasJSON/$1');
     $routes->get('inasistencias/editar/(:num)', 'AdminTH\AdminTHController::editarInasistencia/$1');
     $routes->post('inasistencias/actualizar', 'AdminTH\AdminTHController::actualizarInasistencia');
     $routes->post('inasistencias/cambiar-estado', 'AdminTH\AdminTHController::cambiarEstadoInasistencia');
@@ -102,6 +113,13 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     
     // Solicitudes de capacitación
     $routes->get('solicitudes-capacitacion', 'AdminTH\AdminTHController::solicitudesCapacitacion');
+    
+    // Evaluaciones entre Pares
+    $routes->get('evaluaciones-pares', 'AdminTH\AdminTHController::evaluacionesPares');
+    $routes->get('evaluaciones-pares/docentes', 'AdminTH\AdminTHController::obtenerDocentes');
+    $routes->get('evaluaciones-pares/obtener', 'AdminTH\AdminTHController::obtenerEvaluacionesPares');
+    $routes->post('evaluaciones-pares/asignar', 'AdminTH\AdminTHController::asignarEvaluacionPar');
+    $routes->post('evaluaciones-pares/eliminar', 'AdminTH\AdminTHController::eliminarEvaluacionPar');
     
     // Reportes y estadísticas
     $routes->get('reportes', 'AdminTH\AdminTHController::reportes');
@@ -125,12 +143,25 @@ $routes->group('empleado', ['filter' => 'auth'], function($routes) {
     
     // Capacitaciones
     $routes->get('capacitaciones', 'Empleado\EmpleadoController::capacitaciones');
+    $routes->get('capacitaciones/obtener', 'Empleado\EmpleadoController::obtenerCapacitacionesEmpleado');
+    $routes->get('capacitaciones/disponibles', 'Empleado\EmpleadoController::obtenerCapacitacionesDisponibles');
+    $routes->post('capacitaciones/inscribir', 'Empleado\EmpleadoController::inscribirCapacitacion');
     
     // Títulos académicos
     $routes->get('titulos-academicos', 'Empleado\EmpleadoController::titulosAcademicos');
     
     // Evaluaciones
     $routes->get('evaluaciones', 'Empleado\EmpleadoController::evaluaciones');
+    $routes->get('evaluaciones/mis-evaluaciones', 'Empleado\EmpleadoController::misEvaluacionesJSON');
+    $routes->get('evaluaciones/detalle/(:num)', 'Empleado\EmpleadoController::detalleEvaluacionJSON/$1');
+    $routes->post('evaluaciones/guardar-rubrica', 'Empleado\EmpleadoController::guardarRubrica');
+    
+    // Evaluaciones entre Pares (Docentes)
+    $routes->get('evaluaciones-pares', 'DocenteController::evaluacionesPares');
+    $routes->get('evaluaciones-pares/pendientes', 'DocenteController::obtenerEvaluacionesPendientes');
+    $routes->post('evaluaciones-pares/guardar', 'DocenteController::guardarEvaluacionPar');
+    $routes->get('evaluaciones-pares/retroalimentacion', 'DocenteController::retroalimentacionRecibida');
+    $routes->get('evaluaciones-pares/obtener-retroalimentacion', 'DocenteController::obtenerRetroalimentacion');
     
     // Inasistencias
     $routes->get('inasistencias', 'Empleado\EmpleadoController::inasistencias');

@@ -117,7 +117,7 @@ class CapacitacionController extends Controller
             'institucion' => $this->request->getPost('institucion'),
             'duracion_horas' => $this->request->getPost('duracion_horas'),
             'archivo_certificado' => $archivoCertificado,
-            'estado' => 'Activa',
+            'estado' => 'ACTIVA',
             'creado_por' => session()->get('id_usuario')
         ];
 
@@ -218,15 +218,19 @@ class CapacitacionController extends Controller
     }
 
     /**
-     * Eliminar capacitación
+     * Eliminar capacitación (solo si es INACTIVA)
      */
     public function eliminar($id)
     {
-        // Verificar que no haya empleados inscritos
-        $empleadosInscritos = $this->empleadoCapacitacionModel->where('id_capacitacion', $id)->countAllResults();
+        $capacitacion = $this->capacitacionModel->find($id);
         
-        if ($empleadosInscritos > 0) {
-            return redirect()->to('/capacitaciones')->with('error', 'No se puede eliminar una capacitación con empleados inscritos');
+        if (!$capacitacion) {
+            return redirect()->to('/capacitaciones')->with('error', 'Capacitación no encontrada');
+        }
+
+        // Solo se pueden borrar capacitaciones INACTIVAS
+        if ($capacitacion['estado'] !== 'INACTIVA') {
+            return redirect()->to('/capacitaciones')->with('error', 'Solo se pueden eliminar capacitaciones con estado INACTIVA. Estado actual: ' . $capacitacion['estado']);
         }
 
         if ($this->capacitacionModel->delete($id)) {
@@ -266,7 +270,7 @@ class CapacitacionController extends Controller
     {
         $estadisticas = [
             'total_capacitaciones' => $this->capacitacionModel->countAll(),
-            'capacitaciones_activas' => $this->capacitacionModel->where('estado', 'Activa')->countAllResults(),
+            'capacitaciones_activas' => $this->capacitacionModel->where('estado', 'ACTIVA')->countAllResults(),
             'total_inscripciones' => $this->empleadoCapacitacionModel->countAll(),
             'completadas' => $this->empleadoCapacitacionModel->where('estado', 'Completada')->countAllResults(),
             'en_progreso' => $this->empleadoCapacitacionModel->where('estado', 'Inscrito')->countAllResults()

@@ -208,7 +208,7 @@ class PostulanteModel extends Model
     {
         $db = \Config\Database::connect();
         return $db->table('postulantes p')
-                  ->select('p.*, pt.titulo as titulo_puesto, d.nombre as nombre_departamento')
+                  ->select('p.*, pt.titulo as titulo_puesto, d.id_departamento, d.nombre as nombre_departamento')
                   ->join('puestos pt', 'pt.id_puesto = p.id_puesto')
                   ->join('departamentos d', 'd.id_departamento = pt.id_departamento')
                   ->orderBy('p.fecha_postulacion', 'DESC')

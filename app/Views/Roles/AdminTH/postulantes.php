@@ -411,8 +411,9 @@ document.getElementById('formCambiarEstado').addEventListener('submit', function
                 badge.textContent = nuevoEstado;
             }
             
-            // Si es Contratado, ofrecer crear credenciales
+            // Lógica según el nuevo estado
             if (data.is_contratado) {
+                // Estado: Contratado → Ofrecer crear credenciales
                 Swal.fire({
                     icon: 'success',
                     title: '\u00a1Postulante Contratado!',
@@ -427,7 +428,74 @@ document.getElementById('formCambiarEstado').addEventListener('submit', function
                         window.location.href = '<?= base_url('index.php/admin-th/empleados') ?>?postulante_id=' + idPostulante;
                     }
                 });
+
+            } else if (nuevoEstado === 'Aprobada') {
+                // Estado: Aprobada → Mostrar teléfono de contacto
+                const telefono = data.telefono || 'No disponible';
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Postulación Aprobada',
+                    html: `<p>Se espera al postulante para la entrevista.</p>
+                           <p><strong>Por favor contactarse al número:</strong></p>
+                           <h3 class="text-primary"><i class="bi bi-telephone-fill me-2"></i>${telefono}</h3>`,
+                    confirmButtonColor: '#0d6efd',
+                    confirmButtonText: 'Entendido'
+                });
+
+            } else if (nuevoEstado === 'Rechazada') {
+                // Estado: Rechazada → Preguntar si desea eliminar permanentemente
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Postulación Rechazada',
+                    text: '\u00bfDeseas borrar permanentemente a este postulante?',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'S\u00ed, borrar',
+                    cancelButtonText: 'No'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Eliminar postulante permanentemente
+                        const deleteFormData = new FormData();
+                        deleteFormData.append('id_postulante', idPostulante);
+
+                        fetch('<?= base_url('index.php/admin-th/postulantes/eliminar') ?>', {
+                            method: 'POST',
+                            body: deleteFormData
+                        })
+                        .then(response => response.json())
+                        .then(deleteData => {
+                            if (deleteData.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '\u00a1Eliminado!',
+                                    text: 'El postulante ha sido eliminado permanentemente.',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    window.location.reload();
+                                });
+                            } else {
+                                Swal.fire('Error', deleteData.message || 'No se pudo eliminar al postulante.', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            Swal.fire('Error', 'Error al procesar la eliminación.', 'error');
+                        });
+                    } else {
+                        // Solo rechazado, sin eliminar
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Estado actualizado',
+                            text: 'El postulante fue marcado como rechazado pero no se eliminó.',
+                            timer: 2500,
+                            showConfirmButton: false
+                        });
+                    }
+                });
+
             } else {
+                // Otros estados (Pendiente, etc.)
                 Swal.fire({
                     icon: 'success',
                     title: '\u00a1\u00c9xito!',

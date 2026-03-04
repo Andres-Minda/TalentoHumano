@@ -45,9 +45,7 @@ $sidebar = 'sidebar_empleado';
                 <div class="card radius-10 bg-primary">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <i class="ti ti-book fs-1 text-white"></i>
-                            </div>
+                            <div class="flex-shrink-0"><i class="ti ti-book fs-1 text-white"></i></div>
                             <div class="flex-grow-1 ms-3">
                                 <h4 class="mb-0 text-white" id="total_capacitaciones">0</h4>
                                 <p class="mb-0 text-white-50">Total Capacitaciones</p>
@@ -60,9 +58,7 @@ $sidebar = 'sidebar_empleado';
                 <div class="card radius-10 bg-success">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <i class="ti ti-check fs-1 text-white"></i>
-                            </div>
+                            <div class="flex-shrink-0"><i class="ti ti-check fs-1 text-white"></i></div>
                             <div class="flex-grow-1 ms-3">
                                 <h4 class="mb-0 text-white" id="capacitaciones_completadas">0</h4>
                                 <p class="mb-0 text-white-50">Completadas</p>
@@ -75,9 +71,7 @@ $sidebar = 'sidebar_empleado';
                 <div class="card radius-10 bg-warning">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <i class="ti ti-clock fs-1 text-white"></i>
-                            </div>
+                            <div class="flex-shrink-0"><i class="ti ti-clock fs-1 text-white"></i></div>
                             <div class="flex-grow-1 ms-3">
                                 <h4 class="mb-0 text-white" id="capacitaciones_en_curso">0</h4>
                                 <p class="mb-0 text-white-50">En Curso</p>
@@ -90,9 +84,7 @@ $sidebar = 'sidebar_empleado';
                 <div class="card radius-10 bg-info">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <i class="ti ti-award fs-1 text-white"></i>
-                            </div>
+                            <div class="flex-shrink-0"><i class="ti ti-award fs-1 text-white"></i></div>
                             <div class="flex-grow-1 ms-3">
                                 <h4 class="mb-0 text-white" id="horas_acumuladas">0</h4>
                                 <p class="mb-0 text-white-50">Horas Acumuladas</p>
@@ -103,25 +95,25 @@ $sidebar = 'sidebar_empleado';
             </div>
         </div>
 
-        <!-- Capacitaciones List -->
+        <!-- Mis Capacitaciones Inscritas -->
         <div class="row">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
                         <div class="d-flex align-items-center justify-content-between">
-                            <h5 class="mb-0">Lista de Capacitaciones</h5>
+                            <h5 class="mb-0">Mis Capacitaciones Inscritas</h5>
                             <div class="d-flex gap-2">
                                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="filtrarCapacitaciones('todas')">
                                     <i class="ti ti-filter"></i> Todas
                                 </button>
-                                <button type="button" class="btn btn-outline-success btn-sm" onclick="filtrarCapacitaciones('completadas')">
+                                <button type="button" class="btn btn-outline-success btn-sm" onclick="filtrarCapacitaciones('COMPLETADA')">
                                     <i class="ti ti-check"></i> Completadas
                                 </button>
-                                <button type="button" class="btn btn-outline-warning btn-sm" onclick="filtrarCapacitaciones('en_curso')">
+                                <button type="button" class="btn btn-outline-warning btn-sm" onclick="filtrarCapacitaciones('EN_CURSO')">
                                     <i class="ti ti-clock"></i> En Curso
                                 </button>
-                                <button type="button" class="btn btn-outline-info btn-sm" onclick="filtrarCapacitaciones('pendientes')">
-                                    <i class="ti ti-calendar"></i> Pendientes
+                                <button type="button" class="btn btn-outline-info btn-sm" onclick="filtrarCapacitaciones('ACTIVA')">
+                                    <i class="ti ti-calendar"></i> Activas
                                 </button>
                             </div>
                         </div>
@@ -132,16 +124,16 @@ $sidebar = 'sidebar_empleado';
                                 <thead>
                                     <tr>
                                         <th>Capacitación</th>
-                                        <th>Tipo</th>
+                                        <th>Modalidad</th>
                                         <th>Fecha Inicio</th>
                                         <th>Fecha Fin</th>
                                         <th>Estado</th>
-                                        <th>Progreso</th>
+                                        <th>Duración</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyCapacitaciones">
-                                    <!-- Los datos se cargarán dinámicamente -->
+                                    <tr><td colspan="7" class="text-center"><i class="spinner-border spinner-border-sm"></i> Cargando...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -150,7 +142,7 @@ $sidebar = 'sidebar_empleado';
             </div>
         </div>
 
-        <!-- Capacitaciones Disponibles -->
+        <!-- Capacitaciones Disponibles para Inscribirse -->
         <div class="row">
             <div class="col-12">
                 <div class="card">
@@ -159,7 +151,9 @@ $sidebar = 'sidebar_empleado';
                     </div>
                     <div class="card-body">
                         <div class="row" id="capacitacionesDisponibles">
-                            <!-- Las capacitaciones disponibles se cargarán dinámicamente -->
+                            <div class="col-12 text-center text-muted">
+                                <i class="spinner-border spinner-border-sm"></i> Cargando capacitaciones disponibles...
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -167,62 +161,6 @@ $sidebar = 'sidebar_empleado';
         </div>
     </div>
 </div>
-
-<!-- Modal para Detalles de Capacitación -->
-<div class="modal fade" id="modalDetalleCapacitacion" tabindex="-1" aria-labelledby="modalDetalleCapacitacionLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalDetalleCapacitacionLabel">Detalles de Capacitación</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="modalDetalleCapacitacionBody">
-                <!-- Contenido del modal se cargará dinámicamente -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                <button type="button" class="btn btn-primary" id="btnInscribirCapacitacion">Inscribirse</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para Solicitar Capacitación -->
-<div class="modal fade" id="modalSolicitarCapacitacion" tabindex="-1" aria-labelledby="modalSolicitarCapacitacionLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalSolicitarCapacitacionLabel">Solicitar Nueva Capacitación</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="formSolicitarCapacitacion">
-                    <div class="mb-3">
-                        <label for="nombre_capacitacion" class="form-label">Nombre de la Capacitación</label>
-                        <input type="text" class="form-control" id="nombre_capacitacion" name="nombre_capacitacion" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="descripcion_capacitacion" class="form-label">Descripción</label>
-                        <textarea class="form-control" id="descripcion_capacitacion" name="descripcion_capacitacion" rows="3" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="justificacion_capacitacion" class="form-label">Justificación</label>
-                        <textarea class="form-control" id="justificacion_capacitacion" name="justificacion_capacitacion" rows="3" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="fecha_propuesta" class="form-label">Fecha Propuesta</label>
-                        <input type="date" class="form-control" id="fecha_propuesta" name="fecha_propuesta" required>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="enviarSolicitudCapacitacion()">Enviar Solicitud</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -231,59 +169,43 @@ $sidebar = 'sidebar_empleado';
 let capacitacionesData = [];
 let filtroActual = 'todas';
 
-// Cargar datos al iniciar la página
 document.addEventListener('DOMContentLoaded', function() {
-    cargarEstadisticas();
-    cargarCapacitaciones();
+    cargarMisCapacitaciones();
     cargarCapacitacionesDisponibles();
 });
 
-// Cargar estadísticas
-function cargarEstadisticas() {
-    // Simular carga de estadísticas (en producción esto vendría de una API)
-    document.getElementById('total_capacitaciones').textContent = '5';
-    document.getElementById('capacitaciones_completadas').textContent = '3';
-    document.getElementById('capacitaciones_en_curso').textContent = '1';
-    document.getElementById('horas_acumuladas').textContent = '45';
+// Cargar mis capacitaciones inscritas desde el backend
+function cargarMisCapacitaciones() {
+    fetch('<?= base_url('index.php/empleado/capacitaciones/obtener') ?>')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                capacitacionesData = data.capacitaciones;
+                actualizarEstadisticas(capacitacionesData);
+                mostrarCapacitaciones(capacitacionesData);
+            } else {
+                document.getElementById('tbodyCapacitaciones').innerHTML = 
+                    '<tr><td colspan="7" class="text-center text-danger">Error al cargar capacitaciones</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('tbodyCapacitaciones').innerHTML = 
+                '<tr><td colspan="7" class="text-center text-danger">Error de conexión al servidor</td></tr>';
+        });
 }
 
-// Cargar capacitaciones del empleado
-function cargarCapacitaciones() {
-    // Simular datos (en producción esto vendría de una API)
-    capacitacionesData = [
-        {
-            id: 1,
-            nombre: 'Gestión de Proyectos',
-            tipo: 'Presencial',
-            fecha_inicio: '2025-01-15',
-            fecha_fin: '2025-01-20',
-            estado: 'Completada',
-            progreso: 100,
-            descripcion: 'Capacitación en metodologías ágiles y gestión de proyectos'
-        },
-        {
-            id: 2,
-            nombre: 'Liderazgo Efectivo',
-            tipo: 'Virtual',
-            fecha_inicio: '2025-02-01',
-            fecha_fin: '2025-02-28',
-            estado: 'En Curso',
-            progreso: 65,
-            descripcion: 'Desarrollo de habilidades de liderazgo y comunicación'
-        },
-        {
-            id: 3,
-            nombre: 'Excel Avanzado',
-            tipo: 'Híbrida',
-            fecha_inicio: '2025-03-10',
-            fecha_fin: '2025-03-15',
-            estado: 'Pendiente',
-            progreso: 0,
-            descripcion: 'Funciones avanzadas de Excel para análisis de datos'
-        }
-    ];
+// Actualizar tarjetas de estadísticas
+function actualizarEstadisticas(capacitaciones) {
+    document.getElementById('total_capacitaciones').textContent = capacitaciones.length;
     
-    mostrarCapacitaciones(capacitacionesData);
+    const completadas = capacitaciones.filter(c => c.estado === 'COMPLETADA').length;
+    const enCurso = capacitaciones.filter(c => c.estado === 'EN_CURSO').length;
+    const horasTotal = capacitaciones.reduce((sum, c) => sum + (parseInt(c.duracion_horas) || 0), 0);
+    
+    document.getElementById('capacitaciones_completadas').textContent = completadas;
+    document.getElementById('capacitaciones_en_curso').textContent = enCurso;
+    document.getElementById('horas_acumuladas').textContent = horasTotal;
 }
 
 // Mostrar capacitaciones en la tabla
@@ -291,95 +213,105 @@ function mostrarCapacitaciones(capacitaciones) {
     const tbody = document.getElementById('tbodyCapacitaciones');
     tbody.innerHTML = '';
     
-    capacitaciones.forEach(capacitacion => {
+    if (!capacitaciones || capacitaciones.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No tienes capacitaciones inscritas aún</td></tr>';
+        return;
+    }
+    
+    capacitaciones.forEach(c => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>
                 <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <i class="ti ti-book text-primary fs-4"></i>
-                    </div>
+                    <div class="flex-shrink-0"><i class="ti ti-book text-primary fs-4"></i></div>
                     <div class="flex-grow-1 ms-3">
-                        <h6 class="mb-0">${capacitacion.nombre}</h6>
-                        <small class="text-muted">${capacitacion.descripcion}</small>
+                        <h6 class="mb-0">${c.nombre}</h6>
+                        <small class="text-muted">${c.descripcion || ''}</small>
                     </div>
                 </div>
             </td>
-            <td><span class="badge bg-light text-dark">${capacitacion.tipo}</span></td>
-            <td>${formatearFecha(capacitacion.fecha_inicio)}</td>
-            <td>${formatearFecha(capacitacion.fecha_fin)}</td>
-            <td>${obtenerBadgeEstado(capacitacion.estado)}</td>
+            <td><span class="badge bg-light text-dark">${c.modalidad || '-'}</span></td>
+            <td>${formatearFecha(c.fecha_inicio)}</td>
+            <td>${formatearFecha(c.fecha_fin)}</td>
+            <td>${obtenerBadgeEstado(c.estado)}</td>
+            <td>${c.duracion_horas || '-'} hrs</td>
             <td>
-                <div class="progress" style="height: 6px;">
-                    <div class="progress-bar" role="progressbar" style="width: ${capacitacion.progreso}%" 
-                         aria-valuenow="${capacitacion.progreso}" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-                <small class="text-muted">${capacitacion.progreso}%</small>
-            </td>
-            <td>
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="verDetalleCapacitacion(${capacitacion.id})">
-                        <i class="ti ti-eye"></i>
-                    </button>
-                    ${capacitacion.estado === 'Pendiente' ? 
-                        `<button type="button" class="btn btn-sm btn-outline-success" onclick="iniciarCapacitacion(${capacitacion.id})">
-                            <i class="ti ti-play"></i>
-                        </button>` : ''
-                    }
-                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="verDetalleCapacitacion(${c.id_capacitacion})">
+                    <i class="ti ti-eye"></i>
+                </button>
             </td>
         `;
         tbody.appendChild(row);
     });
 }
 
-// Cargar capacitaciones disponibles
+// Cargar capacitaciones disponibles para inscribirse
 function cargarCapacitacionesDisponibles() {
     const container = document.getElementById('capacitacionesDisponibles');
     
-    // Simular datos (en producción esto vendría de una API)
-    const capacitacionesDisponibles = [
-        {
-            id: 4,
-            nombre: 'Comunicación Efectiva',
-            descripcion: 'Mejora tus habilidades de comunicación interpersonal',
-            duracion: '20 horas',
-            modalidad: 'Virtual',
-            costo: 'Gratuito'
-        },
-        {
-            id: 5,
-            nombre: 'Gestión del Tiempo',
-            descripcion: 'Aprende a organizar tu tiempo de manera eficiente',
-            duracion: '15 horas',
-            modalidad: 'Presencial',
-            costo: '$50'
-        }
-    ];
-    
+    fetch('<?= base_url('index.php/empleado/capacitaciones/disponibles') ?>')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderizarDisponibles(data.capacitaciones);
+            } else {
+                container.innerHTML = '<div class="col-12 text-center text-danger">Error al cargar</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            container.innerHTML = '<div class="col-12 text-center text-danger">Error de conexión</div>';
+        });
+}
+
+function renderizarDisponibles(capacitaciones) {
+    const container = document.getElementById('capacitacionesDisponibles');
     container.innerHTML = '';
-    capacitacionesDisponibles.forEach(capacitacion => {
+    
+    if (!capacitaciones || capacitaciones.length === 0) {
+        container.innerHTML = '<div class="col-12 text-center text-muted">No hay capacitaciones disponibles en este momento</div>';
+        return;
+    }
+    
+    capacitaciones.forEach(c => {
+        const esEnCurso = c.estado === 'EN_CURSO';
+        const esActiva = c.estado === 'ACTIVA';
+        
+        // Botón de inscripción: deshabilitado si EN_CURSO, habilitado solo si ACTIVA
+        let botonHtml = '';
+        if (esEnCurso) {
+            botonHtml = `<button type="button" class="btn btn-secondary btn-sm w-100" disabled>
+                            <i class="ti ti-lock"></i> Capacitación en curso (Cerrada)
+                         </button>`;
+        } else if (esActiva) {
+            botonHtml = `<button type="button" class="btn btn-primary btn-sm w-100" onclick="inscribirseCapacitacion(${c.id_capacitacion})">
+                            <i class="ti ti-plus"></i> Inscribirse
+                         </button>`;
+        } else {
+            botonHtml = `<button type="button" class="btn btn-secondary btn-sm w-100" disabled>
+                            No disponible
+                         </button>`;
+        }
+        
         const card = document.createElement('div');
         card.className = 'col-md-6 col-lg-4 mb-3';
         card.innerHTML = `
-            <div class="card h-100">
+            <div class="card h-100 ${esEnCurso ? 'border-warning' : ''}">
                 <div class="card-body">
-                    <h6 class="card-title">${capacitacion.nombre}</h6>
-                    <p class="card-text text-muted">${capacitacion.descripcion}</p>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title mb-0">${c.nombre}</h6>
+                        ${obtenerBadgeEstado(c.estado)}
+                    </div>
+                    <p class="card-text text-muted small">${c.descripcion || 'Sin descripción'}</p>
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <small class="text-muted">
-                            <i class="ti ti-clock"></i> ${capacitacion.duracion}
-                        </small>
-                        <small class="text-muted">
-                            <i class="ti ti-device-laptop"></i> ${capacitacion.modalidad}
-                        </small>
+                        <small class="text-muted"><i class="ti ti-clock"></i> ${c.duracion_horas || '-'} hrs</small>
+                        <small class="text-muted"><i class="ti ti-device-laptop"></i> ${c.modalidad || '-'}</small>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="badge bg-success">${capacitacion.costo}</span>
-                        <button type="button" class="btn btn-primary btn-sm" onclick="solicitarCapacitacion(${capacitacion.id})">
-                            Solicitar
-                        </button>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <small class="text-muted">${formatearFecha(c.fecha_inicio)} - ${formatearFecha(c.fecha_fin)}</small>
+                        <span class="badge bg-light text-dark">${c.total_inscritos || 0} inscritos</span>
                     </div>
+                    ${botonHtml}
                 </div>
             </div>
         `;
@@ -387,96 +319,77 @@ function cargarCapacitacionesDisponibles() {
     });
 }
 
+// Inscribirse en una capacitación
+function inscribirseCapacitacion(idCapacitacion) {
+    Swal.fire({
+        title: '¿Inscribirse?',
+        text: '¿Deseas inscribirte en esta capacitación?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#198754',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, inscribirme',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const formData = new FormData();
+            formData.append('id_capacitacion', idCapacitacion);
+            
+            fetch('<?= base_url('index.php/empleado/capacitaciones/inscribir') ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: '¡Inscrito!', text: data.message, timer: 2000, showConfirmButton: false })
+                    .then(() => {
+                        cargarMisCapacitaciones();
+                        cargarCapacitacionesDisponibles();
+                    });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'No se pudo inscribir', text: data.message });
+                }
+            })
+            .catch(error => {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Error de conexión al servidor' });
+            });
+        }
+    });
+}
+
 // Filtrar capacitaciones
 function filtrarCapacitaciones(filtro) {
     filtroActual = filtro;
     
-    let capacitacionesFiltradas = [];
-    
-    switch(filtro) {
-        case 'completadas':
-            capacitacionesFiltradas = capacitacionesData.filter(c => c.estado === 'Completada');
-            break;
-        case 'en_curso':
-            capacitacionesFiltradas = capacitacionesData.filter(c => c.estado === 'En Curso');
-            break;
-        case 'pendientes':
-            capacitacionesFiltradas = capacitacionesData.filter(c => c.estado === 'Pendiente');
-            break;
-        default:
-            capacitacionesFiltradas = capacitacionesData;
+    if (filtro === 'todas') {
+        mostrarCapacitaciones(capacitacionesData);
+    } else {
+        const filtradas = capacitacionesData.filter(c => c.estado === filtro);
+        mostrarCapacitaciones(filtradas);
     }
-    
-    mostrarCapacitaciones(capacitacionesFiltradas);
 }
 
 // Ver detalle de capacitación
 function verDetalleCapacitacion(id) {
-    const capacitacion = capacitacionesData.find(c => c.id === id);
-    if (!capacitacion) return;
+    const c = capacitacionesData.find(cap => cap.id_capacitacion == id);
+    if (!c) return;
     
-    const modalBody = document.getElementById('modalDetalleCapacitacionBody');
-    modalBody.innerHTML = `
-        <div class="row">
-            <div class="col-md-6">
-                <h6>Información General</h6>
-                <p><strong>Nombre:</strong> ${capacitacion.nombre}</p>
-                <p><strong>Tipo:</strong> ${capacitacion.tipo}</p>
-                <p><strong>Estado:</strong> ${capacitacion.estado}</p>
-                <p><strong>Progreso:</strong> ${capacitacion.progreso}%</p>
+    Swal.fire({
+        title: c.nombre,
+        html: `
+            <div class="text-start">
+                <p><strong>Descripción:</strong> ${c.descripcion || 'Sin descripción'}</p>
+                <p><strong>Modalidad:</strong> ${c.modalidad || '-'}</p>
+                <p><strong>Duración:</strong> ${c.duracion_horas || '-'} horas</p>
+                <p><strong>Estado:</strong> ${c.estado}</p>
+                <p><strong>Inicio:</strong> ${formatearFecha(c.fecha_inicio)}</p>
+                <p><strong>Fin:</strong> ${formatearFecha(c.fecha_fin)}</p>
             </div>
-            <div class="col-md-6">
-                <h6>Fechas</h6>
-                <p><strong>Inicio:</strong> ${formatearFecha(capacitacion.fecha_inicio)}</p>
-                <p><strong>Fin:</strong> ${formatearFecha(capacitacion.fecha_fin)}</p>
-            </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col-12">
-                <h6>Descripción</h6>
-                <p>${capacitacion.descripcion}</p>
-            </div>
-        </div>
-    `;
-    
-    const modal = new bootstrap.Modal(document.getElementById('modalDetalleCapacitacion'));
-    modal.show();
-}
-
-// Iniciar capacitación
-function iniciarCapacitacion(id) {
-    if (confirm('¿Estás seguro de que quieres iniciar esta capacitación?')) {
-        // Aquí se enviaría la solicitud al servidor
-        alert('Capacitación iniciada exitosamente');
-        // Recargar datos
-        cargarCapacitaciones();
-    }
-}
-
-// Solicitar nueva capacitación
-function solicitarCapacitacion(id) {
-    const modal = new bootstrap.Modal(document.getElementById('modalSolicitarCapacitacion'));
-    modal.show();
-}
-
-// Enviar solicitud de capacitación
-function enviarSolicitudCapacitacion() {
-    const form = document.getElementById('formSolicitarCapacitacion');
-    const formData = new FormData(form);
-    
-    // Validar formulario
-    if (!formData.get('nombre_capacitacion') || !formData.get('descripcion_capacitacion')) {
-        alert('Por favor, complete todos los campos obligatorios');
-        return;
-    }
-    
-    // Aquí se enviaría la solicitud al servidor
-    alert('Solicitud enviada exitosamente');
-    
-    // Cerrar modal y limpiar formulario
-    const modal = bootstrap.Modal.getInstance(document.getElementById('modalSolicitarCapacitacion'));
-    modal.hide();
-    form.reset();
+        `,
+        icon: 'info',
+        confirmButtonText: 'Cerrar'
+    });
 }
 
 // Funciones auxiliares
@@ -487,12 +400,12 @@ function formatearFecha(fecha) {
 
 function obtenerBadgeEstado(estado) {
     const badges = {
-        'Completada': 'bg-success',
-        'En Curso': 'bg-warning',
-        'Pendiente': 'bg-info',
-        'Cancelada': 'bg-danger'
+        'ACTIVA': 'bg-success',
+        'EN_CURSO': 'bg-warning',
+        'COMPLETADA': 'bg-info',
+        'INACTIVA': 'bg-danger',
+        'CANCELADA': 'bg-secondary'
     };
-    
     return `<span class="badge ${badges[estado] || 'bg-secondary'}">${estado}</span>`;
 }
 </script>

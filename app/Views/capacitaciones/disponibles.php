@@ -45,7 +45,6 @@
                                 ?>
                                 <option value="<?= esc($institucion) ?>"><?= esc($institucion) ?></option>
                                 <?php endforeach; ?>
-                                ?>
                             </select>
                         </div>
                         <div class="col-md-3">

@@ -894,4 +894,144 @@ class DocenteController extends Controller
         
         return view('Roles/Docente/permisos_vacaciones', $data);
     }
+
+    // ==================== EVALUACIONES ENTRE PARES (DOCENTES) ====================
+
+    /**
+     * Obtener el id_empleado del docente actual
+     */
+    private function getIdEmpleado()
+    {
+        $idEmpleado = session()->get('id_empleado');
+        if (!$idEmpleado) {
+            $empleadoModel = new \App\Models\EmpleadoModel();
+            $empleado = $empleadoModel->where('id_usuario', session()->get('id_usuario'))->first();
+            $idEmpleado = $empleado ? $empleado['id_empleado'] : null;
+        }
+        return $idEmpleado;
+    }
+
+    /**
+     * Vista de evaluaciones entre pares (pestaña con dos tabs)
+     */
+    public function evaluacionesPares()
+    {
+        return view('Roles/Empleado/evaluaciones_pares');
+    }
+
+    /**
+     * Obtener evaluaciones pendientes para el evaluador actual (AJAX)
+     */
+    public function obtenerEvaluacionesPendientes()
+    {
+        try {
+            $idEmpleado = $this->getIdEmpleado();
+            if (!$idEmpleado) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Empleado no encontrado']);
+            }
+
+            $model = new \App\Models\EvaluacionParModel();
+            $evaluaciones = $model->getEvaluacionesPorEvaluador($idEmpleado);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'evaluaciones' => $evaluaciones
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Guardar la evaluación realizada por el docente (AJAX POST)
+     */
+    public function guardarEvaluacionPar()
+    {
+        try {
+            $idEmpleado = $this->getIdEmpleado();
+            $id = $this->request->getPost('id');
+            $observacion = $this->request->getPost('observacion_clase');
+            $revision = $this->request->getPost('revision_materiales');
+            $retro = $this->request->getPost('retroalimentacion');
+
+            if (empty($observacion) || empty($revision) || empty($retro)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Todos los campos de evaluación son obligatorios'
+                ]);
+            }
+
+            $model = new \App\Models\EvaluacionParModel();
+            $eval = $model->find($id);
+
+            if (!$eval) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Evaluación no encontrada']);
+            }
+
+            // Verificar que el evaluador sea el docente actual
+            if ($eval['evaluador_id'] != $idEmpleado) {
+                return $this->response->setJSON(['success' => false, 'message' => 'No tienes permiso para realizar esta evaluación']);
+            }
+
+            if ($eval['estado'] === 'completada') {
+                return $this->response->setJSON(['success' => false, 'message' => 'Esta evaluación ya fue completada']);
+            }
+
+            $model->update($id, [
+                'observacion_clase'    => $observacion,
+                'revision_materiales'  => $revision,
+                'retroalimentacion'    => $retro,
+                'estado'               => 'completada',
+                'fecha_evaluacion'     => date('Y-m-d H:i:s')
+            ]);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Evaluación enviada correctamente. ¡Gracias por tu retroalimentación!'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Vista de retroalimentación recibida
+     */
+    public function retroalimentacionRecibida()
+    {
+        return view('Roles/Empleado/evaluaciones_pares');
+    }
+
+    /**
+     * Obtener retroalimentación recibida (AJAX)
+     */
+    public function obtenerRetroalimentacion()
+    {
+        try {
+            $idEmpleado = $this->getIdEmpleado();
+            if (!$idEmpleado) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Empleado no encontrado']);
+            }
+
+            $model = new \App\Models\EvaluacionParModel();
+            $retro = $model->getRetroalimentacionRecibida($idEmpleado);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'retroalimentacion' => $retro
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
+    }
 } 

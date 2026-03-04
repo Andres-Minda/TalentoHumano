@@ -16,34 +16,33 @@
             </div>
         </div>
 
-        <!-- Page Header -->
+        <!-- Tabla de capacitaciones -->
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Gestión de Capacitaciones</h4>
-                        <div class="card-actions">
-                            <button type="button" class="btn btn-primary" onclick="nuevaCapacitacion()">
-                                <i class="ti ti-plus"></i> Nueva Capacitación
-                            </button>
-                        </div>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="ti ti-certificate me-2"></i>Gestión de Capacitaciones</h5>
+                        <button type="button" class="btn btn-primary" onclick="nuevaCapacitacion()">
+                            <i class="ti ti-plus me-1"></i> Nueva Capacitación
+                        </button>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-striped" id="tablaCapacitaciones">
-                                <thead>
+                            <table class="table table-striped table-hover align-middle" id="tablaCapacitaciones">
+                                <thead class="table-dark">
                                     <tr>
-                                        <th>ID</th>
+                                        <th>#</th>
                                         <th>Nombre</th>
-                                        <th>Descripción</th>
-                                        <th>Duración</th>
                                         <th>Modalidad</th>
+                                        <th>Duración</th>
+                                        <th>Fechas</th>
+                                        <th>Cupos</th>
                                         <th>Estado</th>
-                                        <th>Acciones</th>
+                                        <th class="text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyCapacitaciones">
-                                    <!-- Los datos se cargarán dinámicamente -->
+                                    <tr><td colspan="8" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Cargando capacitaciones...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -54,138 +53,162 @@
     </div>
 </div>
 
-<!-- Modal para nueva/editar capacitación -->
+<!-- ============ MODAL: CREAR / EDITAR ============ -->
 <div class="modal fade" id="modalCapacitacion" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Nueva Capacitación</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalTitle"><i class="ti ti-plus me-2"></i>Nueva Capacitación</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="formCapacitacion">
+                    <input type="hidden" id="id_capacitacion" name="id_capacitacion">
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="nombre" class="form-label">Nombre *</label>
-                                <input type="text" class="form-control" id="nombre" name="nombre" required>
-                            </div>
+                        <div class="col-md-8 mb-3">
+                            <label for="nombre" class="form-label fw-bold">Nombre <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required placeholder="Nombre de la capacitación">
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="duracion" class="form-label">Duración (horas) *</label>
-                                <input type="number" class="form-control" id="duracion" name="duracion" required>
-                            </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="duracion" class="form-label fw-bold">Duración (horas) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="duracion" name="duracion" required min="1" placeholder="Ej: 40">
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="modalidad" class="form-label">Modalidad *</label>
-                                <select class="form-select" id="modalidad" name="modalidad" required>
-                                    <option value="">Seleccionar...</option>
-                                    <option value="PRESENCIAL">Presencial</option>
-                                    <option value="VIRTUAL">Virtual</option>
-                                    <option value="HIBRIDA">Híbrida</option>
-                                </select>
-                            </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="modalidad" class="form-label fw-bold">Modalidad <span class="text-danger">*</span></label>
+                            <select class="form-select" id="modalidad" name="modalidad" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="PRESENCIAL">Presencial</option>
+                                <option value="VIRTUAL">Virtual</option>
+                                <option value="HIBRIDA">Híbrida</option>
+                            </select>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="estado" class="form-label">Estado</label>
-                                <select class="form-select" id="estado" name="estado">
-                                    <option value="ACTIVA">Activa</option>
-                                    <option value="INACTIVA">Inactiva</option>
-                                    <option value="EN_CURSO">En Curso</option>
-                                </select>
-                            </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="estado" class="form-label fw-bold">Estado</label>
+                            <select class="form-select" id="estado" name="estado">
+                                <option value="ACTIVA">Activa</option>
+                                <option value="INACTIVA">Inactiva</option>
+                                <option value="EN_CURSO">En Curso</option>
+                                <option value="COMPLETADA">Completada</option>
+                                <option value="CANCELADA">Cancelada</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="cupo_maximo" class="form-label fw-bold">Cupo máximo</label>
+                            <input type="number" class="form-control" id="cupo_maximo" name="cupo_maximo" min="1" placeholder="Ej: 30">
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="descripcion" class="form-label">Descripción</label>
-                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3"></textarea>
+                        <label for="descripcion" class="form-label fw-bold">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3" placeholder="Descripción de la capacitación"></textarea>
                     </div>
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="fecha_inicio" class="form-label">Fecha de Inicio</label>
-                                <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio">
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="fecha_inicio" class="form-label fw-bold">Fecha de Inicio <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="fecha_fin" class="form-label">Fecha de Fin</label>
-                                <input type="date" class="form-control" id="fecha_fin" name="fecha_fin">
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="fecha_fin" class="form-label fw-bold">Fecha de Fin</label>
+                            <input type="date" class="form-control" id="fecha_fin" name="fecha_fin">
                         </div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="guardarCapacitacion()">Guardar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="ti ti-x me-1"></i>Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarCapacitacion()"><i class="ti ti-device-floppy me-1"></i>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ MODAL: VER DETALLES ============ -->
+<div class="modal fade" id="modalDetalles" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="ti ti-eye me-2"></i>Detalles de Capacitación</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detallesContenido">
+                <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+// ==================== VARIABLES GLOBALES ====================
+let capacitacionesCache = [];
+
 document.addEventListener('DOMContentLoaded', function() {
     cargarCapacitaciones();
 });
 
+// ==================== CARGAR TABLA ====================
 function cargarCapacitaciones() {
-    // Mostrar loading
     const tbody = document.getElementById('tbodyCapacitaciones');
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center"><i class="spinner-border spinner-border-sm"></i> Cargando capacitaciones...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Cargando...</td></tr>';
     
-    // Obtener capacitaciones del servidor
-    fetch('<?= base_url('admin-th/capacitaciones/obtener') ?>')
-        .then(response => response.json())
+    fetch('<?= base_url('index.php/admin-th/capacitaciones/obtener') ?>')
+        .then(r => r.json())
         .then(data => {
             if (data.success) {
-                renderizarCapacitaciones(data.capacitaciones);
+                capacitacionesCache = data.capacitaciones;
+                renderTabla(data.capacitaciones);
             } else {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar capacitaciones</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4"><i class="ti ti-alert-circle me-2"></i>${data.message || 'Error al cargar'}</td></tr>`;
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error de conexión</td></tr>';
+        .catch(err => {
+            console.error('Error:', err);
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4"><i class="ti ti-wifi-off me-2"></i>Error de conexión al servidor</td></tr>';
         });
 }
 
-function renderizarCapacitaciones(capacitaciones) {
+function renderTabla(caps) {
     const tbody = document.getElementById('tbodyCapacitaciones');
     tbody.innerHTML = '';
 
-    if (capacitaciones.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay capacitaciones disponibles</td></tr>';
+    if (!caps || caps.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No hay capacitaciones registradas</td></tr>';
         return;
     }
 
-    capacitaciones.forEach(capacitacion => {
+    caps.forEach((c, i) => {
+        const esInactiva = c.estado === 'INACTIVA';
+        const fechas = formatFecha(c.fecha_inicio) + (c.fecha_fin ? ' — ' + formatFecha(c.fecha_fin) : '');
+        const inscritos = c.total_inscritos || 0;
+        const cupo = c.cupo_maximo || '∞';
+
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${capacitacion.id_capacitacion}</td>
-            <td>${capacitacion.nombre}</td>
-            <td>${capacitacion.descripcion || 'Sin descripción'}</td>
-            <td>${capacitacion.duracion_horas} hrs</td>
-            <td><span class="badge bg-info">${capacitacion.modalidad}</span></td>
-            <td><span class="badge bg-${getEstadoBadgeColor(capacitacion.estado)}">${capacitacion.estado}</span></td>
-            <td>
-                <div class="btn-group" role="group">
-                    <button class="btn btn-sm btn-outline-primary" onclick="editarCapacitacion(${capacitacion.id_capacitacion})" title="Editar">
-                        <i class="bi bi-pencil"></i>
+            <td>${i + 1}</td>
+            <td><strong>${esc(c.nombre)}</strong><br><small class="text-muted">${esc(c.descripcion || '').substring(0, 60)}</small></td>
+            <td><span class="badge bg-light text-dark border">${c.modalidad || '—'}</span></td>
+            <td>${c.duracion_horas || '—'} hrs</td>
+            <td><small>${fechas}</small></td>
+            <td>${inscritos}/${cupo}</td>
+            <td>${badgeEstado(c.estado)}</td>
+            <td class="text-center">
+                <div class="btn-group btn-group-sm" role="group">
+                    <button class="btn btn-outline-info" onclick="verDetalles(${c.id_capacitacion})" title="Ver Detalles">
+                        <i class="ti ti-eye"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-info" onclick="verDetallesCapacitacion(${capacitacion.id_capacitacion})" title="Ver Detalles">
-                        <i class="bi bi-eye"></i>
+                    <button class="btn btn-outline-primary" onclick="editarCapacitacion(${c.id_capacitacion})" title="Editar">
+                        <i class="ti ti-pencil"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-warning" onclick="cambiarEstadoCapacitacion(${capacitacion.id_capacitacion}, '${capacitacion.estado}')" title="Cambiar Estado">
-                        <i class="bi bi-toggle-on"></i>
+                    <button class="btn btn-outline-warning" onclick="cambiarEstado(${c.id_capacitacion}, '${c.estado}')" title="Cambiar Estado">
+                        <i class="ti ti-toggle-left"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarCapacitacion(${capacitacion.id_capacitacion})" title="Eliminar">
-                        <i class="bi bi-trash"></i>
+                    <button class="btn btn-outline-danger" onclick="eliminarCapacitacion(${c.id_capacitacion})" 
+                            title="${esInactiva ? 'Eliminar' : 'Solo se puede eliminar si está INACTIVA'}" 
+                            ${esInactiva ? '' : 'disabled'}>
+                        <i class="ti ti-trash"></i>
                     </button>
                 </div>
             </td>
@@ -194,269 +217,235 @@ function renderizarCapacitaciones(capacitaciones) {
     });
 }
 
-function nuevaCapacitacion() {
-    document.getElementById('modalTitle').textContent = 'Nueva Capacitación';
-    document.getElementById('formCapacitacion').reset();
-    document.getElementById('formCapacitacion').setAttribute('data-accion', 'crear');
-    
-    // Establecer fechas por defecto
-    const hoy = new Date().toISOString().split('T')[0];
-    document.getElementById('fecha_inicio').value = hoy;
-    
-    const modal = new bootstrap.Modal(document.getElementById('modalCapacitacion'));
+// ==================== VER DETALLES (Modal) ====================
+function verDetalles(id) {
+    const modal = new bootstrap.Modal(document.getElementById('modalDetalles'));
+    document.getElementById('detallesContenido').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
     modal.show();
+
+    fetch(`<?= base_url('index.php/admin-th/capacitaciones/obtener') ?>/${id}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const c = data.capacitacion;
+                document.getElementById('detallesContenido').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5 class="mb-3">${esc(c.nombre)}</h5>
+                            <p class="text-muted">${esc(c.descripcion || 'Sin descripción')}</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            ${badgeEstado(c.estado)}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card bg-light border-0">
+                                <div class="card-body text-center py-3">
+                                    <i class="ti ti-clock fs-3 text-primary"></i>
+                                    <h6 class="mt-2 mb-0">${c.duracion_horas || '—'} horas</h6>
+                                    <small class="text-muted">Duración</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light border-0">
+                                <div class="card-body text-center py-3">
+                                    <i class="ti ti-device-laptop fs-3 text-info"></i>
+                                    <h6 class="mt-2 mb-0">${c.modalidad || '—'}</h6>
+                                    <small class="text-muted">Modalidad</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light border-0">
+                                <div class="card-body text-center py-3">
+                                    <i class="ti ti-users fs-3 text-success"></i>
+                                    <h6 class="mt-2 mb-0">${c.total_inscritos || 0} / ${c.cupo_maximo || '∞'}</h6>
+                                    <small class="text-muted">Inscritos / Cupo</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong><i class="ti ti-calendar me-1"></i>Fecha Inicio:</strong> ${formatFecha(c.fecha_inicio)}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong><i class="ti ti-calendar-off me-1"></i>Fecha Fin:</strong> ${formatFecha(c.fecha_fin)}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong><i class="ti ti-building me-1"></i>Tipo:</strong> ${c.tipo || '—'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong><i class="ti ti-id me-1"></i>ID:</strong> ${c.id_capacitacion}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('detallesContenido').innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+            }
+        })
+        .catch(() => {
+            document.getElementById('detallesContenido').innerHTML = '<div class="alert alert-danger">Error de conexión</div>';
+        });
+}
+
+// ==================== CREAR / EDITAR ====================
+function nuevaCapacitacion() {
+    document.getElementById('modalTitle').innerHTML = '<i class="ti ti-plus me-2"></i>Nueva Capacitación';
+    document.getElementById('formCapacitacion').reset();
+    document.getElementById('id_capacitacion').value = '';
+    document.getElementById('formCapacitacion').setAttribute('data-accion', 'crear');
+    document.getElementById('fecha_inicio').value = new Date().toISOString().split('T')[0];
+    
+    new bootstrap.Modal(document.getElementById('modalCapacitacion')).show();
 }
 
 function editarCapacitacion(id) {
-    // Obtener datos de la capacitación
-    fetch(`<?= base_url('admin-th/capacitaciones/obtener') ?>/${id}`)
-        .then(response => response.json())
+    fetch(`<?= base_url('index.php/admin-th/capacitaciones/obtener') ?>/${id}`)
+        .then(r => r.json())
         .then(data => {
             if (data.success) {
-                const capacitacion = data.capacitacion;
-                
-                // Llenar el formulario
-                document.getElementById('modalTitle').textContent = 'Editar Capacitación';
+                const c = data.capacitacion;
+                document.getElementById('modalTitle').innerHTML = '<i class="ti ti-pencil me-2"></i>Editar Capacitación';
                 document.getElementById('formCapacitacion').setAttribute('data-accion', 'editar');
-                document.getElementById('formCapacitacion').setAttribute('data-id', id);
-                
-                document.getElementById('nombre').value = capacitacion.nombre;
-                document.getElementById('descripcion').value = capacitacion.descripcion || '';
-                document.getElementById('duracion').value = capacitacion.duracion_horas;
-                document.getElementById('modalidad').value = capacitacion.modalidad;
-                document.getElementById('estado').value = capacitacion.estado;
-                document.getElementById('fecha_inicio').value = capacitacion.fecha_inicio || '';
-                document.getElementById('fecha_fin').value = capacitacion.fecha_fin || '';
-                
-                const modal = new bootstrap.Modal(document.getElementById('modalCapacitacion'));
-                modal.show();
+                document.getElementById('id_capacitacion').value = id;
+                document.getElementById('nombre').value = c.nombre || '';
+                document.getElementById('descripcion').value = c.descripcion || '';
+                document.getElementById('duracion').value = c.duracion_horas || '';
+                document.getElementById('modalidad').value = c.modalidad || '';
+                document.getElementById('estado').value = c.estado || 'ACTIVA';
+                document.getElementById('fecha_inicio').value = c.fecha_inicio || '';
+                document.getElementById('fecha_fin').value = c.fecha_fin || '';
+                document.getElementById('cupo_maximo').value = c.cupo_maximo || '';
+
+                new bootstrap.Modal(document.getElementById('modalCapacitacion')).show();
             } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: data.message || 'Error al obtener datos de la capacitación'
-                });
+                Swal.fire({icon:'error', title:'Error', text: data.message || 'No se pudo obtener los datos'});
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Error de conexión'
-            });
-        });
+        .catch(() => Swal.fire({icon:'error', title:'Error', text:'Error de conexión'}));
 }
 
 function guardarCapacitacion() {
     const form = document.getElementById('formCapacitacion');
     const accion = form.getAttribute('data-accion');
-    const formData = new FormData(form);
+    const fd = new FormData(form);
     
-    // Validaciones básicas
-    if (!formData.get('nombre') || !formData.get('duracion') || !formData.get('modalidad')) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Campos Requeridos',
-            text: 'Por favor complete todos los campos obligatorios'
-        });
+    if (!fd.get('nombre') || !fd.get('duracion') || !fd.get('modalidad') || !fd.get('fecha_inicio')) {
+        Swal.fire({icon:'warning', title:'Campos Requeridos', text:'Complete Nombre, Duración, Modalidad y Fecha de Inicio'});
         return;
     }
     
-    const url = accion === 'crear' ? 
-        '<?= base_url('admin-th/capacitaciones/crear') ?>' : 
-        '<?= base_url('admin-th/capacitaciones/actualizar') ?>';
+    const url = accion === 'crear' 
+        ? '<?= base_url('index.php/admin-th/capacitaciones/crear') ?>' 
+        : '<?= base_url('index.php/admin-th/capacitaciones/actualizar') ?>';
     
-    if (accion === 'editar') {
-        formData.append('id_capacitacion', form.getAttribute('data-id'));
-    }
-    
-    fetch(url, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
+    fetch(url, { method: 'POST', body: fd })
+    .then(r => r.json())
     .then(data => {
         if (data.success) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Éxito',
-                text: data.message
-            }).then(() => {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('modalCapacitacion'));
-                modal.hide();
-                cargarCapacitaciones();
-            });
+            bootstrap.Modal.getInstance(document.getElementById('modalCapacitacion')).hide();
+            Swal.fire({icon:'success', title:'¡Éxito!', text: data.message, timer: 2000, showConfirmButton: false});
+            cargarCapacitaciones();
         } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data.message || 'Error al guardar la capacitación'
-            });
+            Swal.fire({icon:'error', title:'Error', text: data.message || 'Error al guardar'});
         }
     })
-    .catch(error => {
-        console.error('Error:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Error de conexión'
-        });
-    });
+    .catch(() => Swal.fire({icon:'error', title:'Error', text:'Error de conexión'}));
 }
 
-function verDetallesCapacitacion(id) {
-    // Obtener detalles completos de la capacitación
-    fetch(`<?= base_url('admin-th/capacitaciones/obtener') ?>/${id}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const capacitacion = data.capacitacion;
-                
-                Swal.fire({
-                    title: capacitacion.nombre,
-                    html: `
-                        <div class="text-start">
-                            <p><strong>Descripción:</strong> ${capacitacion.descripcion || 'Sin descripción'}</p>
-                            <p><strong>Duración:</strong> ${capacitacion.duracion_horas} horas</p>
-                            <p><strong>Modalidad:</strong> ${capacitacion.modalidad}</p>
-                            <p><strong>Estado:</strong> ${capacitacion.estado}</p>
-                            <p><strong>Fecha Inicio:</strong> ${capacitacion.fecha_inicio || 'No definida'}</p>
-                            <p><strong>Fecha Fin:</strong> ${capacitacion.fecha_fin || 'No definida'}</p>
-                            <p><strong>Fecha Creación:</strong> ${new Date(capacitacion.fecha_creacion).toLocaleDateString('es-ES')}</p>
-                        </div>
-                    `,
-                    icon: 'info',
-                    confirmButtonText: 'Cerrar'
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: data.message || 'Error al obtener detalles'
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Error de conexión'
-            });
-        });
-}
-
-function cambiarEstadoCapacitacion(id, estadoActual) {
+// ==================== CAMBIAR ESTADO (SweetAlert2) ====================
+function cambiarEstado(id, estadoActual) {
     const nuevoEstado = estadoActual === 'ACTIVA' ? 'INACTIVA' : 'ACTIVA';
+    const colorBtn = nuevoEstado === 'ACTIVA' ? '#198754' : '#dc3545';
     
     Swal.fire({
         title: '¿Cambiar Estado?',
-        text: `¿Deseas cambiar el estado de la capacitación a ${nuevoEstado}?`,
+        html: `El estado cambiará de <strong>${estadoActual}</strong> a <strong>${nuevoEstado}</strong>`,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, cambiar',
+        confirmButtonColor: colorBtn,
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: `Sí, cambiar a ${nuevoEstado}`,
         cancelButtonText: 'Cancelar'
-    }).then((result) => {
+    }).then(result => {
         if (result.isConfirmed) {
-            const formData = new FormData();
-            formData.append('id_capacitacion', id);
-            formData.append('estado', nuevoEstado);
+            const fd = new FormData();
+            fd.append('id_capacitacion', id);
+            fd.append('estado', nuevoEstado);
             
-            fetch('<?= base_url('admin-th/capacitaciones/cambiar-estado') ?>', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
+            fetch('<?= base_url('index.php/admin-th/capacitaciones/cambiar-estado') ?>', { method: 'POST', body: fd })
+            .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Estado Cambiado',
-                        text: data.message
-                    }).then(() => {
-                        cargarCapacitaciones();
-                    });
+                    Swal.fire({icon:'success', title:'Estado Actualizado', text: data.message, timer: 2000, showConfirmButton: false});
+                    cargarCapacitaciones();
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.message || 'Error al cambiar el estado'
-                    });
+                    Swal.fire({icon:'error', title:'Error', text: data.message});
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Error de conexión'
-                });
-            });
+            .catch(() => Swal.fire({icon:'error', title:'Error', text:'Error de conexión'}));
         }
     });
 }
 
+// ==================== ELIMINAR (solo INACTIVA) ====================
 function eliminarCapacitacion(id) {
     Swal.fire({
         title: '¿Eliminar Capacitación?',
-        text: "Esta acción no se puede deshacer",
+        text: 'Esta acción no se puede deshacer. Solo se eliminan capacitaciones INACTIVAS.',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Sí, eliminar',
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="ti ti-trash me-1"></i> Sí, eliminar',
         cancelButtonText: 'Cancelar'
-    }).then((result) => {
+    }).then(result => {
         if (result.isConfirmed) {
-            const formData = new FormData();
-            formData.append('id_capacitacion', id);
+            const fd = new FormData();
+            fd.append('id_capacitacion', id);
             
-            fetch('<?= base_url('admin-th/capacitaciones/eliminar') ?>', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
+            fetch('<?= base_url('index.php/admin-th/capacitaciones/eliminar') ?>', { method: 'POST', body: fd })
+            .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Eliminada',
-                        text: data.message
-                    }).then(() => {
-                        cargarCapacitaciones();
-                    });
+                    Swal.fire({icon:'success', title:'Eliminada', text: data.message, timer: 2000, showConfirmButton: false});
+                    cargarCapacitaciones();
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.message || 'Error al eliminar la capacitación'
-                    });
+                    Swal.fire({icon:'error', title:'No se pudo eliminar', text: data.message});
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Error de conexión'
-                });
-            });
+            .catch(() => Swal.fire({icon:'error', title:'Error', text:'Error de conexión'}));
         }
     });
 }
 
-function getEstadoBadgeColor(estado) {
-    switch(estado) {
-        case 'ACTIVA': return 'success';
-        case 'INACTIVA': return 'danger';
-        case 'EN_CURSO': return 'warning';
-        case 'COMPLETADA': return 'info';
-        case 'CANCELADA': return 'secondary';
-        default: return 'secondary';
-    }
+// ==================== HELPERS ====================
+function badgeEstado(estado) {
+    const map = {
+        'ACTIVA':     '<span class="badge bg-success"><i class="ti ti-check me-1"></i>Activa</span>',
+        'INACTIVA':   '<span class="badge bg-danger"><i class="ti ti-x me-1"></i>Inactiva</span>',
+        'EN_CURSO':   '<span class="badge bg-warning text-dark"><i class="ti ti-player-play me-1"></i>En Curso</span>',
+        'COMPLETADA': '<span class="badge bg-info"><i class="ti ti-trophy me-1"></i>Completada</span>',
+        'CANCELADA':  '<span class="badge bg-secondary"><i class="ti ti-ban me-1"></i>Cancelada</span>'
+    };
+    return map[estado] || `<span class="badge bg-secondary">${estado}</span>`;
+}
+
+function formatFecha(f) {
+    if (!f) return '—';
+    const d = new Date(f + 'T00:00:00');
+    return d.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function esc(str) {
+    if (!str) return '';
+    const el = document.createElement('span');
+    el.textContent = str;
+    return el.innerHTML;
 }
 </script>
 <?= $this->endSection() ?>
