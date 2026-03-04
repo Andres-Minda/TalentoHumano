@@ -9,7 +9,7 @@ class SolicitudModel extends Model
     protected $table = 'solicitudes';
     protected $primaryKey = 'id_solicitud';
     protected $allowedFields = [
-        'id_empleado', 'tipo_solicitud', 'titulo', 'descripcion', 'estado',
+        'id_empleado', 'tipo_solicitud', 'titulo', 'motivo_descripcion', 'dias_solicitados', 'fecha_inicio', 'fecha_fin', 'fecha_solicitud', 'estado',
         'resuelto_por', 'comentarios_resolucion', 'activo'
     ];
     protected $useTimestamps = false;

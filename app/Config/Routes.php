@@ -96,24 +96,32 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     
     // Gestión de inasistencias
     $routes->get('inasistencias', 'AdminTH\AdminTHController::inasistencias');
+    $routes->get('inasistencias/listar', 'AdminTH\AdminTHController::listarInasistencias');
     $routes->get('inasistencias/registrar', 'AdminTH\AdminTHController::registrarInasistencia');
     $routes->post('inasistencias/guardar', 'AdminTH\AdminTHController::guardarInasistencia');
-    $routes->get('inasistencias/listar-json', 'AdminTH\AdminTHController::listarInasistenciasJSON');
-    $routes->get('inasistencias/total/(:num)', 'AdminTH\AdminTHController::totalInasistenciasJSON/$1');
+    $routes->get('inasistencias/detalles/(:num)', 'AdminTH\AdminTHController::detalles/$1');
+    $routes->delete('inasistencias/eliminar/(:num)', 'AdminTH\AdminTHController::eliminar/$1');
     $routes->get('inasistencias/editar/(:num)', 'AdminTH\AdminTHController::editarInasistencia/$1');
+    $routes->post('inasistencias/actualizar/(:num)', 'AdminTH\AdminTHController::actualizarInasistencia/$1');
+    $routes->get('inasistencias/listar-json', 'AdminTH\AdminTHController::listarInasistenciasJSON');
     $routes->post('inasistencias/actualizar', 'AdminTH\AdminTHController::actualizarInasistencia');
     $routes->post('inasistencias/cambiar-estado', 'AdminTH\AdminTHController::cambiarEstadoInasistencia');
     $routes->get('inasistencias/justificar/(:num)', 'AdminTH\AdminTHController::justificarInasistencia/$1');
-    $routes->post('inasistencias/procesar-justificacion', 'AdminTH\AdminTHController::procesarJustificacion');
+    $routes->post('inasistencias/guardar-justificacion/(:num)', 'AdminTH\AdminTHController::guardarJustificacion/$1');
+    $routes->get('inasistencias/reporte-empleado/(:num)', 'AdminTH\AdminTHController::reporteEmpleado/$1');
+    $routes->get('inasistencias/perfil-empleado/(:num)', 'AdminTH\AdminTHController::obtenerPerfilEmpleado/$1');
     $routes->get('inasistencias/reporte', 'AdminTH\AdminTHController::reporteInasistencias');
     $routes->get('inasistencias/exportar', 'AdminTH\AdminTHController::exportarInasistencias');
     
     // Políticas de inasistencia
     $routes->get('politicas-inasistencia', 'AdminTH\AdminTHController::politicasInasistencia');
     
-    // Solicitudes de capacitación
-    $routes->get('solicitudes-capacitacion', 'AdminTH\AdminTHController::solicitudesCapacitacion');
-    
+    // Solicitudes Administrativas (Reemplaza capacitaciones)
+    $routes->get('solicitudes/vacaciones', 'SolicitudController::adminVacaciones');
+    $routes->get('solicitudes/permisos', 'SolicitudController::adminPermisos');
+    $routes->get('solicitudes/certificados', 'SolicitudController::adminCertificados');
+    $routes->post('solicitudes/cambiar-estado/(:num)', 'SolicitudController::cambiarEstado/$1');
+    // $routes->get('solicitudes-capacitacion', 'AdminTH\AdminTHController::solicitudesCapacitacion');
     // Evaluaciones entre Pares
     $routes->get('evaluaciones-pares', 'AdminTH\AdminTHController::evaluacionesPares');
     $routes->get('evaluaciones-pares/docentes', 'AdminTH\AdminTHController::obtenerDocentes');
@@ -170,11 +178,16 @@ $routes->group('empleado', ['filter' => 'auth'], function($routes) {
     $routes->get('inasistencias/ver/(:num)', 'Empleado\EmpleadoController::verInasistencia/$1');
     $routes->get('inasistencias/estadisticas', 'Empleado\EmpleadoController::estadisticasInasistencias');
     
-    // Solicitudes de capacitación
-    $routes->get('solicitudes-capacitacion', 'Empleado\EmpleadoController::solicitudesCapacitacion');
+    // Solicitudes Administrativas (Reemplaza capacitaciones/generales antiguas)
+    // $routes->get('solicitudes-capacitacion', 'Empleado\EmpleadoController::solicitudesCapacitacion');
+    // $routes->get('permisos-vacaciones', 'Empleado\EmpleadoController::permisosVacaciones');
     
-    // Permisos y vacaciones
-    $routes->get('permisos-vacaciones', 'Empleado\EmpleadoController::permisosVacaciones');
+    $routes->group('mis-solicitudes', function($routes) {
+        $routes->get('vacaciones', 'SolicitudController::misVacaciones');
+        $routes->get('permisos', 'SolicitudController::misPermisos');
+        $routes->get('certificados', 'SolicitudController::misCertificados');
+        $routes->post('guardar', 'SolicitudController::guardarSolicitud');
+    });
     
     // Competencias
     $routes->get('competencias', 'Empleado\EmpleadoController::competencias');

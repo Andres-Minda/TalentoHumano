@@ -126,14 +126,14 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <a href="<?= base_url('admin-th/inasistencias/registrar') ?>" 
                                    class="btn btn-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center">
                                     <i class="bi bi-plus-circle fs-1 mb-2"></i>
                                     <span>Registrar Nueva Inasistencia</span>
                                 </a>
                             </div>
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <a href="<?= base_url('admin-th/inasistencias/revisar-justificaciones') ?>" 
                                    class="btn btn-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center">
                                     <i class="bi bi-clipboard-check fs-1 mb-2"></i>
@@ -145,18 +145,11 @@
                                     <?php endif; ?>
                                 </a>
                             </div>
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <a href="<?= base_url('admin-th/inasistencias/reportes') ?>" 
                                    class="btn btn-info w-100 h-100 d-flex flex-column align-items-center justify-content-center">
                                     <i class="bi bi-bar-chart fs-1 mb-2"></i>
                                     <span>Generar Reportes</span>
-                                </a>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <a href="<?= base_url('admin-th/inasistencias/politicas') ?>" 
-                                   class="btn btn-success w-100 h-100 d-flex flex-column align-items-center justify-content-center">
-                                    <i class="bi bi-shield-check fs-1 mb-2"></i>
-                                    <span>Gestionar Políticas</span>
                                 </a>
                             </div>
                         </div>
@@ -207,7 +200,7 @@
                             <i class="bi bi-clock-history text-info me-2"></i>
                             Inasistencias Recientes
                         </h5>
-                        <a href="<?= base_url('admin-th/inasistencias/listar') ?>" class="btn btn-outline-primary btn-sm">
+                        <a href="<?= site_url('admin-th/inasistencias/listar') ?>" class="btn btn-outline-primary btn-sm">
                             Ver Todas
                         </a>
                     </div>
@@ -283,19 +276,27 @@
                                                 <td>
                                                     <div class="btn-group" role="group">
                                                         <button type="button" class="btn btn-sm btn-outline-info" 
-                                                                onclick="verDetalle(<?= $inasistencia['id'] ?>)">
+                                                                onclick="verDetalle(<?= $inasistencia['id'] ?>)"
+                                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
                                                             <i class="bi bi-eye"></i>
                                                         </button>
                                                         <button type="button" class="btn btn-sm btn-outline-warning" 
-                                                                onclick="editarInasistencia(<?= $inasistencia['id'] ?>)">
+                                                                onclick="editarInasistencia(<?= $inasistencia['id'] ?>)"
+                                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                                             <i class="bi bi-pencil"></i>
                                                         </button>
                                                         <?php if ($inasistencia['estado'] === 'PENDIENTE'): ?>
                                                             <button type="button" class="btn btn-sm btn-outline-success" 
-                                                                    onclick="revisarJustificacion(<?= $inasistencia['id'] ?>)">
+                                                                    onclick="revisarJustificacion(<?= $inasistencia['id'] ?>)"
+                                                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Revisar Justificación">
                                                                 <i class="bi bi-check-circle"></i>
                                                             </button>
                                                         <?php endif; ?>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                                onclick="eliminarInasistencia(<?= $inasistencia['id'] ?>)"
+                                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -431,18 +432,22 @@
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <button type="button" class="btn btn-sm btn-outline-info" 
-                                                                onclick="verEmpleado(<?= $empleado['id_empleado'] ?? 0 ?>)">
+                                                        <button type="button" class="btn btn-sm btn-outline-info btn-ver-perfil" 
+                                                                data-id="<?= $empleado['empleado_id'] ?? 0 ?>"
+                                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Perfil">
                                                             <i class="bi bi-eye"></i>
                                                         </button>
                                                         <button type="button" class="btn btn-sm btn-outline-warning" 
-                                                                onclick="contactarEmpleado(<?= $empleado['id_empleado'] ?? 0 ?>)">
+                                                                onclick="enDesarrollo()"
+                                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Contactar">
                                                             <i class="bi bi-chat"></i>
                                                         </button>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                                onclick="generarReporte(<?= $empleado['id_empleado'] ?? 0 ?>)">
+                                                        <a href="<?= site_url('admin-th/inasistencias/reporte-empleado/' . ($empleado['empleado_id'] ?? 0)) ?>" 
+                                                           target="_blank"
+                                                           class="btn btn-sm btn-outline-danger" 
+                                                           data-bs-toggle="tooltip" data-bs-placement="top" title="Generar Reporte">
                                                             <i class="bi bi-file-earmark-text"></i>
-                                                        </button>
+                                                        </a>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -465,123 +470,264 @@
     </div>
 </div>
 
+<!-- Modal Ver Detalles (Inasistencia) -->
+<div class="modal fade" id="modalVerDetalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="bi bi-info-circle me-2"></i>Detalle de la Inasistencia</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="contenidoDetalle">
+                <div class="text-center py-3"><div class="spinner-border text-info" role="status"></div></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ver Perfil de Empleado -->
+<div class="modal fade" id="modalPerfilEmpleado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-person-badge me-2"></i>Perfil del Empleado</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="contenidoPerfil">
+                <!-- Fallback/spinner -->
+                <div class="text-center py-4 text-primary">
+                    <div class="spinner-border" role="status"></div>
+                    <p class="mt-2">Cargando perfil...</p>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SweetAlert2 Plugin -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Preparar variables desde PHP (Req 4)
+    const labelsDeptos = <?= json_encode($graficos['departamentos']['labels'] ?? ['Sin Datos']) ?>;
+    const valoresDeptos = <?= json_encode($graficos['departamentos']['valores'] ?? [1]) ?>;
+    
+    const labelsTendencia = <?= json_encode($graficos['tendencia']['labels'] ?? []) ?>;
+    const valoresTendencia = <?= json_encode($graficos['tendencia']['valores'] ?? []) ?>;
+
     // Gráfico por departamentos
-    const ctxDepartamentos = document.getElementById('graficoDepartamentos').getContext('2d');
-    new Chart(ctxDepartamentos, {
-        type: 'doughnut',
-        data: {
-            labels: <?= json_encode($graficos['departamentos']['labels'] ?? []) ?>,
-            datasets: [{
-                data: <?= json_encode($graficos['departamentos']['valores'] ?? []) ?>,
-                backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d', '#17a2b8'],
-                borderWidth: 2,
-                borderColor: '#fff'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
+    const canvasDeptos = document.getElementById('graficoDepartamentos');
+    if (canvasDeptos) {
+        const ctxDepartamentos = canvasDeptos.getContext('2d');
+        new Chart(ctxDepartamentos, {
+            type: 'doughnut',
+            data: {
+                labels: labelsDeptos,
+                datasets: [{
+                    data: valoresDeptos,
+                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d', '#17a2b8', '#e83e8c', '#6f42c1'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
                 }
             }
-        }
-    });
+        });
+    }
 
     // Gráfico de tendencia
-    const ctxTendencia = document.getElementById('graficoTendencia').getContext('2d');
-    new Chart(ctxTendencia, {
-        type: 'line',
-        data: {
-            labels: <?= json_encode($graficos['tendencia']['labels'] ?? []) ?>,
-            datasets: [{
-                label: 'Inasistencias',
-                data: <?= json_encode($graficos['tendencia']['valores'] ?? []) ?>,
-                borderColor: '#007bff',
-                backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
+    const canvasTendencia = document.getElementById('graficoTendencia');
+    if (canvasTendencia) {
+        const ctxTendencia = canvasTendencia.getContext('2d');
+        new Chart(ctxTendencia, {
+            type: 'line',
+            data: {
+                labels: labelsTendencia,
+                datasets: [{
+                    label: 'Inasistencias por Día',
+                    data: valoresTendencia,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
                     }
                 }
             }
-        }
+        });
+    }
+
+    // Inicializar Tooltips (Req 2)
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Lógica AJAX para Ver Perfil de Empleado
+    const botonesVerPerfil = document.querySelectorAll('.btn-ver-perfil');
+    botonesVerPerfil.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const empleadoId = this.getAttribute('data-id');
+            const modalElement = document.getElementById('modalPerfilEmpleado');
+            const modal = new bootstrap.Modal(modalElement);
+            const contenido = document.getElementById('contenidoPerfil');
+            
+            // Mostrar modal y spinner
+            contenido.innerHTML = `
+                <div class="text-center py-4 text-primary">
+                    <div class="spinner-border" role="status"></div>
+                    <p class="mt-2">Cargando perfil...</p>
+                </div>`;
+            modal.show();
+
+            // Llamada Fetch
+            fetch(`<?= site_url('admin-th/inasistencias/perfil-empleado/') ?>${empleadoId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        contenido.innerHTML = `
+                            <div class="text-center mb-4">
+                                <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
+                                    ${data.nombre_completo.charAt(0)}
+                                </div>
+                                <h5 class="mb-0 text-dark font-weight-bold">${data.nombre_completo}</h5>
+                                <span class="badge bg-secondary mt-1">${data.tipo_empleado}</span>
+                            </div>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <span class="text-muted"><i class="bi bi-card-text me-2"></i>Documento</span>
+                                    <span class="font-weight-medium">${data.cedula}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <span class="text-muted"><i class="bi bi-building me-2"></i>Departamento</span>
+                                    <span class="font-weight-medium">${data.departamento}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <span class="text-muted"><i class="bi bi-envelope me-2"></i>Correo</span>
+                                    <span class="font-weight-medium">${data.correo}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <span class="text-muted"><i class="bi bi-telephone me-2"></i>Teléfono</span>
+                                    <span class="font-weight-medium">${data.telefono}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <span class="text-muted"><i class="bi bi-calendar-check me-2"></i>Contratación</span>
+                                    <span class="font-weight-medium">${data.fecha_contratacion}</span>
+                                </li>
+                            </ul>
+                        `;
+                    } else {
+                        contenido.innerHTML = `<div class="alert alert-danger text-center"><i class="bi bi-exclamation-triangle me-2"></i>${data.message || 'Error al cargar perfil.'}</div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching profile:', error);
+                    contenido.innerHTML = `<div class="alert alert-danger text-center"><i class="bi bi-wifi-off me-2"></i>Error de conexión al servidor.</div>`;
+                });
+        });
     });
 });
 
 function verDetalle(id) {
-    window.location.href = '<?= base_url('admin-th/inasistencias/ver/') ?>' + id;
+    const modal = new bootstrap.Modal(document.getElementById('modalVerDetalle'));
+    modal.show();
+    document.getElementById('contenidoDetalle').innerHTML = '<div class="text-center py-3"><div class="spinner-border text-info" role="status"></div></div>';
+
+    fetch(`<?= site_url('admin-th/inasistencias/detalles/') ?>${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const i = data.inasistencia;
+                document.getElementById('contenidoDetalle').innerHTML = `
+                    <div class="mb-3"><strong>Empleado:</strong> <br> ${i.apellidos} ${i.nombres}</div>
+                    <div class="mb-3"><strong>Fecha y Hora:</strong> <br> ${i.fecha_inasistencia} ${i.hora_inasistencia ? '- ' + i.hora_inasistencia : ''}</div>
+                    <div class="mb-3"><strong>Tipo:</strong> <br> <span class="badge bg-secondary">${i.tipo_inasistencia}</span></div>
+                    <div class="mb-3"><strong>Estado:</strong> <br> <span class="badge ${i.justificada == 1 ? 'bg-success' : 'bg-warning'}">${i.justificada == 1 ? 'Justificada' : 'Sin Justificar'}</span></div>
+                    <div class="mb-3"><strong>Motivo:</strong> <br> <p class="text-muted border p-2 rounded bg-light">${i.motivo}</p></div>
+                `;
+            } else {
+                document.getElementById('contenidoDetalle').innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('contenidoDetalle').innerHTML = `<div class="alert alert-danger">Error de conexión al cargar datos.</div>`;
+        });
 }
 
-function editarInasistencia(id) {
-    window.location.href = '<?= base_url('admin-th/inasistencias/editar/') ?>' + id;
+function eliminarInasistencia(id) {
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: "Esta inasistencia será eliminada permanentemente.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'Eliminando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+            
+            fetch(`<?= site_url('admin-th/inasistencias/eliminar/') ?>${id}`, {
+                method: 'DELETE',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    Swal.fire('¡Eliminado!', 'El registro ha sido eliminado.', 'success').then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', data.message || 'No se pudo eliminar el registro.', 'error');
+                }
+            })
+            .catch(err => {
+                Swal.fire('Error', 'Problema de conexión con el servidor.', 'error');
+            });
+        }
+    });
 }
 
-function revisarJustificacion(id) {
-    window.location.href = '<?= base_url('admin-th/inasistencias/revisar-justificacion/') ?>' + id;
-}
 
-function verEmpleado(id) {
-    window.location.href = '<?= base_url('admin-th/empleados/ver/') ?>' + id;
-}
-
-function contactarEmpleado(id) {
-    // Implementar modal de contacto
-    alert('Función de contacto en desarrollo');
-}
-
-function generarReporte(id) {
-    window.location.href = '<?= base_url('admin-th/inasistencias/reporte-empleado/') ?>' + id;
+function enDesarrollo() {
+    Swal.fire({
+        title: 'En desarrollo',
+        text: 'Esta funcionalidad estará disponible próximamente.',
+        icon: 'info',
+        confirmButtonColor: '#007bff'
+    });
 }
 </script>
 
 <style>
-.avatar-sm {
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.btn-group .btn {
-    margin-right: 2px;
-}
-
-.btn-group .btn:last-child {
-    margin-right: 0;
-}
-
-.card-header .btn {
-    font-size: 0.875rem;
-}
-
-.table th {
-    background-color: #f8f9fa;
-    border-top: none;
-}
-
-.badge {
-    font-size: 0.875em;
-}
-
-.mini-stats-wid .avatar-title {
-    width: 48px;
-    height: 48px;
-    font-size: 24px;
-}
+.avatar-sm { width: 32px; height: 32px; font-size: 14px; font-weight: 600; }
+.btn-group .btn { margin-right: 2px; }
+.btn-group .btn:last-child { margin-right: 0; }
+.card-header .btn { font-size: 0.875rem; }
+.table th { background-color: #f8f9fa; border-top: none; }
+.badge { font-size: 0.875em; }
+.mini-stats-wid .avatar-title { width: 48px; height: 48px; font-size: 24px; }
 </style>
 
 <?= $this->endSection() ?>

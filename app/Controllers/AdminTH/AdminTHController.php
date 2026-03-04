@@ -1366,6 +1366,80 @@ class AdminTHController extends Controller
      */
     public function inasistencias()
     {
+        $db = \Config\Database::connect();
+        $mesActual = date('Y-m');
+
+        // 1. Inasistencias Recientes (últimas 5)
+        $recientes = $db->table('inasistencias i')
+            ->select('i.*, e.nombres as empleado_nombre, e.apellidos as empleado_apellido, e.tipo_empleado as empleado_tipo, e.departamento')
+            ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+            ->orderBy('i.fecha_inasistencia', 'DESC')
+            ->limit(5)
+            ->get()->getResultArray();
+
+        // Limpiar para la vista
+        foreach ($recientes as &$r) {
+            $r['empleado_nombre'] = trim(($r['empleado_nombre'] ?? '') . ' ' . ($r['empleado_apellido'] ?? ''));
+            $r['fecha'] = $r['fecha_inasistencia'];
+            $r['tipo_nombre'] = $r['tipo_inasistencia'];
+            $r['estado'] = $r['justificada'] ? 'JUSTIFICADA' : 'SIN_JUSTIFICAR';
+        }
+
+        // 2. Top Empleados (Este Mes)
+        $topEmpleados = $db->table('inasistencias i')
+            ->select('i.empleado_id, e.nombres, e.apellidos, e.tipo_empleado as tipo, e.departamento, COUNT(i.id) as total_inasistencias, SUM(i.justificada) as justificadas')
+            ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+            ->like('i.fecha_inasistencia', $mesActual, 'after')
+            ->groupBy('i.empleado_id, e.nombres, e.apellidos, e.tipo_empleado, e.departamento')
+            ->orderBy('total_inasistencias', 'DESC')
+            ->limit(5)
+            ->get()->getResultArray();
+
+        foreach ($topEmpleados as &$e) {
+            $e['nombre'] = trim(($e['nombres'] ?? '') . ' ' . ($e['apellidos'] ?? ''));
+            $e['sin_justificar'] = $e['total_inasistencias'] - $e['justificadas'];
+        }
+
+        // 3. Inasistencias por Departamento
+        $deptos = $db->table('inasistencias i')
+            ->select('e.departamento, COUNT(i.id) as total')
+            ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+            ->groupBy('e.departamento')
+            ->get()->getResultArray();
+
+        $labelsDeptos = [];
+        $valoresDeptos = [];
+        foreach ($deptos as $d) {
+            $labelsDeptos[] = $d['departamento'] ?? 'Sin asignar';
+            $valoresDeptos[] = (int) $d['total'];
+        }
+
+        // 4. Tendencia Semanal (Últimos 7 días)
+        $fechaHace7Dias = date('Y-m-d', strtotime('-7 days'));
+        $tendencia = $db->table('inasistencias')
+            ->select('fecha_inasistencia, COUNT(id) as total')
+            ->where('fecha_inasistencia >', $fechaHace7Dias)
+            ->groupBy('fecha_inasistencia')
+            ->orderBy('fecha_inasistencia', 'ASC')
+            ->get()->getResultArray();
+
+        $labelsTendencia = [];
+        $valoresTendencia = [];
+        // Rellenar ceros si faltan días
+        for ($i = 6; $i >= 0; $i--) {
+            $diaStr = date('Y-m-d', strtotime("-{$i} days"));
+            $labelsTendencia[] = date('d/m', strtotime("-{$i} days"));
+            
+            $totalDia = 0;
+            foreach ($tendencia as $t) {
+                if ($t['fecha_inasistencia'] === $diaStr) {
+                    $totalDia = (int) $t['total'];
+                    break;
+                }
+            }
+            $valoresTendencia[] = $totalDia;
+        }
+
         $data = [
             'titulo' => 'Gestión de Inasistencias',
             'usuario' => [
@@ -1373,10 +1447,114 @@ class AdminTHController extends Controller
                 'apellidos' => session()->get('apellidos'),
                 'rol' => session()->get('nombre_rol')
             ],
-            'inasistencias' => $this->inasistenciaModel->getInasistenciasConEmpleado()
+            'inasistencias_recientes' => $recientes,
+            'empleados_criticos' => $topEmpleados,
+            'graficos' => [
+                'departamentos' => [
+                    'labels' => empty($labelsDeptos) ? ['Sin Datos'] : $labelsDeptos,
+                    'valores' => empty($valoresDeptos) ? [1] : $valoresDeptos
+                ],
+                'tendencia' => [
+                    'labels' => $labelsTendencia,
+                    'valores' => $valoresTendencia
+                ]
+            ],
+            // Stats para los recuadros de arriba (opcional pero bueno tenerlos reales)
+            'estadisticas' => [
+                'total' => $db->table('inasistencias')->countAllResults(),
+                'pendientes' => $db->table('inasistencias')->where('justificada', 0)->where('tipo_inasistencia', 'Permiso')->countAllResults(),
+                'sin_justificar' => $db->table('inasistencias')->where('justificada', 0)->countAllResults(),
+                'tasa_justificacion' => 0 // dummy for now, requires calculation
+            ]
         ];
 
+        // Calcular tasa si hay total
+        if ($data['estadisticas']['total'] > 0) {
+            $justificadas = $db->table('inasistencias')->where('justificada', 1)->countAllResults();
+            $data['estadisticas']['tasa_justificacion'] = round(($justificadas / $data['estadisticas']['total']) * 100);
+        }
+
         return view('Roles/AdminTH/inasistencias/dashboard', $data);
+    }
+
+    /**
+     * Listar todas las inasistencias (Página "Ver todas")
+     */
+    public function listarInasistencias()
+    {
+        $db = \Config\Database::connect();
+        
+        $inasistencias = $db->table('inasistencias i')
+            ->select('i.*, e.nombres, e.apellidos, e.departamento, e.tipo_empleado')
+            ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+            ->orderBy('i.fecha_inasistencia', 'DESC')
+            ->get()->getResultArray();
+
+        $data = [
+            'titulo' => 'Historial de Inasistencias',
+            'usuario' => [
+                'nombres' => session()->get('nombres'),
+                'apellidos' => session()->get('apellidos'),
+                'rol' => session()->get('nombre_rol')
+            ],
+            'inasistencias' => $inasistencias
+        ];
+
+        return view('Roles/AdminTH/inasistencias/index', $data);
+    }
+
+    /**
+     * Ver Detalles Inasistencia JSON (AJAX) - Para Modal
+     */
+    public function detalles($id)
+    {
+        $db = \Config\Database::connect();
+        $inasistencia = $db->table('inasistencias i')
+            ->select('i.*, e.nombres, e.apellidos, e.departamento, e.tipo_empleado')
+            ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+            ->where('i.id', $id)
+            ->get()->getRowArray();
+
+        if (!$inasistencia) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Inasistencia no encontrada.']);
+        }
+
+        // Formatear si es necesario
+        $inasistencia['fecha_inasistencia'] = date('d/m/Y', strtotime($inasistencia['fecha_inasistencia']));
+        if ($inasistencia['hora_inasistencia']) {
+            $inasistencia['hora_inasistencia'] = date('H:i', strtotime($inasistencia['hora_inasistencia']));
+        }
+
+        return $this->response->setJSON(['success' => true, 'inasistencia' => $inasistencia]);
+    }
+
+    /**
+     * Eliminar Inasistencia (AJAX DELETE)
+     */
+    public function eliminar($id)
+    {
+        try {
+            $inasistenciaModel = new \App\Models\InasistenciaModel();
+            
+            // Verificar si existe
+            $registro = $inasistenciaModel->find($id);
+            if (!$registro) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Registro no encontrado.']);
+            }
+
+            // Opcional: solo permitir eliminar si no está justificada, o según negocio. 
+            // Para admin, usualmente pueden eliminar cualquiera, se procede directo.
+            
+            $eliminado = $inasistenciaModel->delete($id);
+            
+            if ($eliminado) {
+                return $this->response->setJSON(['success' => true, 'message' => 'Inasistencia eliminada correctamente.']);
+            } else {
+                return $this->response->setJSON(['success' => false, 'message' => 'No se pudo eliminar el registro.']);
+            }
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -1458,6 +1636,76 @@ class AdminTHController extends Controller
     }
 
     /**
+     * Editar Inasistencia (Mostrar formulario con datos cargados)
+     */
+    public function editarInasistencia($id)
+    {
+        $db = \Config\Database::connect();
+        
+        // Obtener la inasistencia actual
+        $inasistencia = $db->table('inasistencias')->where('id', $id)->get()->getRowArray();
+        
+        if (!$inasistencia) {
+            session()->setFlashdata('error', 'Inasistencia no encontrada.');
+            return redirect()->to(base_url('admin-th/inasistencias'));
+        }
+
+        // Obtener empleados para el combo
+        $empleados = $db->table('empleados')
+            ->select('id_empleado, nombres, apellidos, departamento')
+            ->where('estado', 'Activo')
+            ->orderBy('apellidos', 'ASC')
+            ->get()->getResultArray();
+
+        $data = [
+            'titulo' => 'Editar Inasistencia',
+            'usuario' => [
+                'nombres' => session()->get('nombres'),
+                'apellidos' => session()->get('apellidos'),
+                'rol' => session()->get('nombre_rol')
+            ],
+            'inasistencia' => $inasistencia,
+            'empleados' => $empleados
+        ];
+
+        return view('Roles/AdminTH/inasistencias/editar', $data);
+    }
+
+    /**
+     * Actualiza inasistencia (Proceso POST)
+     */
+    public function actualizarInasistencia($id = null)
+    {
+        // En algunas rutas puede venir por POST sin param ($id=null).
+        if ($id === null) {
+            $id = $this->request->getPost('id');
+        }
+
+        if (!$id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'ID no proporcionado.']);
+        }
+
+        $inasistenciaModel = new \App\Models\InasistenciaModel();
+        
+        $datos = [
+            'empleado_id' => $this->request->getPost('empleado_id'),
+            'fecha_inasistencia' => $this->request->getPost('fecha_inasistencia'),
+            'hora_inasistencia' => $this->request->getPost('hora_inasistencia') ?: null,
+            'tipo_inasistencia' => $this->request->getPost('tipo_inasistencia') ?: 'Injustificada',
+            'motivo' => $this->request->getPost('motivo'),
+            'justificada' => ($this->request->getPost('tipo_inasistencia') === 'Justificada') ? 1 : 0
+        ];
+
+        try {
+            $inasistenciaModel->update($id, $datos);
+            session()->setFlashdata('success', 'Inasistencia actualizada correctamente.');
+            return $this->response->setJSON(['success' => true]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error al actualizar: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * Listar inasistencias con acumulado (AJAX - JSON) - Req 4
      */
     public function listarInasistenciasJSON()
@@ -1499,6 +1747,66 @@ class AdminTHController extends Controller
                 'message' => 'Error: ' . $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Generar Reporte de Inasistencias de un Empleado (Vista para Imprimir) - Req 3
+     */
+    public function reporteEmpleado($empleado_id)
+    {
+        $db = \Config\Database::connect();
+        
+        // Consultar datos del empleado (haciendo join con usuarios para la cédula)
+        $empleado = $db->table('empleados e')
+            ->select('e.id_empleado, e.nombres, e.apellidos, e.departamento, e.tipo_empleado, e.estado, u.cedula')
+            ->join('usuarios u', 'u.id_usuario = e.id_usuario', 'left')
+            ->where('e.id_empleado', $empleado_id)
+            ->get()->getRowArray();
+
+        if (!$empleado) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Empleado no encontrado.");
+        }
+
+        // Consultar historial de inasistencias completo
+        $inasistencias = $db->table('inasistencias')
+            ->where('empleado_id', $empleado_id)
+            ->orderBy('fecha_inasistencia', 'DESC')
+            ->get()->getResultArray();
+
+        $data = [
+            'empleado' => $empleado,
+            'inasistencias' => $inasistencias
+        ];
+
+        return view('Roles/AdminTH/inasistencias/reporte_empleado', $data);
+    }
+
+    /**
+     * Obtener perfil de empleado por AJAX - Req 2
+     */
+    public function obtenerPerfilEmpleado($empleado_id)
+    {
+        $empleadoModel = new \App\Models\EmpleadoModel();
+        
+        $empleado = $empleadoModel->getEmpleadoConUsuario($empleado_id);
+
+        if (!$empleado) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Empleado no encontrado']);
+        }
+
+        // Formatear datos que podrían ser nulos o dar detalles extra
+        $datos = [
+            'success'            => true,
+            'nombre_completo'    => $empleado['nombres'] . ' ' . $empleado['apellidos'],
+            'cedula'             => $empleado['cedula'] ?? 'N/A',
+            'correo'             => $empleado['email'] ?? 'N/A',
+            'telefono'           => $empleado['telefono'] ?? 'N/A',
+            'departamento'       => $empleado['departamento'] ?? 'N/A',
+            'tipo_empleado'      => $empleado['tipo_empleado'] ?? 'N/A',
+            'fecha_contratacion' => $empleado['fecha_ingreso'] ? date('d/m/Y', strtotime($empleado['fecha_ingreso'])) : 'N/A'
+        ];
+
+        return $this->response->setJSON($datos);
     }
 
     /**

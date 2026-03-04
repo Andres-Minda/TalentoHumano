@@ -111,12 +111,24 @@
                 </li>
                 <li class="nav-small-cap">
                     <i class="ti ti-dots nav-small-cap-icon fs-6"></i>
-                    <span class="hide-menu">SOLICITUDES</span>
+                    <span class="hide-menu">TRÁMITES Y SOLICITUDES</span>
                 </li>
                 <li class="sidebar-item">
-                    <a class="sidebar-link" href="<?= base_url('index.php/admin-th/solicitudes-capacitacion') ?>" aria-expanded="false">
-                        <span><i class="bi bi-clipboard-data"></i></span>
-                        <span class="hide-menu">Solicitudes de Capacitación</span>
+                    <a class="sidebar-link" href="<?= base_url('index.php/admin-th/solicitudes/vacaciones') ?>" aria-expanded="false">
+                        <span><i class="bi bi-airplane"></i></span>
+                        <span class="hide-menu">Vacaciones</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a class="sidebar-link" href="<?= base_url('index.php/admin-th/solicitudes/permisos') ?>" aria-expanded="false">
+                        <span><i class="bi bi-clock-history"></i></span>
+                        <span class="hide-menu">Permisos</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a class="sidebar-link" href="<?= base_url('index.php/admin-th/solicitudes/certificados') ?>" aria-expanded="false">
+                        <span><i class="bi bi-file-earmark-check"></i></span>
+                        <span class="hide-menu">Certificados / Docs</span>
                     </a>
                 </li>
                 <li class="nav-small-cap">

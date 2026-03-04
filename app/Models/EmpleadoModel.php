@@ -26,7 +26,8 @@ class EmpleadoModel extends Model
         'estado_civil',
         'direccion',
         'telefono',
-        'activo'
+        'activo',
+        'dias_vacaciones_disponibles'
     ];
 
     protected $useTimestamps = true;
