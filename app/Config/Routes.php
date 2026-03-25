@@ -129,6 +129,11 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->post('evaluaciones-pares/asignar', 'AdminTH\AdminTHController::asignarEvaluacionPar');
     $routes->post('evaluaciones-pares/eliminar', 'AdminTH\AdminTHController::eliminarEvaluacionPar');
     
+    // Evaluaciones Estudiantiles (gestión de links anónimos)
+    $routes->get('evaluaciones-estudiantiles', 'AdminTH\AdminTHController::evaluacionesEstudiantiles');
+    $routes->post('evaluaciones-estudiantiles/generar', 'AdminTH\AdminTHController::generarTokensEstudiantiles');
+    $routes->get('evaluaciones-estudiantiles/obtener', 'AdminTH\AdminTHController::obtenerTokensEstudiantiles');
+    
     // Reportes y estadísticas
     $routes->get('reportes', 'AdminTH\AdminTHController::reportes');
     $routes->get('estadisticas', 'AdminTH\AdminTHController::estadisticas');
@@ -261,6 +266,10 @@ if (ENVIRONMENT === 'development') {
     $routes->get('test', 'TestController::index');
     $routes->get('debug', 'DebugController::index');
 }
+
+// Rutas PÚBLICAS para evaluación estudiantil (sin auth)
+$routes->get('evaluacion-estudiantil/(:any)', 'EvaluacionEstudiantilController::index/$1');
+$routes->post('evaluacion-estudiantil/(:any)', 'EvaluacionEstudiantilController::guardar/$1');
 
 // Rutas para postulaciones públicas (deben ir al final para no interferir con otras rutas)
 $routes->get('postularse/(:num)', 'PostulacionController::mostrarFormulario/$1');

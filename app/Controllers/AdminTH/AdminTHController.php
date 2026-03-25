@@ -3863,4 +3863,116 @@ class AdminTHController extends Controller
             return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
+
+    // ================================================================
+    // EVALUACIONES ESTUDIANTILES — Generación y gestión de tokens
+    // ================================================================
+
+    /**
+     * Vista principal del panel de evaluaciones estudiantiles
+     */
+    public function evaluacionesEstudiantiles()
+    {
+        $db = \Config\Database::connect();
+
+        // Evaluaciones activas para el select
+        $evaluaciones = $db->table('evaluaciones')
+            ->select('id_evaluacion, nombre')
+            ->orderBy('id_evaluacion', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        // Docentes activos para el select
+        $docentes = $db->table('empleados')
+            ->select('id_empleado, nombres, apellidos')
+            ->where('estado', 'Activo')
+            ->whereIn('tipo_empleado', ['Docente', 'DOCENTE'])
+            ->orderBy('apellidos', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        // Si no hay docentes con tipo estricto, traer todos los activos
+        if (empty($docentes)) {
+            $docentes = $db->table('empleados')
+                ->select('id_empleado, nombres, apellidos')
+                ->where('estado', 'Activo')
+                ->orderBy('apellidos', 'ASC')
+                ->get()
+                ->getResultArray();
+        }
+
+        $data = [
+            'titulo'       => 'Evaluaciones Estudiantiles',
+            'usuario'      => [
+                'nombres'  => session()->get('nombres'),
+                'apellidos' => session()->get('apellidos'),
+                'rol'      => session()->get('nombre_rol')
+            ],
+            'evaluaciones' => $evaluaciones,
+            'docentes'     => $docentes,
+        ];
+
+        return view('Roles/AdminTH/evaluaciones_estudiantiles', $data);
+    }
+
+    /**
+     * Generar N tokens para evaluación estudiantil (POST AJAX)
+     */
+    public function generarTokensEstudiantiles()
+    {
+        if (!$this->request->is('post')) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        try {
+            $idEvaluacion = (int)$this->request->getPost('id_evaluacion');
+            $idDocente    = (int)$this->request->getPost('id_docente');
+            $grupoCurso   = trim($this->request->getPost('grupo_curso'));
+            $cantidad     = (int)$this->request->getPost('cantidad');
+            $diasVigencia = (int)($this->request->getPost('dias_vigencia') ?: 7);
+
+            if (!$idEvaluacion || !$idDocente || !$grupoCurso || $cantidad < 1) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Todos los campos son obligatorios.']);
+            }
+
+            if ($cantidad > 100) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Máximo 100 links por generación.']);
+            }
+
+            $fechaExpiracion = date('Y-m-d H:i:s', strtotime("+{$diasVigencia} days"));
+
+            $tokenModel = new \App\Models\TokenEvaluacionModel();
+            $tokens = $tokenModel->generarTokens($idEvaluacion, $idDocente, $grupoCurso, $cantidad, $fechaExpiracion);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => "Se generaron {$cantidad} links exitosamente. Vigencia: {$diasVigencia} días.",
+                'total_generados' => count($tokens),
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error al generar tokens estudiantiles: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Obtener tokens agrupados por docente/curso (GET AJAX)
+     */
+    public function obtenerTokensEstudiantiles()
+    {
+        try {
+            $tokenModel = new \App\Models\TokenEvaluacionModel();
+            $grupos = $tokenModel->getTokensAgrupados();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'grupos'  => $grupos,
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error al obtener tokens: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
 }
