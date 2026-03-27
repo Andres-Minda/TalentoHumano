@@ -30,6 +30,7 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->post('empleados/deshabilitar', 'AdminTH\AdminTHController::deshabilitarEmpleado');
     $routes->post('empleados/habilitar', 'AdminTH\AdminTHController::habilitarEmpleado');
     $routes->post('empleados/eliminar', 'AdminTH\AdminTHController::eliminarEmpleado');
+    $routes->post('empleados/eliminar-masivo', 'AdminTH\AdminTHController::eliminarEmpleadosMasivo');
     $routes->get('empleados/historial/(:num)', 'AdminTH\AdminTHController::obtenerHistorialEmpleado/$1');
     $routes->get('empleados/reporte-inactivos', 'AdminTH\AdminTHController::reporteEmpleadosInactivos');
     $routes->get('empleados/exportar-inactivos', 'AdminTH\AdminTHController::exportarEmpleadosInactivos');
@@ -40,6 +41,7 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->get('departamentos/obtener/(:num)', 'AdminTH\AdminTHController::obtenerDepartamento/$1');
     $routes->post('departamentos/guardar', 'AdminTH\AdminTHController::guardarDepartamento');
     $routes->post('departamentos/eliminar', 'AdminTH\AdminTHController::eliminarDepartamento');
+    $routes->post('departamentos/eliminar-masivo', 'AdminTH\AdminTHController::eliminarDepartamentosMasivo');
     $routes->get('departamentos/activos', 'AdminTH\AdminTHController::obtenerDepartamentosActivos');
     $routes->get('departamentos/estadisticas', 'AdminTH\AdminTHController::obtenerEstadisticasDepartamentos');
     
@@ -49,6 +51,7 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->get('puestos/obtener/(:num)', 'AdminTH\AdminTHController::obtenerPuesto/$1');
     $routes->post('puestos/guardar', 'AdminTH\AdminTHController::guardarPuesto');
     $routes->post('puestos/eliminar', 'AdminTH\AdminTHController::eliminarPuesto');
+    $routes->post('puestos/eliminar-masivo', 'AdminTH\AdminTHController::eliminarPuestosMasivo');
     $routes->post('puestos/generar-url', 'AdminTH\AdminTHController::generarUrlPostulacion');
     $routes->get('puestos/(:num)/postulantes', 'AdminTH\AdminTHController::obtenerPostulantesPuesto/$1');
     
@@ -72,6 +75,7 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->post('capacitaciones/actualizar', 'AdminTH\AdminTHController::actualizarCapacitacion');
     $routes->post('capacitaciones/cambiar-estado', 'AdminTH\AdminTHController::cambiarEstadoCapacitacion');
     $routes->post('capacitaciones/eliminar', 'AdminTH\AdminTHController::eliminarCapacitacion');
+    $routes->post('capacitaciones/eliminar-masivo', 'AdminTH\AdminTHController::eliminarCapacitacionesMasivo');
     
     // Gestión de títulos académicos
     $routes->get('titulos-academicos', 'AdminTH\AdminTHController::titulosAcademicos');
@@ -80,6 +84,7 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->post('titulos-academicos/crear', 'AdminTH\AdminTHController::crearTituloAcademico');
     $routes->post('titulos-academicos/editar', 'AdminTH\AdminTHController::editarTituloAcademico');
     $routes->post('titulos-academicos/deshabilitar', 'AdminTH\AdminTHController::deshabilitarTituloAcademico');
+    $routes->post('titulos-academicos/eliminar-masivo', 'AdminTH\AdminTHController::eliminarTitulosAcademicosMasivo');
     $routes->post('titulos-academicos/habilitar', 'AdminTH\AdminTHController::habilitarTituloAcademico');
     
     // Gestión de evaluaciones
@@ -101,6 +106,7 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->post('inasistencias/guardar', 'AdminTH\AdminTHController::guardarInasistencia');
     $routes->get('inasistencias/detalles/(:num)', 'AdminTH\AdminTHController::detalles/$1');
     $routes->delete('inasistencias/eliminar/(:num)', 'AdminTH\AdminTHController::eliminar/$1');
+    $routes->post('inasistencias/eliminar-masivo', 'AdminTH\AdminTHController::eliminarInasistenciasMasivo');
     $routes->get('inasistencias/editar/(:num)', 'AdminTH\AdminTHController::editarInasistencia/$1');
     $routes->post('inasistencias/actualizar/(:num)', 'AdminTH\AdminTHController::actualizarInasistencia/$1');
     $routes->get('inasistencias/listar-json', 'AdminTH\AdminTHController::listarInasistenciasJSON');
@@ -115,6 +121,7 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     
     // Políticas de inasistencia
     $routes->get('politicas-inasistencia', 'AdminTH\AdminTHController::politicasInasistencia');
+    $routes->post('politicas-inasistencia/eliminar-masivo', 'AdminTH\AdminTHController::eliminarPoliticasMasivo');
     
     // Solicitudes Administrativas (Reemplaza capacitaciones)
     $routes->get('solicitudes/vacaciones', 'SolicitudController::adminVacaciones');
@@ -133,6 +140,13 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->get('evaluaciones-estudiantiles', 'AdminTH\AdminTHController::evaluacionesEstudiantiles');
     $routes->post('evaluaciones-estudiantiles/generar', 'AdminTH\AdminTHController::generarTokensEstudiantiles');
     $routes->get('evaluaciones-estudiantiles/obtener', 'AdminTH\AdminTHController::obtenerTokensEstudiantiles');
+    
+    // Gestión de Periodos Académicos
+    $routes->get('periodos-academicos', 'AdminTH\PeriodoAcademicoController::index');
+    $routes->get('periodos-academicos/obtener', 'AdminTH\PeriodoAcademicoController::obtener');
+    $routes->post('periodos-academicos/guardar', 'AdminTH\PeriodoAcademicoController::guardar');
+    $routes->post('periodos-academicos/cambiar-estado', 'AdminTH\PeriodoAcademicoController::cambiarEstado');
+    $routes->post('periodos-academicos/eliminar', 'AdminTH\PeriodoAcademicoController::eliminar');
     
     // Reportes y estadísticas
     $routes->get('reportes', 'AdminTH\AdminTHController::reportes');

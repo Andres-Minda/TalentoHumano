@@ -4,10 +4,22 @@ namespace App\Controllers;
 
 use App\Models\PuestoModel;
 use App\Models\PostulanteModel;
-use Google\Client;
-use Google\Service\Drive;
 use CodeIgniter\Controller;
 
+/**
+ * Controlador de postulaciones públicas.
+ *
+ * La subida de CVs a Google Drive utiliza OAuth2 con la cuenta personal del administrador.
+ * Credenciales: writable/client_secrets.json
+ * Token:        writable/token.json (generado por obtener_token.php)
+ * Carpeta de destino en Drive: 1WBBRZjMLvRd0PctXRKM0F6_TIEKIEz8B
+ *
+ * PARA EVITAR QUE EL TOKEN EXPIRE CADA 7 DÍAS:
+ *   1. Google Cloud Console → APIs & Services → OAuth consent screen
+ *   2. Clic en "PUBLISH APP" para pasar de Prueba a Producción
+ *   3. Re-ejecutar obtener_token.php para obtener un refresh_token permanente
+ *   Motivo: en modo "Prueba", Google revoca los refresh_tokens cada 7 días.
+ */
 class PostulacionController extends Controller
 {
     protected $puestoModel;
@@ -177,10 +189,10 @@ class PostulacionController extends Controller
                 $tokenPath = WRITEPATH . 'token.json';
 
                 if (!file_exists($clientSecretsPath)) {
-                    throw new \Exception('No se encontró client_secrets.json en writable/');
+                    throw new \Exception('No se encontró client_secrets.json en writable/. Descarga las credenciales OAuth2 desde Google Cloud Console.');
                 }
                 if (!file_exists($tokenPath)) {
-                    throw new \Exception('Google Drive no está conectado. El administrador debe autorizar la cuenta desde el panel de Puestos de Trabajo.');
+                    throw new \Exception('Google Drive no está conectado. El administrador debe ejecutar obtener_token.php para autorizar la cuenta.');
                 }
 
                 // Configurar Google Client con OAuth2
@@ -196,11 +208,18 @@ class PostulacionController extends Controller
                 if ($client->isAccessTokenExpired()) {
                     if ($client->getRefreshToken()) {
                         $newToken = $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+
+                        // Verificar si la renovación falló (invalid_grant u otro error)
+                        if (isset($newToken['error'])) {
+                            log_message('critical', '[Google Drive] Fallo al renovar token: ' . json_encode($newToken) . '. Ejecutar obtener_token.php para re-autorizar.');
+                            throw new \Exception('TOKEN_INVALID_GRANT');
+                        }
+
                         // Guardar el token renovado
                         file_put_contents($tokenPath, json_encode($client->getAccessToken()));
                         log_message('info', 'Token de Google Drive renovado automáticamente.');
                     } else {
-                        throw new \Exception('El token de Google Drive expiró y no tiene refresh_token. El administrador debe reconectar desde el panel.');
+                        throw new \Exception('El token de Google Drive expiró y no tiene refresh_token. Ejecutar obtener_token.php para re-autorizar.');
                     }
                 }
 
@@ -233,7 +252,7 @@ class PostulacionController extends Controller
                 // Guardar el webViewLink para insertar en BD
                 $cvPath = $uploadedFile->webViewLink;
 
-                log_message('info', 'CV subido a Drive exitosamente (OAuth2): ' . $cvPath);
+                log_message('info', 'CV subido a Drive exitosamente: ' . $cvPath);
             }
 
             // ===== PASO 2: Guardar postulante en BD (DESPUÉS de Drive) =====
@@ -300,12 +319,42 @@ class PostulacionController extends Controller
                 'message' => '¡Postulación enviada con éxito! Su CV ha sido recibido.'
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Google\Service\Exception $e) {
+            // ── Error específico de la API de Google Drive ──
             $db->transRollback();
-            log_message('error', 'Error al procesar postulación: ' . $e->getMessage());
+            $errorBody = $e->getMessage();
+
+            if (strpos($errorBody, 'invalid_grant') !== false) {
+                log_message('critical', '[Google Drive] Token revocado/expirado. Ejecutar obtener_token.php. Detalle: ' . $errorBody);
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'La conexión con Google Drive ha expirado. El administrador debe renovarla desde el panel. (Código: DRV-AUTH)'
+                ]);
+            }
+
+            log_message('error', '[Google Drive] Error de API: ' . $errorBody);
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error Drive: ' . $e->getMessage()
+                'message' => 'Error temporal al subir su CV al servidor. Por favor, intente nuevamente en unos minutos. (Código: DRV-API)'
+            ]);
+
+        } catch (\Exception $e) {
+            // ── Error general (BD, validación, token, etc.) ──
+            $db->transRollback();
+            $errorMsg = $e->getMessage();
+
+            if (strpos($errorMsg, 'TOKEN_INVALID_GRANT') !== false || strpos($errorMsg, 'invalid_grant') !== false) {
+                log_message('critical', '[Google Drive] Token inválido. Ejecutar obtener_token.php. Detalle: ' . $errorMsg);
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'La conexión con Google Drive ha expirado. El administrador debe renovarla desde el panel. (Código: DRV-AUTH)'
+                ]);
+            }
+
+            log_message('error', 'Error al procesar postulación: ' . $errorMsg);
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Ocurrió un error inesperado al procesar su postulación. Por favor, intente nuevamente. (Código: SYS-ERR)'
             ]);
         }
     }

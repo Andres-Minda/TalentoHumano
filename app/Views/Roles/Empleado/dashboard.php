@@ -220,11 +220,28 @@ if (!isset($titulo)) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted">
-                                            No hay capacitaciones recientes
-                                        </td>
-                                    </tr>
+                                    <?php if(empty($capacitaciones_recientes)): ?>
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">
+                                                No hay capacitaciones recientes
+                                            </td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach($capacitaciones_recientes as $cap): ?>
+                                            <tr>
+                                                <td>
+                                                    <strong><?= esc($cap['tema_capacitacion'] ?? $cap['tipo_capacitacion'] ?? 'N/A') ?></strong>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-info fw-normal"><?= esc($cap['modalidad'] ?? 'General') ?></span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge <?= ($cap['estado'] === 'ACTIVA') ? 'bg-success' : 'bg-secondary' ?> fw-normal"><?= esc($cap['estado'] ?? 'N/A') ?></span>
+                                                </td>
+                                                <td><?= isset($cap['fecha_inicio']) ? date('d/m/Y', strtotime($cap['fecha_inicio'])) : 'N/A' ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -252,11 +269,31 @@ if (!isset($titulo)) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted">
-                                            No hay solicitudes recientes
-                                        </td>
-                                    </tr>
+                                    <?php if(empty($solicitudes_recientes)): ?>
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">
+                                                No hay solicitudes recientes
+                                            </td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach($solicitudes_recientes as $sol): ?>
+                                            <tr>
+                                                <td><?= esc($sol['tipo_solicitud'] ?? 'General') ?></td>
+                                                <td><?= esc($sol['titulo'] ?? 'Sin título') ?></td>
+                                                <td>
+                                                    <?php 
+                                                        $bClass = 'bg-secondary';
+                                                        $est = strtoupper($sol['estado'] ?? 'PENDIENTE');
+                                                        if($est == 'PENDIENTE') $bClass = 'bg-warning text-dark';
+                                                        if($est == 'APROBADO' || $est == 'APROBADA') $bClass = 'bg-success';
+                                                        if($est == 'RECHAZADO' || $est == 'RECHAZADA') $bClass = 'bg-danger';
+                                                    ?>
+                                                    <span class="badge <?= $bClass ?> fw-normal"><?= esc($est) ?></span>
+                                                </td>
+                                                <td><?= isset($sol['fecha_solicitud']) ? date('d/m/Y', strtotime($sol['fecha_solicitud'])) : 'N/A' ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>

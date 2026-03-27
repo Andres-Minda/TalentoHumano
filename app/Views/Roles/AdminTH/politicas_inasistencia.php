@@ -20,19 +20,35 @@
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Gestión de Políticas de Inasistencia</h4>
-                        <div class="card-actions">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">Gestión de Políticas de Inasistencia</h4>
+                        <div class="card-actions d-flex align-items-center">
+                            <button type="button" class="btn btn-danger me-2 d-none" id="btnEliminarSeleccion" onclick="eliminarSeleccionados()">
+                                <i class="ti ti-trash"></i> Eliminar ( <span id="contadorSeleccion">0</span> )
+                            </button>
                             <button type="button" class="btn btn-primary" onclick="nuevaPolitica()">
                                 <i class="ti ti-plus"></i> Nueva Política
                             </button>
                         </div>
                     </div>
                     <div class="card-body">
+                        <!-- Buscador Interno -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="ti ti-search"></i></span>
+                                    <input type="text" class="form-control" id="filtroPolitica" placeholder="Buscar por Nombre, Tipo, Estado..." oninput="filtrarPoliticas()">
+                                </div>
+                            </div>
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-striped" id="tablaPoliticas">
                                 <thead>
                                     <tr>
+                                        <!-- Estándar Modular: Checkbox Maestro -->
+                                        <th style="width:40px;">
+                                            <input type="checkbox" class="form-check-input" id="checkAll" onchange="toggleAll(this)">
+                                        </th>
                                         <th>ID</th>
                                         <th>Nombre de la Política</th>
                                         <th>Tipo de Empleado</th>
@@ -149,6 +165,9 @@ function cargarPoliticas() {
     politicas.forEach(politica => {
         const row = document.createElement('tr');
         row.innerHTML = `
+            <td>
+                <input type="checkbox" class="form-check-input chk-item" value="${politica.id}" onchange="actualizarBotonEliminar()">
+            </td>
             <td>${politica.id}</td>
             <td><strong>${politica.nombre}</strong></td>
             <td><span class="badge bg-info">${politica.tipo}</span></td>
@@ -193,5 +212,130 @@ function eliminarPolitica(id) {
         alert('Funcionalidad de eliminación en desarrollo');
     }
 }
+
+// ==================== [ESTANDARIZACIÓN] LÓGICA DE BÚSQUEDA Y BORRADO MASIVO ====================
+// 1. Buscador Interno del Frontend
+function filtrarPoliticas() {
+    const filtro = document.getElementById('filtroPolitica').value.toLowerCase().trim();
+    const filas = document.querySelectorAll('#tbodyPoliticas tr');
+
+    filas.forEach(fila => {
+        const celdas = fila.querySelectorAll('td');
+        if (celdas.length < 5) return;
+
+        let textoFila = '';
+        celdas.forEach(celda => textoFila += celda.textContent.toLowerCase() + ' ');
+
+        if (!filtro || textoFila.includes(filtro)) {
+            fila.style.display = '';
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+}
+
+// 2. Controladores de Selección Múltiple (Checkboxes)
+function toggleAll(master) {
+    const checkboxes = document.querySelectorAll('.chk-item');
+    checkboxes.forEach(chk => {
+        if (chk.closest('tr').style.display !== 'none') {
+            chk.checked = master.checked;
+        }
+    });
+    actualizarBotonEliminar();
+}
+
+function actualizarBotonEliminar() {
+    const seleccionados = document.querySelectorAll('.chk-item:checked');
+    const btn = document.getElementById('btnEliminarSeleccion');
+    const contador = document.getElementById('contadorSeleccion');
+
+    if (seleccionados.length > 0) {
+        btn.classList.remove('d-none');
+        if (contador) contador.textContent = seleccionados.length;
+    } else {
+        btn.classList.add('d-none');
+        if (contador) contador.textContent = '0';
+    }
+
+    const todosVisibles = Array.from(document.querySelectorAll('.chk-item')).filter(chk => chk.closest('tr').style.display !== 'none');
+    const checkAll = document.getElementById('checkAll');
+    
+    if (todosVisibles.length > 0) {
+        const completados = document.querySelectorAll('.chk-item:checked').length;
+        if (checkAll) {
+            checkAll.checked = completados === todosVisibles.length;
+            checkAll.indeterminate = completados > 0 && completados < todosVisibles.length;
+        }
+    }
+}
+
+// 3. Acción AJAX: Eliminación Masiva
+function eliminarSeleccionados() {
+    const ids = Array.from(document.querySelectorAll('.chk-item:checked')).map(chk => chk.value);
+
+    if (ids.length === 0) return;
+
+    const msg = '¿Eliminar ' + ids.length + ' política(s)? Esta acción no se puede deshacer.';
+    
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: '¿Confirmar eliminación masiva?',
+            text: msg,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="ti ti-trash me-1"></i> Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then(result => {
+            if (result.isConfirmed) procesarEliminacionAjax(ids);
+        });
+    } else {
+        if (confirm(msg)) procesarEliminacionAjax(ids);
+    }
+}
+
+function procesarEliminacionAjax(ids) {
+    const btnDelete = document.getElementById('btnEliminarSeleccion');
+    const htmlAnterior = btnDelete.innerHTML;
+    btnDelete.innerHTML = '<i class="ti ti-loader ti-spin"></i> Procesando...';
+    btnDelete.disabled = true;
+
+    const fnData = new FormData();
+    ids.forEach(id => fnData.append('ids[]', id));
+
+    fetch('<?= site_url('admin-th/politicas-inasistencia/eliminar-masivo') ?>', { 
+        method: 'POST', 
+        body: fnData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btnDelete.innerHTML = htmlAnterior;
+        btnDelete.disabled = false;
+        
+        if (data.success) {
+            if (typeof Swal !== 'undefined') Swal.fire({icon: 'success', title: '¡Éxito!', text: data.message, timer: 3000, showConfirmButton: false});
+            else alert(data.message);
+            
+            document.getElementById('checkAll').checked = false;
+            document.getElementById('checkAll').indeterminate = false;
+            actualizarBotonEliminar();
+            cargarPoliticas(); // Recargar la data mock temporal o DB
+        } else {
+            if (typeof Swal !== 'undefined') Swal.fire({icon: 'error', title: 'Error', text: data.message});
+            else alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error(error);
+        btnDelete.innerHTML = htmlAnterior;
+        btnDelete.disabled = false;
+        if (typeof Swal !== 'undefined') Swal.fire({icon: 'error', title: 'Error', text: 'Fallo de red al intentar eliminar.'});
+        else alert('Error de red al eliminar.');
+    });
+}
+// ==================== FIN [ESTANDARIZACIÓN] ====================
 </script>
 <?= $this->endSection() ?>

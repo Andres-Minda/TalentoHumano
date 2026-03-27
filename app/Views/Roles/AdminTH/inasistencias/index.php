@@ -28,7 +28,10 @@
                             <i class="ti ti-list text-primary me-2"></i>
                             Todas las Inasistencias
                         </h5>
-                        <div>
+                        <div class="d-flex align-items-center">
+                            <button type="button" class="btn btn-danger btn-sm me-2 d-none" id="btnEliminarSeleccion" onclick="eliminarSeleccionados()">
+                                <i class="ti ti-trash"></i> Eliminar ( <span id="contadorSeleccion">0</span> )
+                            </button>
                             <a href="<?= site_url('admin-th/inasistencias') ?>" class="btn btn-outline-secondary btn-sm me-2">
                                 <i class="ti ti-arrow-left me-1"></i>Regresar al Dashboard
                             </a>
@@ -42,6 +45,10 @@
                             <table class="table table-hover table-centered align-middle" id="tablaInasistenciasCompletas">
                                 <thead class="table-dark">
                                     <tr>
+                                        <!-- Estándar Modular: Checkbox Maestro -->
+                                        <th style="width:40px;">
+                                            <input type="checkbox" class="form-check-input" id="checkAll" onchange="toggleAll(this)">
+                                        </th>
                                         <th>#</th>
                                         <th>Empleado</th>
                                         <th>Departamento</th>
@@ -56,6 +63,9 @@
                                     <?php if (isset($inasistencias) && !empty($inasistencias)): ?>
                                         <?php foreach ($inasistencias as $index => $ina): ?>
                                             <tr>
+                                                <td>
+                                                    <input type="checkbox" class="form-check-input chk-item" value="<?= $ina['id'] ?>" onchange="actualizarBotonEliminar()">
+                                                </td>
                                                 <td><?= $index + 1 ?></td>
                                                 <td>
                                                     <strong><?= esc($ina['apellidos'] ?? '') ?> <?= esc($ina['nombres'] ?? '') ?></strong><br>
@@ -230,5 +240,100 @@ function eliminarInasistencia(id) {
         }
     });
 }
+
+// ==================== [ESTANDARIZACIÓN] LÓGICA DE BORRADO MASIVO ====================
+
+function toggleAll(master) {
+    // Usamos DataTables API para acceder a todas las filas, incluyendo las paginadas si está instanciado
+    const table = $('#tablaInasistenciasCompletas').DataTable();
+    const isChecked = master.checked;
+
+    // Actualizar el DOM actual y las páginas ocultas de DataTables
+    table.rows().nodes().to$().find('.chk-item').prop('checked', isChecked);
+    
+    actualizarBotonEliminar();
+}
+
+function actualizarBotonEliminar() {
+    const table = $('#tablaInasistenciasCompletas').DataTable();
+    // Obtener los checked de todas las páginas
+    const seleccionados = table.rows().nodes().to$().find('.chk-item:checked').length;
+    const btn = document.getElementById('btnEliminarSeleccion');
+    const contador = document.getElementById('contadorSeleccion');
+
+    if (seleccionados > 0) {
+        btn.classList.remove('d-none');
+        if (contador) contador.textContent = seleccionados;
+    } else {
+        btn.classList.add('d-none');
+        if (contador) contador.textContent = '0';
+    }
+
+    const todos = table.rows().nodes().to$().find('.chk-item').length;
+    const checkAll = document.getElementById('checkAll');
+    
+    if (todos > 0) {
+        if (checkAll) {
+            checkAll.checked = seleccionados === todos;
+            checkAll.indeterminate = seleccionados > 0 && seleccionados < todos;
+        }
+    }
+}
+
+function eliminarSeleccionados() {
+    const table = $('#tablaInasistenciasCompletas').DataTable();
+    const chks = table.rows().nodes().to$().find('.chk-item:checked');
+    const ids = Array.from(chks).map(chk => chk.value);
+
+    if (ids.length === 0) return;
+
+    Swal.fire({
+        title: '¿Confirmar eliminación masiva?',
+        text: `¿Eliminar ${ids.length} inasistencia(s)? Esta acción no se puede deshacer.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="ti ti-trash me-1"></i> Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then(result => {
+        if (result.isConfirmed) procesarEliminacionAjaxMasiva(ids);
+    });
+}
+
+function procesarEliminacionAjaxMasiva(ids) {
+    const btnDelete = document.getElementById('btnEliminarSeleccion');
+    const htmlAnterior = btnDelete.innerHTML;
+    btnDelete.innerHTML = '<i class="ti ti-loader ti-spin"></i> Procesando...';
+    btnDelete.disabled = true;
+
+    const fnData = new FormData();
+    ids.forEach(id => fnData.append('ids[]', id));
+
+    fetch('<?= site_url('admin-th/inasistencias/eliminar-masivo') ?>', { 
+        method: 'POST', 
+        body: fnData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btnDelete.innerHTML = htmlAnterior;
+        btnDelete.disabled = false;
+        
+        if (data.success) {
+            Swal.fire({icon: 'success', title: '¡Éxito!', text: data.message, timer: 3000, showConfirmButton: false})
+            .then(() => window.location.reload());
+        } else {
+            Swal.fire({icon: 'error', title: 'Error', text: data.message});
+        }
+    })
+    .catch(error => {
+        console.error(error);
+        btnDelete.innerHTML = htmlAnterior;
+        btnDelete.disabled = false;
+        Swal.fire({icon: 'error', title: 'Error', text: 'Fallo de red al intentar eliminar.'});
+    });
+}
+// ==================== FIN [ESTANDARIZACIÓN] ====================
 </script>
 <?= $this->endSection() ?>

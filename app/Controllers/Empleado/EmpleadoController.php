@@ -54,20 +54,50 @@ class EmpleadoController extends Controller
         // Descripción del dashboard según el tipo de empleado
         $descripcionDashboard = $this->getDescripcionDashboard(session()->get('tipo_empleado'));
         
-        // Estadísticas básicas (simuladas por ahora)
+        $idEmpleado = session()->get('id_empleado');
+        
+        $todasCapacitaciones = [];
+        $todasSolicitudes = [];
+        $total_documentos = 0;
+        $total_certificados = 0;
+        
+        if ($idEmpleado) {
+            if (class_exists('\App\Models\CapacitacionModel')) {
+                $capModel = new \App\Models\CapacitacionModel();
+                $todasCapacitaciones = $capModel->getCapacitacionesPorEmpleado($idEmpleado);
+            }
+            if (class_exists('\App\Models\SolicitudModel')) {
+                $solModel = new \App\Models\SolicitudModel();
+                $todasSolicitudes = $solModel->getSolicitudesPorEmpleado($idEmpleado);
+            }
+            if (class_exists('\App\Models\DocumentoModel')) {
+                $docModel = new \App\Models\DocumentoModel();
+                try { $total_documentos = $docModel->where('id_empleado', $idEmpleado)->countAllResults(); } catch (\Exception $e) {}
+            }
+            if (class_exists('\App\Models\CertificadoModel')) {
+                $certModel = new \App\Models\CertificadoModel();
+                try { $total_certificados = $certModel->where('id_empleado', $idEmpleado)->countAllResults(); } catch (\Exception $e) {}
+            }
+        }
+        
         $estadisticas = [
-            'total_capacitaciones' => 3,
-            'total_documentos' => 8,
-            'total_certificados' => 5,
-            'total_solicitudes' => 2
+            'total_capacitaciones' => count($todasCapacitaciones),
+            'total_documentos' => $total_documentos,
+            'total_certificados' => $total_certificados,
+            'total_solicitudes' => count($todasSolicitudes)
         ];
+        
+        $capacitaciones_recientes = array_slice($todasCapacitaciones, 0, 5);
+        $solicitudes_recientes = array_slice($todasSolicitudes, 0, 5);
 
         $data = [
             'titulo' => 'Dashboard Empleado',
             'user' => $user,
             'empleado' => $empleado,
             'descripcionDashboard' => $descripcionDashboard,
-            'estadisticas' => $estadisticas
+            'estadisticas' => $estadisticas,
+            'capacitaciones_recientes' => $capacitaciones_recientes,
+            'solicitudes_recientes' => $solicitudes_recientes
         ];
 
         return view('Roles/Empleado/dashboard', $data);
@@ -283,13 +313,55 @@ class EmpleadoController extends Controller
      */
     public function evaluaciones()
     {
+        $idUsuario = session()->get('id_usuario');
+        $db = \Config\Database::connect();
+        
+        // 1. Cruzar id_usuario con empleados para obtener id_empleado
+        $empleado = $db->table('empleados')->where('id_usuario', $idUsuario)->get()->getRowArray();
+        $idEmpleado = $empleado ? $empleado['id_empleado'] : null;
+        
+        $pendientes = [];
+        $completadas = [];
+        
+        if ($idEmpleado) {
+            // Guardar en sesión para los métodos AJAX de la rúbrica
+            session()->set('id_empleado', $idEmpleado);
+            
+            $evaluaciones = $db->table('evaluaciones_empleados ee')
+                ->select('ee.id_evaluacion_empleado as id, ee.id_evaluacion, ee.id_empleado, ee.id_evaluador,
+                          ee.fecha_evaluacion, ee.puntaje_total, ee.observaciones,
+                          ee.puntaje_responsabilidad, ee.puntaje_equipo, ee.puntaje_etica,
+                          ee.puntaje_comunicacion, ee.puntaje_compromiso,
+                          e.nombre as nombre_evaluacion, e.tipo_evaluacion, e.estado,
+                          emp.nombres as nombres_evaluado, emp.apellidos as apellidos_evaluado')
+                ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
+                ->join('empleados emp', 'emp.id_empleado = ee.id_empleado', 'left')
+                ->where('ee.id_evaluador', $idEmpleado)
+                ->orderBy('ee.fecha_evaluacion', 'DESC')
+                ->get()
+                ->getResultArray();
+
+            foreach ($evaluaciones as $ev) {
+                if ($ev['puntaje_total'] === null || (float)$ev['puntaje_total'] == 0) {
+                    $pendientes[] = $ev;
+                } else {
+                    $completadas[] = $ev;
+                }
+            }
+        }
+
         $data = [
             'titulo' => 'Mis Evaluaciones',
             'usuario' => [
                 'nombres' => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
                 'rol' => session()->get('nombre_rol')
-            ]
+            ],
+            'pendientes' => $pendientes,
+            'completadas' => $completadas,
+            'total' => count($pendientes) + count($completadas),
+            'total_pendientes' => count($pendientes),
+            'total_completadas' => count($completadas),
         ];
 
         return view('Roles/Empleado/evaluaciones', $data);
@@ -569,13 +641,20 @@ class EmpleadoController extends Controller
     public function misEvaluacionesJSON()
     {
         try {
-            $idEmpleado = session()->get('id_empleado');
-
-            if (!$idEmpleado) {
+            $idUsuario = session()->get('id_usuario');
+            if (!$idUsuario) {
                 return $this->response->setJSON(['success' => false, 'message' => 'Sesión no válida']);
             }
 
             $db = \Config\Database::connect();
+            $empleado = $db->table('empleados')->where('id_usuario', $idUsuario)->get()->getRowArray();
+            
+            if (!$empleado || !$empleado['id_empleado']) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Registro de empleado no encontrado']);
+            }
+            
+            $idEmpleado = $empleado['id_empleado'];
+            session()->set('id_empleado', $idEmpleado);
 
             // Evaluaciones donde el empleado es el EVALUADOR
             $evaluaciones = $db->table('evaluaciones_empleados ee')

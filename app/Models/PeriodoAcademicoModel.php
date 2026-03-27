@@ -27,7 +27,7 @@ class PeriodoAcademicoModel extends Model
         'nombre'       => 'required|min_length[3]|max_length[100]',
         'fecha_inicio' => 'required|valid_date',
         'fecha_fin'    => 'required|valid_date',
-        'estado'       => 'required|in_list[ACTIVO,INACTIVO,PLANIFICADO,FINALIZADO]',
+        'estado'       => 'required|in_list[Activo,Inactivo,Cerrado]',
         'descripcion'  => 'permit_empty|max_length[500]'
     ];
 
@@ -47,7 +47,7 @@ class PeriodoAcademicoModel extends Model
         ],
         'estado' => [
             'required' => 'El estado es obligatorio',
-            'in_list' => 'El estado debe ser ACTIVO, INACTIVO, PLANIFICADO o FINALIZADO'
+            'in_list' => 'El estado debe ser Activo, Inactivo o Cerrado'
         ]
     ];
 
@@ -70,15 +70,15 @@ class PeriodoAcademicoModel extends Model
      */
     public function getPeriodoActivo()
     {
-        return $this->where('estado', 'ACTIVO')->first();
+        return $this->where('estado', 'Activo')->first();
     }
 
     /**
-     * Obtiene períodos disponibles (activos y planificados)
+     * Obtiene períodos disponibles (activos y planificados/inactivos)
      */
     public function getPeriodosDisponibles()
     {
-        return $this->whereIn('estado', ['ACTIVO', 'PLANIFICADO'])
+        return $this->whereIn('estado', ['Activo', 'Inactivo'])
             ->orderBy('fecha_inicio', 'ASC')
             ->findAll();
     }
@@ -118,17 +118,43 @@ class PeriodoAcademicoModel extends Model
      */
     public function tienePeriodoActivo()
     {
-        return $this->where('estado', 'ACTIVO')->countAllResults() > 0;
+        return $this->where('estado', 'Activo')->countAllResults() > 0;
     }
 
     /**
-     * Obtiene el próximo período planificado
+     * Obtiene el próximo período planificado (inactivo pero futuro)
      */
     public function getProximoPeriodo()
     {
-        return $this->where('estado', 'PLANIFICADO')
+        return $this->where('estado', 'Inactivo')
             ->where('fecha_inicio >', date('Y-m-d'))
             ->orderBy('fecha_inicio', 'ASC')
             ->first();
+    }
+
+    /**
+     * Verifica y cierra automáticamente los periodos activos que ya superaron su fecha de fin.
+     */
+    public function verificarCierreAutomatico()
+    {
+        $hoy = date('Y-m-d');
+        
+        // Buscar periodos activos cuya fecha_fin ya pasó
+        $periodosExpirados = $this->where('estado', 'Activo')
+                                  ->where('fecha_fin <', $hoy)
+                                  ->findAll();
+
+        if (!empty($periodosExpirados)) {
+            $db = \Config\Database::connect();
+            foreach ($periodosExpirados as $p) {
+                // Se marca como Inactivo (o Cerrado) según regla de negocio
+                $db->table($this->table)
+                   ->set('estado', 'Inactivo')
+                   ->where('id_periodo', $p['id_periodo'])
+                   ->update();
+                   
+                log_message('info', 'Cierre automático del periodo académico ejecutado: ' . $p['nombre']);
+            }
+        }
     }
 } 

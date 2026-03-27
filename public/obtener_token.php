@@ -10,11 +10,11 @@
  */
 
 // Carga las librerías de Composer
-require __DIR__ . '/vendor/autoload.php';
+require dirname(__DIR__) . '/vendor/autoload.php';
 
 $client = new Google\Client();
 // Ruta al archivo que descargaste en el Paso 1
-$client->setAuthConfig(__DIR__ . '/writable/client_secrets.json');
+$client->setAuthConfig(dirname(__DIR__) . '/writable/client_secrets.json');
 
 // access_type=offline  → Garantiza la obtención de un refresh_token
 // prompt=consent        → Fuerza la pantalla de consentimiento para regenerar el refresh_token
@@ -54,7 +54,7 @@ if (!isset($_GET['code'])) {
     }
 
     // Guardamos el token en la carpeta writable
-    $tokenPath = __DIR__ . '/writable/token.json';
+    $tokenPath = dirname(__DIR__) . '/writable/token.json';
     file_put_contents($tokenPath, json_encode($accessToken));
     
     echo "<h2 style='color:green;'>✅ ¡ÉXITO TOTAL!</h2>";

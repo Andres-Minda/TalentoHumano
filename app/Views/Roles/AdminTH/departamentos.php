@@ -20,19 +20,35 @@
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Gestión de Departamentos</h4>
-                        <div class="card-actions">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">Gestión de Departamentos</h4>
+                        <div class="card-actions d-flex align-items-center">
+                            <button type="button" class="btn btn-danger me-2 d-none" id="btnEliminarSeleccion" onclick="eliminarSeleccionados()">
+                                <i class="ti ti-trash"></i> Eliminar Seleccionados (<span id="contadorSeleccion">0</span>)
+                            </button>
                             <button type="button" class="btn btn-primary" onclick="nuevoDepartamento()">
                                 <i class="ti ti-plus"></i> Nuevo Departamento
                             </button>
                         </div>
                     </div>
                     <div class="card-body">
+                        <!-- Buscador Interno -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="ti ti-search"></i></span>
+                                    <input type="text" class="form-control" id="filtroDepartamento" placeholder="Buscar por Nombre, Responsable, Edo..." oninput="filtrarDepartamentos()">
+                                </div>
+                            </div>
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-striped" id="tablaDepartamentos">
                                 <thead>
                                     <tr>
+                                        <!-- Estándar Modular: Checkbox Maestro -->
+                                        <th style="width:40px;">
+                                            <input type="checkbox" class="form-check-input" id="checkAll" onchange="toggleAll(this)">
+                                        </th>
                                         <th>ID</th>
                                         <th>Nombre</th>
                                         <th>Descripción</th>
@@ -260,6 +276,9 @@ function cargarDepartamentos() {
             departamentos.forEach(departamento => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
+                    <td>
+                        <input type="checkbox" class="form-check-input chk-item" value="${departamento.id_departamento}" onchange="actualizarBotonEliminar()">
+                    </td>
                     <td>${departamento.id_departamento}</td>
                     <td><strong>${departamento.nombre}</strong></td>
                     <td>${departamento.descripcion || 'Sin descripción'}</td>
@@ -294,9 +313,119 @@ function cargarDepartamentos() {
     })
     .catch(error => {
         console.error('Error al cargar departamentos:', error);
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error de conexión al cargar departamentos</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error de conexión al cargar departamentos</td></tr>';
     });
 }
+
+// ==================== [ESTANDARIZACIÓN] LÓGICA DE BÚSQUEDA Y BORRADO MASIVO ====================
+// 1. Buscador Interno del Frontend
+function filtrarDepartamentos() {
+    const filtro = document.getElementById('filtroDepartamento').value.toLowerCase().trim();
+    const filas = document.querySelectorAll('#tbodyDepartamentos tr');
+
+    filas.forEach(fila => {
+        const celdas = fila.querySelectorAll('td');
+        if (celdas.length < 8) return; // Salta filas especiales/cargando
+
+        let textoFila = '';
+        celdas.forEach(celda => textoFila += celda.textContent.toLowerCase() + ' ');
+
+        if (!filtro || textoFila.includes(filtro)) {
+            fila.style.display = '';
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+}
+
+// 2. Controladores de Selección Múltiple (Checkboxes)
+function toggleAll(master) {
+    const checkboxes = document.querySelectorAll('.chk-item');
+    checkboxes.forEach(chk => {
+        if (chk.closest('tr').style.display !== 'none') {
+            chk.checked = master.checked;
+        }
+    });
+    actualizarBotonEliminar();
+}
+
+function actualizarBotonEliminar() {
+    const seleccionados = document.querySelectorAll('.chk-item:checked');
+    const btn = document.getElementById('btnEliminarSeleccion');
+    const contador = document.getElementById('contadorSeleccion');
+
+    if (seleccionados.length > 0) {
+        btn.classList.remove('d-none');
+        contador.textContent = seleccionados.length;
+    } else {
+        btn.classList.add('d-none');
+        contador.textContent = '0';
+    }
+
+    const todosVisibles = Array.from(document.querySelectorAll('.chk-item')).filter(chk => chk.closest('tr').style.display !== 'none');
+    const checkAll = document.getElementById('checkAll');
+    
+    if (todosVisibles.length > 0) {
+        const completados = document.querySelectorAll('.chk-item:checked').length;
+        checkAll.checked = completados === todosVisibles.length;
+        checkAll.indeterminate = completados > 0 && completados < todosVisibles.length;
+    }
+}
+
+// 3. Acción AJAX: Eliminación Masiva
+function eliminarSeleccionados() {
+    const ids = Array.from(document.querySelectorAll('.chk-item:checked')).map(chk => chk.value);
+
+    if (ids.length === 0) {
+        mostrarAlerta('warning', 'Seleccione al menos un departamento para eliminar.');
+        return;
+    }
+
+    mostrarConfirmacion(
+        '¿Eliminar ' + ids.length + ' departamento(s)?',
+        'Se perderán permanentemente los registros seleccionados. Nota: Los departamentos con empleados asignados no podrán ser eliminados.',
+        'Eliminación Masiva',
+        'Sí, eliminar seleccionados',
+        'btn-danger',
+        () => {
+            const btn = document.getElementById('btnEliminarSeleccion');
+            const htmlAnterior = btn.innerHTML;
+            btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Procesando...';
+            btn.disabled = true;
+
+            const fnData = new FormData();
+            ids.forEach(id => fnData.append('ids[]', id));
+
+            fetch('<?= site_url('admin-th/departamentos/eliminar-masivo') ?>', { 
+                method: 'POST', 
+                body: fnData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                btn.innerHTML = htmlAnterior;
+                btn.disabled = false;
+                
+                if (data.success) {
+                    mostrarAlerta('success', data.message);
+                    document.getElementById('checkAll').checked = false;
+                    document.getElementById('checkAll').indeterminate = false;
+                    actualizarBotonEliminar();
+                    cargarDepartamentos();
+                } else {
+                    mostrarAlerta('error', data.message);
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                btn.innerHTML = htmlAnterior;
+                btn.disabled = false;
+                mostrarAlerta('error', 'Fallo de red al intentar eliminar.');
+            });
+        }
+    );
+}
+// ==================== FIN [ESTANDARIZACIÓN] ====================
 
 function nuevoDepartamento() {
     document.getElementById('modalTitle').textContent = 'Nuevo Departamento';

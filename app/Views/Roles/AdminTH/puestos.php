@@ -32,19 +32,35 @@
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <h4 class="card-title mb-0">Gestión de Puestos de Trabajo</h4>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">Gestión de Puestos de Trabajo</h4>
+                        <div class="card-actions d-flex align-items-center">
+                            <button type="button" class="btn btn-danger me-2 d-none" id="btnEliminarSeleccion" onclick="eliminarSeleccionados()">
+                                <i class="ti ti-trash"></i> Eliminar Seleccionados (<span id="contadorSeleccion">0</span>)
+                            </button>
                             <button type="button" class="btn btn-primary" onclick="nuevoPuesto()">
                                 <i class="ti ti-plus"></i> Nuevo Puesto
                             </button>
                         </div>
                     </div>
                     <div class="card-body">
+                        <!-- Buscador Interno -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="ti ti-search"></i></span>
+                                    <input type="text" class="form-control" id="filtroPuesto" placeholder="Buscar por Título, Depto, Contrato, Edo..." oninput="filtrarPuestos()">
+                                </div>
+                            </div>
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-striped table-hover" id="tablaPuestos">
                                 <thead>
                                     <tr>
+                                        <!-- Estándar Modular: Checkbox Maestro -->
+                                        <th style="width:40px;">
+                                            <input type="checkbox" class="form-check-input" id="checkAll" onchange="toggleAll(this)">
+                                        </th>
                                         <th>ID</th>
                                         <th>Título</th>
                                         <th>Departamento</th>
@@ -493,6 +509,9 @@ function renderizarTablaPuestos() {
     puestosData.forEach(puesto => {
         const row = document.createElement('tr');
         row.innerHTML = `
+            <td>
+                <input type="checkbox" class="form-check-input chk-item" value="${puesto.id_puesto}" onchange="actualizarBotonEliminar()">
+            </td>
             <td>${puesto.id_puesto}</td>
             <td><strong>${puesto.titulo}</strong></td>
             <td>${puesto.nombre_departamento || 'N/A'}</td>
@@ -591,9 +610,124 @@ function editarPuesto(idPuesto) {
     document.getElementById('estado').value = puesto.estado;
     document.getElementById('activo').value = puesto.activo;
 
-    const modal = new bootstrap.Modal(document.getElementById('modalPuesto'));
     modal.show();
 }
+
+// ==================== [ESTANDARIZACIÓN] LÓGICA DE BÚSQUEDA Y BORRADO MASIVO ====================
+// 1. Buscador Interno del Frontend
+function filtrarPuestos() {
+    const filtro = document.getElementById('filtroPuesto').value.toLowerCase().trim();
+    const filas = document.querySelectorAll('#tablaPuestos tbody tr');
+
+    filas.forEach(fila => {
+        const celdas = fila.querySelectorAll('td');
+        if (celdas.length < 8) return; // Salta filas especiales/cargando
+
+        let textoFila = '';
+        celdas.forEach(celda => textoFila += celda.textContent.toLowerCase() + ' ');
+
+        if (!filtro || textoFila.includes(filtro)) {
+            fila.style.display = '';
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+}
+
+// 2. Controladores de Selección Múltiple (Checkboxes)
+function toggleAll(master) {
+    const checkboxes = document.querySelectorAll('.chk-item');
+    checkboxes.forEach(chk => {
+        if (chk.closest('tr').style.display !== 'none') {
+            chk.checked = master.checked;
+        }
+    });
+    actualizarBotonEliminar();
+}
+
+function actualizarBotonEliminar() {
+    const seleccionados = document.querySelectorAll('.chk-item:checked');
+    const btn = document.getElementById('btnEliminarSeleccion');
+    const contador = document.getElementById('contadorSeleccion');
+
+    if (seleccionados.length > 0) {
+        btn.classList.remove('d-none');
+        contador.textContent = seleccionados.length;
+    } else {
+        btn.classList.add('d-none');
+        contador.textContent = '0';
+    }
+
+    const todosVisibles = Array.from(document.querySelectorAll('.chk-item')).filter(chk => chk.closest('tr').style.display !== 'none');
+    const checkAll = document.getElementById('checkAll');
+    
+    if (todosVisibles.length > 0) {
+        const completados = document.querySelectorAll('.chk-item:checked').length;
+        checkAll.checked = completados === todosVisibles.length;
+        checkAll.indeterminate = completados > 0 && completados < todosVisibles.length;
+    }
+}
+
+// 3. Acción AJAX: Eliminación Masiva
+function eliminarSeleccionados() {
+    const ids = Array.from(document.querySelectorAll('.chk-item:checked')).map(chk => chk.value);
+
+    if (ids.length === 0) {
+        mostrarAlerta('Advertencia', 'Seleccione al menos un puesto para eliminar.', 'warning');
+        return;
+    }
+
+    document.getElementById('mensajeConfirmacion').textContent = '¿Eliminar ' + ids.length + ' puesto(s)? Se perderán permanentemente los registros seleccionados. Los puestos que contengan postulantes no podrán eliminarse.';
+    const modalConfirmacion = new bootstrap.Modal(document.getElementById('modalConfirmacion'));
+    
+    const btnConfirmar = document.getElementById('btnConfirmarAccion');
+    
+    // Remover event listeners perezosos previos (clonando botón)
+    const nuevoBtnConfirmar = btnConfirmar.cloneNode(true);
+    btnConfirmar.parentNode.replaceChild(nuevoBtnConfirmar, btnConfirmar);
+
+    nuevoBtnConfirmar.addEventListener('click', function() {
+        modalConfirmacion.hide();
+        
+        const btnDelete = document.getElementById('btnEliminarSeleccion');
+        const htmlAnterior = btnDelete.innerHTML;
+        btnDelete.innerHTML = '<i class="ti ti-loader ti-spin"></i> Procesando...';
+        btnDelete.disabled = true;
+
+        const fnData = new FormData();
+        ids.forEach(id => fnData.append('ids[]', id));
+
+        fetch('<?= site_url('admin-th/puestos/eliminar-masivo') ?>', { 
+            method: 'POST', 
+            body: fnData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            btnDelete.innerHTML = htmlAnterior;
+            btnDelete.disabled = false;
+            
+            if (data.success) {
+                mostrarAlerta('¡Éxito!', data.message, 'success');
+                document.getElementById('checkAll').checked = false;
+                document.getElementById('checkAll').indeterminate = false;
+                actualizarBotonEliminar();
+                cargarPuestos(); // Refresh DataTables UI logic internally
+            } else {
+                mostrarAlerta('Error', data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            btnDelete.innerHTML = htmlAnterior;
+            btnDelete.disabled = false;
+            mostrarAlerta('Error', 'Fallo de red al intentar eliminar.', 'danger');
+        });
+    });
+    
+    modalConfirmacion.show();
+}
+// ==================== FIN [ESTANDARIZACIÓN] ====================
 
 // Función para guardar puesto
 document.getElementById('formPuesto').addEventListener('submit', function(e) {

@@ -200,15 +200,24 @@
                             <i class="bi bi-clock-history text-info me-2"></i>
                             Inasistencias Recientes
                         </h5>
-                        <a href="<?= site_url('admin-th/inasistencias/listar') ?>" class="btn btn-outline-primary btn-sm">
-                            Ver Todas
-                        </a>
+                        <div class="d-flex align-items-center">
+                            <button type="button" class="btn btn-danger btn-sm me-2 d-none" id="btnEliminarSeleccion" onclick="eliminarSeleccionados()">
+                                <i class="ti ti-trash"></i> Eliminar ( <span id="contadorSeleccion">0</span> )
+                            </button>
+                            <a href="<?= site_url('admin-th/inasistencias/listar') ?>" class="btn btn-outline-primary btn-sm">
+                                Ver Todas
+                            </a>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-centered table-nowrap mb-0">
                                 <thead>
                                     <tr>
+                                        <!-- Estándar Modular: Checkbox Maestro -->
+                                        <th style="width:40px;">
+                                            <input type="checkbox" class="form-check-input" id="checkAll" onchange="toggleAll(this)">
+                                        </th>
                                         <th>Empleado</th>
                                         <th>Fecha</th>
                                         <th>Tipo</th>
@@ -221,6 +230,9 @@
                                     <?php if (isset($inasistencias_recientes) && !empty($inasistencias_recientes)): ?>
                                         <?php foreach ($inasistencias_recientes as $inasistencia): ?>
                                             <tr>
+                                                <td>
+                                                    <input type="checkbox" class="form-check-input chk-item" value="<?= $inasistencia['id'] ?>" onchange="actualizarBotonEliminar()">
+                                                </td>
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <div class="avatar-sm rounded-circle bg-light text-dark d-flex align-items-center justify-content-center me-2">
@@ -710,7 +722,6 @@ function eliminarInasistencia(id) {
 }
 
 
-function enDesarrollo() {
     Swal.fire({
         title: 'En desarrollo',
         text: 'Esta funcionalidad estará disponible próximamente.',
@@ -718,6 +729,95 @@ function enDesarrollo() {
         confirmButtonColor: '#007bff'
     });
 }
+
+// ==================== [ESTANDARIZACIÓN] LÓGICA DE BORRADO MASIVO ====================
+function toggleAll(master) {
+    const checkboxes = document.querySelectorAll('.chk-item');
+    checkboxes.forEach(chk => {
+        if (chk.closest('tr').style.display !== 'none') {
+            chk.checked = master.checked;
+        }
+    });
+    actualizarBotonEliminar();
+}
+
+function actualizarBotonEliminar() {
+    const seleccionados = document.querySelectorAll('.chk-item:checked');
+    const btn = document.getElementById('btnEliminarSeleccion');
+    const contador = document.getElementById('contadorSeleccion');
+
+    if (seleccionados.length > 0) {
+        btn.classList.remove('d-none');
+        if (contador) contador.textContent = seleccionados.length;
+    } else {
+        btn.classList.add('d-none');
+        if (contador) contador.textContent = '0';
+    }
+
+    const todosVisibles = Array.from(document.querySelectorAll('.chk-item')).filter(chk => chk.closest('tr').style.display !== 'none');
+    const checkAll = document.getElementById('checkAll');
+    
+    if (todosVisibles.length > 0) {
+        const completados = document.querySelectorAll('.chk-item:checked').length;
+        if (checkAll) {
+            checkAll.checked = completados === todosVisibles.length;
+            checkAll.indeterminate = completados > 0 && completados < todosVisibles.length;
+        }
+    }
+}
+
+function eliminarSeleccionados() {
+    const ids = Array.from(document.querySelectorAll('.chk-item:checked')).map(chk => chk.value);
+
+    if (ids.length === 0) return;
+
+    Swal.fire({
+        title: '¿Confirmar eliminación masiva?',
+        text: `¿Eliminar ${ids.length} inasistencia(s)? Esta acción no se puede deshacer.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="ti ti-trash me-1"></i> Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then(result => {
+        if (result.isConfirmed) procesarEliminacionAjaxMasiva(ids);
+    });
+}
+
+function procesarEliminacionAjaxMasiva(ids) {
+    const btnDelete = document.getElementById('btnEliminarSeleccion');
+    const htmlAnterior = btnDelete.innerHTML;
+    btnDelete.innerHTML = '<i class="ti ti-loader ti-spin"></i> Procesando...';
+    btnDelete.disabled = true;
+
+    const fnData = new FormData();
+    ids.forEach(id => fnData.append('ids[]', id));
+
+    fetch('<?= site_url('admin-th/inasistencias/eliminar-masivo') ?>', { 
+        method: 'POST', 
+        body: fnData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({icon: 'success', title: '¡Éxito!', text: data.message, timer: 3000, showConfirmButton: false})
+            .then(() => window.location.reload());
+        } else {
+            Swal.fire({icon: 'error', title: 'Error', text: data.message});
+            btnDelete.innerHTML = htmlAnterior;
+            btnDelete.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error(error);
+        btnDelete.innerHTML = htmlAnterior;
+        btnDelete.disabled = false;
+        Swal.fire({icon: 'error', title: 'Error', text: 'Fallo de red al intentar eliminar.'});
+    });
+}
+// ==================== FIN [ESTANDARIZACIÓN] ====================
 </script>
 
 <style>

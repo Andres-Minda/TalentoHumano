@@ -36,6 +36,8 @@ class Filters extends BaseFilters
         'performance'   => PerformanceMetrics::class,
         'auth'          => \App\Filters\AuthFilter::class,
         'role'          => \App\Filters\RoleFilter::class,
+        'periodContext' => \App\Filters\PeriodContextFilter::class,
+        'readOnly'      => \App\Filters\ReadOnlyFilter::class,
     ];
 
     /**
@@ -74,6 +76,8 @@ class Filters extends BaseFilters
             // 'honeypot',
             // 'csrf',
             // 'invalidchars',
+            'periodContext',
+            'readOnly',
         ],
         'after' => [
             // 'honeypot',

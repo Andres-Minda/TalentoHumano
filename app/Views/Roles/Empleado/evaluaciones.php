@@ -28,7 +28,7 @@ $sidebar = 'sidebar_empleado';
                         <div class="d-flex align-items-center">
                             <i class="ti ti-clipboard-list fs-1 text-white"></i>
                             <div class="ms-3">
-                                <h4 class="mb-0 text-white" id="stat_total">0</h4>
+                                <h4 class="mb-0 text-white" id="stat_total"><?= isset($total) ? $total : 0 ?></h4>
                                 <p class="mb-0 text-white-50">Total Evaluaciones</p>
                             </div>
                         </div>
@@ -41,7 +41,7 @@ $sidebar = 'sidebar_empleado';
                         <div class="d-flex align-items-center">
                             <i class="ti ti-clock fs-1 text-white"></i>
                             <div class="ms-3">
-                                <h4 class="mb-0 text-white" id="stat_pendientes">0</h4>
+                                <h4 class="mb-0 text-white" id="stat_pendientes"><?= isset($total_pendientes) ? $total_pendientes : 0 ?></h4>
                                 <p class="mb-0 text-white-50">Pendientes</p>
                             </div>
                         </div>
@@ -54,7 +54,7 @@ $sidebar = 'sidebar_empleado';
                         <div class="d-flex align-items-center">
                             <i class="ti ti-check fs-1 text-white"></i>
                             <div class="ms-3">
-                                <h4 class="mb-0 text-white" id="stat_completadas">0</h4>
+                                <h4 class="mb-0 text-white" id="stat_completadas"><?= isset($total_completadas) ? $total_completadas : 0 ?></h4>
                                 <p class="mb-0 text-white-50">Completadas</p>
                             </div>
                         </div>
@@ -84,7 +84,34 @@ $sidebar = 'sidebar_empleado';
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyPendientes">
-                                    <tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm text-warning me-2"></div>Cargando...</td></tr>
+                                    <?php if(empty($pendientes)): ?>
+                                        <tr><td colspan="6" class="text-center py-3 text-muted"><i class="ti ti-check me-1"></i>Aún no tienes evaluaciones asignadas</td></tr>
+                                    <?php else: ?>
+                                        <?php foreach($pendientes as $i => $e): ?>
+                                            <?php 
+                                            $esAuto = ($e['tipo_evaluacion'] === 'Autoevaluación') || ($e['id_empleado'] == $e['id_evaluador']); 
+                                            $nombreEv = esc(($e['nombres_evaluado'] ?? '') . ' ' . ($e['apellidos_evaluado'] ?? ''));
+                                            ?>
+                                            <tr>
+                                                <td><?= $i+1 ?></td>
+                                                <td><strong><?= $esAuto ? 'Yo mismo (Autoevaluación)' : $nombreEv ?></strong></td>
+                                                <td><span class="badge bg-<?= $esAuto ? 'secondary' : 'info' ?>"><?= esc($e['tipo_evaluacion'] ?? '—') ?></span></td>
+                                                <td><small><?= !empty($e['fecha_evaluacion']) ? date('d/m/Y', strtotime($e['fecha_evaluacion'])) : '—' ?></small></td>
+                                                <td><span class="badge bg-warning text-dark"><i class="ti ti-clock me-1"></i>Pendiente</span></td>
+                                                <td class="text-center">
+                                                    <?php if ($esAuto): ?>
+                                                        <button class="btn btn-sm btn-gradient" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;" onclick="abrirAutoevaluacion(<?= $e['id'] ?>)">
+                                                            <i class="ti ti-user-check me-1"></i>Autoevaluarme
+                                                        </button>
+                                                    <?php else: ?>
+                                                        <button class="btn btn-sm btn-primary" onclick="abrirRubrica(<?= $e['id'] ?>, '<?= addslashes($nombreEv) ?>')">
+                                                            <i class="ti ti-clipboard-check me-1"></i>Evaluar
+                                                        </button>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -114,7 +141,28 @@ $sidebar = 'sidebar_empleado';
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyCompletadas">
-                                    <tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm text-success me-2"></div>Cargando...</td></tr>
+                                    <?php if(empty($completadas)): ?>
+                                        <tr><td colspan="6" class="text-center py-3 text-muted"><i class="ti ti-inbox me-1"></i>No hay evaluaciones completadas</td></tr>
+                                    <?php else: ?>
+                                        <?php foreach($completadas as $i => $e): ?>
+                                            <?php 
+                                            $puntaje = $e['puntaje_total'] ? number_format((float)$e['puntaje_total'], 0) : '0';
+                                            $pColor = $puntaje >= 20 ? 'success' : ($puntaje >= 15 ? 'primary' : ($puntaje >= 10 ? 'warning' : 'danger'));
+                                            ?>
+                                            <tr>
+                                                <td><?= $i+1 ?></td>
+                                                <td><strong><?= esc(($e['nombres_evaluado'] ?? '') . ' ' . ($e['apellidos_evaluado'] ?? '')) ?></strong></td>
+                                                <td><span class="badge bg-info"><?= esc($e['tipo_evaluacion'] ?? '—') ?></span></td>
+                                                <td><small><?= !empty($e['fecha_evaluacion']) ? date('d/m/Y', strtotime($e['fecha_evaluacion'])) : '—' ?></small></td>
+                                                <td><span class="badge bg-<?= $pColor ?>"><?= $puntaje ?>/25</span></td>
+                                                <td class="text-center">
+                                                    <button class="btn btn-sm btn-outline-info" onclick="verDetalleRubrica(<?= $e['id'] ?>)" title="Ver detalle">
+                                                        <i class="ti ti-eye"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -356,87 +404,9 @@ $sidebar = 'sidebar_empleado';
 
 <?= $this->section('scripts') ?>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    cargarMisEvaluaciones();
-});
+    // Las funciones de render dinámico JS ya no son necesarias por primera carga usando PHP
+    // Sin embargo, si 'cargarMisEvaluaciones' se llama luego de guardar rúbrica, aquí están las de update:
 
-function cargarMisEvaluaciones() {
-    fetch('<?= base_url('index.php/empleado/evaluaciones/mis-evaluaciones') ?>')
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            document.getElementById('stat_total').textContent = data.total;
-            document.getElementById('stat_pendientes').textContent = data.total_pendientes;
-            document.getElementById('stat_completadas').textContent = data.total_completadas;
-            renderPendientes(data.pendientes);
-            renderCompletadas(data.completadas);
-        } else {
-            document.getElementById('tbodyPendientes').innerHTML = `<tr><td colspan="6" class="text-center text-danger">${data.message}</td></tr>`;
-            document.getElementById('tbodyCompletadas').innerHTML = `<tr><td colspan="6" class="text-center text-danger">${data.message}</td></tr>`;
-        }
-    })
-    .catch(err => {
-        document.getElementById('tbodyPendientes').innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error: ${err.message}</td></tr>`;
-    });
-}
-
-function renderPendientes(evals) {
-    const tbody = document.getElementById('tbodyPendientes');
-    tbody.innerHTML = '';
-    if (!evals || evals.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3"><i class="ti ti-check me-1"></i>No tienes evaluaciones pendientes</td></tr>';
-        return;
-    }
-    evals.forEach((e, i) => {
-        const esAuto = (e.tipo_evaluacion === 'Autoevaluación') || (e.id_empleado == e.id_evaluador);
-        const nombreEv = esc(e.nombres_evaluado || '') + ' ' + esc(e.apellidos_evaluado || '');
-        let botonHTML;
-        if (esAuto) {
-            botonHTML = `<button class="btn btn-sm btn-gradient" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;" onclick="abrirAutoevaluacion(${e.id})">
-                <i class="ti ti-user-check me-1"></i>Autoevaluarme
-            </button>`;
-        } else {
-            botonHTML = `<button class="btn btn-sm btn-primary" onclick="abrirRubrica(${e.id}, '${nombreEv.replace(/'/g, "\\'")}')"><i class="ti ti-clipboard-check me-1"></i>Evaluar</button>`;
-        }
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${i+1}</td>
-            <td><strong>${esAuto ? 'Yo mismo (Autoevaluación)' : nombreEv}</strong></td>
-            <td><span class="badge bg-${esAuto ? 'secondary' : 'info'}">${esc(e.tipo_evaluacion || '—')}</span></td>
-            <td><small>${formatFecha(e.fecha_evaluacion)}</small></td>
-            <td><span class="badge bg-warning text-dark"><i class="ti ti-clock me-1"></i>Pendiente</span></td>
-            <td class="text-center">${botonHTML}</td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-function renderCompletadas(evals) {
-    const tbody = document.getElementById('tbodyCompletadas');
-    tbody.innerHTML = '';
-    if (!evals || evals.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3"><i class="ti ti-inbox me-1"></i>No hay evaluaciones completadas</td></tr>';
-        return;
-    }
-    evals.forEach((e, i) => {
-        const puntaje = e.puntaje_total ? parseFloat(e.puntaje_total).toFixed(0) : '0';
-        const pColor = puntaje >= 20 ? 'success' : (puntaje >= 15 ? 'primary' : (puntaje >= 10 ? 'warning' : 'danger'));
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${i+1}</td>
-            <td><strong>${esc(e.nombres_evaluado || '')} ${esc(e.apellidos_evaluado || '')}</strong></td>
-            <td><span class="badge bg-info">${esc(e.tipo_evaluacion || '—')}</span></td>
-            <td><small>${formatFecha(e.fecha_evaluacion)}</small></td>
-            <td><span class="badge bg-${pColor}">${puntaje}/25</span></td>
-            <td class="text-center">
-                <button class="btn btn-sm btn-outline-info" onclick="verDetalleRubrica(${e.id})" title="Ver detalle">
-                    <i class="ti ti-eye"></i>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
 
 // ==================== RÚBRICA ====================
 function abrirRubrica(id, nombre) {
@@ -469,8 +439,9 @@ function enviarRubrica() {
     .then(data => {
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('modalRealizarEvaluacion')).hide();
-            Swal.fire({icon:'success', title:'¡Evaluación enviada!', text: data.message, timer:2500, showConfirmButton:false});
-            cargarMisEvaluaciones();
+            Swal.fire({icon:'success', title:'¡Evaluación enviada!', text: data.message, timer:2500, showConfirmButton:false}).then(() => {
+                window.location.reload(); // Recargar página por seguridad para ver los resultados actualizados
+            });
         } else {
             Swal.fire({icon:'error', title:'Error', text: data.message});
         }
@@ -507,8 +478,9 @@ function enviarAutoevaluacion() {
     .then(data => {
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('modalAutoevaluacion')).hide();
-            Swal.fire({icon:'success', title:'¡Autoevaluación enviada!', text: data.message, timer:2500, showConfirmButton:false});
-            cargarMisEvaluaciones();
+            Swal.fire({icon:'success', title:'¡Autoevaluación enviada!', text: data.message, timer:2500, showConfirmButton:false}).then(() => {
+                window.location.reload(); // Recargar página para reflejar el estado completado
+            });
         } else {
             Swal.fire({icon:'error', title:'Error', text: data.message});
         }

@@ -11,5 +11,9 @@ class BaseController extends Controller
     public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);
+
+        // Disparador global: Cierre automático de periodos expirados
+        $periodoModel = new \App\Models\PeriodoAcademicoModel();
+        $periodoModel->verificarCierreAutomatico();
     }
 } 

@@ -22,15 +22,33 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="ti ti-certificate me-2"></i>Gestión de Capacitaciones</h5>
-                        <button type="button" class="btn btn-primary" onclick="nuevaCapacitacion()">
-                            <i class="ti ti-plus me-1"></i> Nueva Capacitación
-                        </button>
+                        <div class="card-actions d-flex align-items-center">
+                            <button type="button" class="btn btn-danger me-2 d-none" id="btnEliminarSeleccion" onclick="eliminarSeleccionados()">
+                                <i class="ti ti-trash"></i> Eliminar Seleccionados (<span id="contadorSeleccion">0</span>)
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="nuevaCapacitacion()">
+                                <i class="ti ti-plus me-1"></i> Nueva Capacitación
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
+                        <!-- Buscador Interno -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="ti ti-search"></i></span>
+                                    <input type="text" class="form-control" id="filtroCapacitacion" placeholder="Buscar por Nombre, Modalidad, Estado..." oninput="filtrarCapacitaciones()">
+                                </div>
+                            </div>
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-striped table-hover align-middle" id="tablaCapacitaciones">
                                 <thead class="table-dark">
                                     <tr>
+                                        <!-- Estándar Modular: Checkbox Maestro -->
+                                        <th style="width:40px;">
+                                            <input type="checkbox" class="form-check-input" id="checkAll" onchange="toggleAll(this)">
+                                        </th>
                                         <th>#</th>
                                         <th>Nombre</th>
                                         <th>Modalidad</th>
@@ -187,6 +205,9 @@ function renderTabla(caps) {
 
         const row = document.createElement('tr');
         row.innerHTML = `
+            <td>
+                <input type="checkbox" class="form-check-input chk-item" value="${c.id_capacitacion}" onchange="actualizarBotonEliminar()">
+            </td>
             <td>${i + 1}</td>
             <td><strong>${esc(c.nombre)}</strong><br><small class="text-muted">${esc(c.descripcion || '').substring(0, 60)}</small></td>
             <td><span class="badge bg-light text-dark border">${c.modalidad || '—'}</span></td>
@@ -447,5 +468,118 @@ function esc(str) {
     el.textContent = str;
     return el.innerHTML;
 }
+
+// ==================== [ESTANDARIZACIÓN] LÓGICA DE BÚSQUEDA Y BORRADO MASIVO ====================
+// 1. Buscador Interno del Frontend
+function filtrarCapacitaciones() {
+    const filtro = document.getElementById('filtroCapacitacion').value.toLowerCase().trim();
+    const filas = document.querySelectorAll('#tbodyCapacitaciones tr');
+
+    filas.forEach(fila => {
+        const celdas = fila.querySelectorAll('td');
+        if (celdas.length < 8) return; // Salta filas especiales/cargando
+
+        let textoFila = '';
+        celdas.forEach(celda => textoFila += celda.textContent.toLowerCase() + ' ');
+
+        if (!filtro || textoFila.includes(filtro)) {
+            fila.style.display = '';
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+}
+
+// 2. Controladores de Selección Múltiple (Checkboxes)
+function toggleAll(master) {
+    const checkboxes = document.querySelectorAll('.chk-item');
+    checkboxes.forEach(chk => {
+        if (chk.closest('tr').style.display !== 'none') {
+            chk.checked = master.checked;
+        }
+    });
+    actualizarBotonEliminar();
+}
+
+function actualizarBotonEliminar() {
+    const seleccionados = document.querySelectorAll('.chk-item:checked');
+    const btn = document.getElementById('btnEliminarSeleccion');
+
+    if (seleccionados.length > 0) {
+        btn.classList.remove('d-none');
+        document.getElementById('contadorSeleccion').textContent = seleccionados.length;
+    } else {
+        btn.classList.add('d-none');
+        document.getElementById('contadorSeleccion').textContent = '0';
+    }
+
+    const todosVisibles = Array.from(document.querySelectorAll('.chk-item')).filter(chk => chk.closest('tr').style.display !== 'none');
+    const checkAll = document.getElementById('checkAll');
+    
+    if (todosVisibles.length > 0) {
+        const completados = document.querySelectorAll('.chk-item:checked').length;
+        checkAll.checked = completados === todosVisibles.length;
+        checkAll.indeterminate = completados > 0 && completados < todosVisibles.length;
+    }
+}
+
+// 3. Acción AJAX: Eliminación Masiva
+function eliminarSeleccionados() {
+    const ids = Array.from(document.querySelectorAll('.chk-item:checked')).map(chk => chk.value);
+
+    if (ids.length === 0) {
+        Swal.fire({icon: 'warning', title: 'Aviso', text: 'Seleccione al menos una capacitación para eliminar.'});
+        return;
+    }
+
+    Swal.fire({
+        title: '¿Eliminar ' + ids.length + ' capacitación(es)?',
+        text: 'Solo se eliminarán las capacitaciones INACTIVAS. Las que estén en curso u otro estado serán omitidas.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="ti ti-trash me-1"></i> Sí, eliminar seleccionadas',
+        cancelButtonText: 'Cancelar'
+    }).then(result => {
+        if (result.isConfirmed) {
+            const btnDelete = document.getElementById('btnEliminarSeleccion');
+            const htmlAnterior = btnDelete.innerHTML;
+            btnDelete.innerHTML = '<i class="ti ti-loader ti-spin"></i> Procesando...';
+            btnDelete.disabled = true;
+
+            const fnData = new FormData();
+            ids.forEach(id => fnData.append('ids[]', id));
+
+            fetch('<?= site_url('admin-th/capacitaciones/eliminar-masivo') ?>', { 
+                method: 'POST', 
+                body: fnData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                btnDelete.innerHTML = htmlAnterior;
+                btnDelete.disabled = false;
+                
+                if (data.success) {
+                    Swal.fire({icon: 'success', title: '¡Éxito!', text: data.message, timer: 3000, showConfirmButton: false});
+                    document.getElementById('checkAll').checked = false;
+                    document.getElementById('checkAll').indeterminate = false;
+                    actualizarBotonEliminar();
+                    cargarCapacitaciones();
+                } else {
+                    Swal.fire({icon: 'error', title: 'Error', text: data.message});
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                btnDelete.innerHTML = htmlAnterior;
+                btnDelete.disabled = false;
+                Swal.fire({icon: 'error', title: 'Error', text: 'Fallo de red al intentar eliminar.'});
+            });
+        }
+    });
+}
+// ==================== FIN [ESTANDARIZACIÓN] ====================
 </script>
 <?= $this->endSection() ?>

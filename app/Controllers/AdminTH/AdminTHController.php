@@ -246,6 +246,96 @@ class AdminTHController extends Controller
     }
 
     /**
+     * Eliminar (Deshabilitar) títulos masivamente
+     */
+    public function eliminarTitulosAcademicosMasivo()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $ids = $this->request->getPost('ids');
+            
+            if (empty($ids) || !is_array($ids)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se seleccionaron títulos para eliminar'
+                ]);
+            }
+
+            $tituloModel = new \App\Models\TituloAcademicoModel();
+            $logModel = new \App\Models\LogSistemaModel();
+            $idUsuario = session()->get('id_usuario');
+
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            $eliminados = 0;
+            $errores = 0;
+
+            foreach ($ids as $idTitulo) {
+                $titulo = $tituloModel->find($idTitulo);
+                
+                if (!$titulo) {
+                    $errores++;
+                    continue;
+                }
+
+                // Verificar si hay empleados usando este título, en cuyo caso omitir
+                if ($tituloModel->contarEmpleadosConTitulo($idTitulo) > 0) {
+                    $errores++;
+                    continue;
+                }
+
+                // El usuario quiere "Eliminar" pero la DB maneja "Deshabilitar" (activo = 0)
+                // Usamos la misma lógica original o delete() si es hard delete. Según el original es update()
+                if ($tituloModel->update($idTitulo, ['activo' => 0])) {
+                    $logModel->registrarLog(
+                        $idUsuario,
+                        'DESHABILITAR_TITULO_ACADEMICO_MASIVO',
+                        'TITULOS_ACADEMICOS',
+                        "Título académico deshabilitado en lote: {$titulo['nombre_titulo']}"
+                    );
+                    $eliminados++;
+                } else {
+                    $errores++;
+                }
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al ejecutar la eliminación masiva. Operación revertida.'
+                ]);
+            }
+
+            if ($eliminados === 0 && $errores > 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se eliminó ningún título. Asegúrese de que no estén asignados a ningún empleado activo.'
+                ]);
+            }
+
+            $mensajeExtra = $errores > 0 ? " (Omitidos/En Uso: {$errores})" : "";
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => "{$eliminados} título(s) eliminado(s) correctamente." . $mensajeExtra
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error en eliminación masiva de títulos académicos: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor en borrado masivo'
+            ]);
+        }
+    }
+
+    /**
      * Obtener credenciales del empleado en tiempo real desde la BD
      */
     public function obtenerCredenciales($id)
@@ -673,6 +763,75 @@ class AdminTHController extends Controller
     }
 
     /**
+     * Eliminar departamentos masivamente
+     */
+    public function eliminarDepartamentosMasivo()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $ids = $this->request->getPost('ids');
+            
+            if (empty($ids) || !is_array($ids)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se seleccionaron departamentos para eliminar'
+                ]);
+            }
+
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            $eliminados = 0;
+            $errores = 0;
+
+            foreach ($ids as $idDepartamento) {
+                // Verificar si el departamento está en uso
+                if ($this->departamentoModel->departamentoEnUso($idDepartamento)) {
+                    $errores++;
+                    continue;
+                }
+
+                // Eliminar departamento
+                $this->departamentoModel->delete($idDepartamento);
+                $eliminados++;
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al ejecutar la eliminación en lote. La operación fue revertida.'
+                ]);
+            }
+
+            if ($eliminados === 0 && $errores > 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se eliminó ninguno. ' . $errores . ' departamento(s) tienen empleados asignados.'
+                ]);
+            }
+
+            $mensajeExtra = $errores > 0 ? " (Omitidos: {$errores} en uso)" : "";
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $eliminados . ' departamento(s) eliminado(s) correctamente.' . $mensajeExtra
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error en eliminación masiva de departamentos: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor en borrado masivo'
+            ]);
+        }
+    }
+
+    /**
      * Obtener departamentos activos para dropdown
      */
     public function obtenerDepartamentosActivos()
@@ -895,6 +1054,75 @@ class AdminTHController extends Controller
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Error al eliminar puesto: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Eliminar puestos masivamente
+     */
+    public function eliminarPuestosMasivo()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $ids = $this->request->getPost('ids');
+            
+            if (empty($ids) || !is_array($ids)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se seleccionaron puestos para eliminar'
+                ]);
+            }
+
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            $eliminados = 0;
+            $errores = 0;
+
+            foreach ($ids as $idPuesto) {
+                // Verificar si el puesto está en uso (tiene empleados o postulantes vinculados)
+                if ($this->puestoModel->puestoEnUso($idPuesto)) {
+                    $errores++;
+                    continue;
+                }
+
+                // Eliminar puesto
+                $this->puestoModel->delete($idPuesto);
+                $eliminados++;
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al ejecutar la eliminación en lote. La operación fue revertida.'
+                ]);
+            }
+
+            if ($eliminados === 0 && $errores > 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se eliminó ninguno. ' . $errores . ' puesto(s) están en uso (tienen postulantes o empleados).'
+                ]);
+            }
+
+            $mensajeExtra = $errores > 0 ? " (Omitidos: {$errores} en uso)" : "";
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $eliminados . ' puesto(s) eliminado(s) correctamente.' . $mensajeExtra
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error en eliminación masiva de puestos: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor en borrado masivo'
             ]);
         }
     }
@@ -1558,6 +1786,68 @@ class AdminTHController extends Controller
     }
 
     /**
+     * Eliminar Inasistencias Masivamente (AJAX POST)
+     */
+    public function eliminarInasistenciasMasivo()
+    {
+        if (!$this->request->isAJAX()) return redirect()->back();
+
+        try {
+            $ids = $this->request->getPost('ids');
+            if (empty($ids) || !is_array($ids)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'No se seleccionaron registros.']);
+            }
+
+            $inasistenciaModel = new \App\Models\InasistenciaModel();
+            $logModel = new \App\Models\LogSistemaModel();
+            
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            $eliminados = 0;
+            $errores = 0;
+
+            foreach ($ids as $id) {
+                // Verificar existencia
+                $registro = $inasistenciaModel->find($id);
+                if (!$registro) {
+                    $errores++;
+                    continue;
+                }
+
+                if ($inasistenciaModel->delete($id)) {
+                    $logModel->registrarLog(
+                        session()->get('id_usuario'),
+                        'ELIMINAR_INASISTENCIA_MASIVA',
+                        'INASISTENCIAS',
+                        "Inasistencia eliminada en lote (ID: {$id}, Motivo: {$registro['motivo']})"
+                    );
+                    $eliminados++;
+                } else {
+                    $errores++;
+                }
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Error de base de datos durante el borrado.']);
+            }
+
+            if ($eliminados === 0 && $errores > 0) {
+                return $this->response->setJSON(['success' => false, 'message' => 'No se eliminó ningún registro.']);
+            }
+
+            $msgExtra = $errores > 0 ? " ({$errores} omitidas)" : "";
+            return $this->response->setJSON(['success' => true, 'message' => "{$eliminados} inasistencia(s) eliminada(s) correctamente.{$msgExtra}"]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error en borrado masivo de inasistencias: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * Vista del formulario para registrar nueva inasistencia
      */
     public function registrarInasistencia()
@@ -1825,6 +2115,77 @@ class AdminTHController extends Controller
         ];
 
         return view('Roles/AdminTH/politicas_inasistencia', $data);
+    }
+
+    /**
+     * Eliminar Políticas Masivamente (AJAX POST)
+     */
+    public function eliminarPoliticasMasivo()
+    {
+        if (!$this->request->isAJAX()) return redirect()->back();
+
+        try {
+            $ids = $this->request->getPost('ids');
+            if (empty($ids) || !is_array($ids)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'No se seleccionaron políticas.']);
+            }
+
+            // Según el controlador global parece estar cargado como $this->politicaInasistenciaModel
+            // Si la vista está en desarrollo, probamos invocar el modelo explícitamente si existe
+            // Para prevenir errores si no está importado globalmente
+            $modelClass = '\App\Models\PoliticaInasistenciaModel';
+            if (!class_exists($modelClass)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'El módulo de políticas no está completamente implementado.']);
+            }
+
+            $politicaModel = new $modelClass();
+            $logModel = new \App\Models\LogSistemaModel();
+
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            $eliminadas = 0;
+            $errores = 0;
+
+            foreach ($ids as $id) {
+                $politica = $politicaModel->find($id);
+                if (!$politica) {
+                    $errores++;
+                    continue;
+                }
+
+                if ($politicaModel->delete($id)) {
+                    $logModel->registrarLog(
+                        session()->get('id_usuario'),
+                        'ELIMINAR_POLITICA_MASIVA',
+                        'POLITICAS_INASISTENCIA',
+                        "Política eliminada en lote (ID: {$id}, Nombre: {$politica['nombre_politica']})"
+                    );
+                    $eliminadas++;
+                } else {
+                    $errores++;
+                }
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Error de base de datos durante el borrado.']);
+            }
+
+            if ($eliminadas === 0 && $errores > 0) {
+                return $this->response->setJSON(['success' => false, 'message' => 'No se eliminó ninguna política.']);
+            }
+
+            return $this->response->setJSON([
+                'success' => true, 
+                'message' => "{$eliminadas} política(s) eliminada(s) correctamente." . ($errores > 0 ? " ({$errores} omitidas)" : "")
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error en borrado masivo de políticas: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error interno: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -2291,6 +2652,90 @@ class AdminTHController extends Controller
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Error interno del servidor'
+            ]);
+        }
+    }
+
+    /**
+     * Eliminar empleados masivamente
+     */
+    public function eliminarEmpleadosMasivo()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $ids = $this->request->getPost('ids');
+            
+            if (empty($ids) || !is_array($ids)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se seleccionaron empleados para eliminar'
+                ]);
+            }
+
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            $eliminados = 0;
+            $errores = [];
+
+            foreach ($ids as $idEmpleado) {
+                // Obtener empleado
+                $empleado = $this->empleadoModel->find($idEmpleado);
+                if (!$empleado) {
+                    continue;
+                }
+
+                // Protección: no se puede eliminar al Administrador de Talento Humano
+                $usuario = $db->table('usuarios')->where('id_usuario', $empleado['id_usuario'])->get()->getRowArray();
+                if ($usuario && $usuario['id_rol'] == 2) {
+                    $errores[] = "Se omitió a " . $empleado['nombres'] . " (Es Administrador).";
+                    continue;
+                }
+
+                $idUsuario = $empleado['id_usuario'];
+
+                // 1. Eliminar empleado
+                $db->table('empleados')->where('id_empleado', $idEmpleado)->delete();
+
+                // 2. Eliminar usuario vinculado
+                if ($idUsuario) {
+                    $db->table('usuarios')->where('id_usuario', $idUsuario)->delete();
+                }
+
+                $eliminados++;
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al ejecutar la eliminación en lote. La operación fue revertida.'
+                ]);
+            }
+
+            if ($eliminados === 0 && !empty($errores)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se eliminó ninguno: ' . implode(' ', $errores)
+                ]);
+            }
+
+            $mensajeExtra = !empty($errores) ? " (Omitidos: " . count($errores) . ")" : "";
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $eliminados . ' registro(s) eliminado(s) correctamente.' . $mensajeExtra
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error en eliminación masiva de empleados: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor en borrado masivo'
             ]);
         }
     }
@@ -2856,6 +3301,89 @@ class AdminTHController extends Controller
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Error al eliminar: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Eliminar capacitaciones masivamente
+     */
+    public function eliminarCapacitacionesMasivo()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $ids = $this->request->getPost('ids');
+            
+            if (empty($ids) || !is_array($ids)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se seleccionaron capacitaciones para eliminar'
+                ]);
+            }
+
+            $capacitacionModel = new CapacitacionModel();
+            $logModel = new LogSistemaModel();
+            $idUsuario = session()->get('id_usuario');
+
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            $eliminados = 0;
+            $errores = 0;
+
+            foreach ($ids as $idCapacitacion) {
+                $capacitacion = $capacitacionModel->find($idCapacitacion);
+                
+                // Solo eliminar si existe y está INACTIVA
+                if (!$capacitacion || $capacitacion['estado'] !== 'INACTIVA') {
+                    $errores++;
+                    continue;
+                }
+
+                if ($capacitacionModel->delete($idCapacitacion)) {
+                    $logModel->registrarLog(
+                        $idUsuario,
+                        'ELIMINAR_CAPACITACION_MASIVO',
+                        'CAPACITACIONES',
+                        "Capacitación eliminada en lote: {$capacitacion['nombre']}"
+                    );
+                    $eliminados++;
+                } else {
+                    $errores++;
+                }
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al ejecutar la eliminación en lote. Operación revertida.'
+                ]);
+            }
+
+            if ($eliminados === 0 && $errores > 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se eliminó ninguna capacitación. Asegúrese de que estén en estado INACTIVA.'
+                ]);
+            }
+
+            $mensajeExtra = $errores > 0 ? " (Omitidas/Activas: {$errores})" : "";
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => "{$eliminados} capacitación(es) eliminada(s) correctamente." . $mensajeExtra
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error en eliminación masiva de capacitaciones: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error interno del servidor en borrado masivo'
             ]);
         }
     }

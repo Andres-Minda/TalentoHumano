@@ -20,19 +20,35 @@
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Gestión de Títulos Académicos</h4>
-                        <div class="card-actions">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">Gestión de Títulos Académicos</h4>
+                        <div class="card-actions d-flex align-items-center">
+                            <button type="button" class="btn btn-danger me-2 d-none" id="btnEliminarSeleccion" onclick="eliminarSeleccionados()">
+                                <i class="ti ti-trash"></i> Eliminar Seleccionados (<span id="contadorSeleccion">0</span>)
+                            </button>
                             <button type="button" class="btn btn-primary" onclick="nuevoTitulo()">
                                 <i class="ti ti-plus"></i> Nuevo Título
                             </button>
                         </div>
                     </div>
                     <div class="card-body">
+                        <!-- Buscador Interno -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="ti ti-search"></i></span>
+                                    <input type="text" class="form-control" id="filtroTitulo" placeholder="Buscar por Empleado, Título, Inst..." oninput="filtrarTitulos()">
+                                </div>
+                            </div>
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-striped" id="tablaTitulos">
                                 <thead>
                                     <tr>
+                                        <!-- Estándar Modular: Checkbox Maestro -->
+                                        <th style="width:40px;">
+                                            <input type="checkbox" class="form-check-input" id="checkAll" onchange="toggleAll(this)">
+                                        </th>
                                         <th>ID</th>
                                         <th>Empleado</th>
                                         <th>Título</th>
@@ -126,8 +142,12 @@ function cargarTitulos() {
 
     titulos.forEach(titulo => {
         const row = document.createElement('tr');
+        const idCol = titulo.id_titulo || titulo.id;
         row.innerHTML = `
-            <td>${titulo.id}</td>
+            <td>
+                <input type="checkbox" class="form-check-input chk-item" value="${idCol}" onchange="actualizarBotonEliminar()">
+            </td>
+            <td>${idCol}</td>
             <td>${titulo.empleado}</td>
             <td>${titulo.titulo}</td>
             <td>${titulo.institucion}</td>
@@ -180,5 +200,139 @@ function getEstadoBadgeColor(estado) {
         default: return 'secondary';
     }
 }
+
+// ==================== [ESTANDARIZACIÓN] LÓGICA DE BÚSQUEDA Y BORRADO MASIVO ====================
+// 1. Buscador Interno del Frontend
+function filtrarTitulos() {
+    const filtro = document.getElementById('filtroTitulo').value.toLowerCase().trim();
+    const filas = document.querySelectorAll('#tbodyTitulos tr');
+
+    filas.forEach(fila => {
+        const celdas = fila.querySelectorAll('td');
+        if (celdas.length < 7) return;
+
+        let textoFila = '';
+        celdas.forEach(celda => textoFila += celda.textContent.toLowerCase() + ' ');
+
+        if (!filtro || textoFila.includes(filtro)) {
+            fila.style.display = '';
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+}
+
+// 2. Controladores de Selección Múltiple (Checkboxes)
+function toggleAll(master) {
+    const checkboxes = document.querySelectorAll('.chk-item');
+    checkboxes.forEach(chk => {
+        if (chk.closest('tr').style.display !== 'none') {
+            chk.checked = master.checked;
+        }
+    });
+    actualizarBotonEliminar();
+}
+
+function actualizarBotonEliminar() {
+    const seleccionados = document.querySelectorAll('.chk-item:checked');
+    const btn = document.getElementById('btnEliminarSeleccion');
+    const contador = document.getElementById('contadorSeleccion');
+
+    if (seleccionados.length > 0) {
+        btn.classList.remove('d-none');
+        if (contador) contador.textContent = seleccionados.length;
+    } else {
+        btn.classList.add('d-none');
+        if (contador) contador.textContent = '0';
+    }
+
+    const todosVisibles = Array.from(document.querySelectorAll('.chk-item')).filter(chk => chk.closest('tr').style.display !== 'none');
+    const checkAll = document.getElementById('checkAll');
+    
+    if (todosVisibles.length > 0) {
+        const completados = document.querySelectorAll('.chk-item:checked').length;
+        if (checkAll) {
+            checkAll.checked = completados === todosVisibles.length;
+            checkAll.indeterminate = completados > 0 && completados < todosVisibles.length;
+        }
+    }
+}
+
+// 3. Acción AJAX: Eliminación Masiva
+function eliminarSeleccionados() {
+    const ids = Array.from(document.querySelectorAll('.chk-item:checked')).map(chk => chk.value);
+
+    if (ids.length === 0) {
+        // En caso de que no haya SweetAlert, usamos alert nativo como fallback temporal if needed
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({icon: 'warning', title: 'Aviso', text: 'Seleccione al menos un título para eliminar.'});
+        } else {
+            alert('Seleccione al menos un título para eliminar.');
+        }
+        return;
+    }
+
+    const msg = '¿Eliminar ' + ids.length + ' título(s)? Esta acción no se puede deshacer.';
+    
+    // Uso de Confirm estándar si no hay SweetAlert implementado en esta vista, sino Swal.
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: '¿Confirmar eliminación masiva?',
+            text: msg,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="ti ti-trash me-1"></i> Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then(result => {
+            if (result.isConfirmed) procesarEliminacionAjax(ids);
+        });
+    } else {
+        if (confirm(msg)) procesarEliminacionAjax(ids);
+    }
+}
+
+function procesarEliminacionAjax(ids) {
+    const btnDelete = document.getElementById('btnEliminarSeleccion');
+    const htmlAnterior = btnDelete.innerHTML;
+    btnDelete.innerHTML = '<i class="ti ti-loader ti-spin"></i> Procesando...';
+    btnDelete.disabled = true;
+
+    const fnData = new FormData();
+    ids.forEach(id => fnData.append('ids[]', id));
+
+    fetch('<?= site_url('admin-th/titulos-academicos/eliminar-masivo') ?>', { 
+        method: 'POST', 
+        body: fnData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btnDelete.innerHTML = htmlAnterior;
+        btnDelete.disabled = false;
+        
+        if (data.success) {
+            if (typeof Swal !== 'undefined') Swal.fire({icon: 'success', title: '¡Éxito!', text: data.message, timer: 3000, showConfirmButton: false});
+            else alert(data.message);
+            
+            document.getElementById('checkAll').checked = false;
+            document.getElementById('checkAll').indeterminate = false;
+            actualizarBotonEliminar();
+            cargarTitulos();
+        } else {
+            if (typeof Swal !== 'undefined') Swal.fire({icon: 'error', title: 'Error', text: data.message});
+            else alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error(error);
+        btnDelete.innerHTML = htmlAnterior;
+        btnDelete.disabled = false;
+        if (typeof Swal !== 'undefined') Swal.fire({icon: 'error', title: 'Error', text: 'Fallo de red al intentar eliminar.'});
+        else alert('Error de red al eliminar.');
+    });
+}
+// ==================== FIN [ESTANDARIZACIÓN] ====================
 </script>
 <?= $this->endSection() ?>
