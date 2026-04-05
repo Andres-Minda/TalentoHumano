@@ -5,9 +5,18 @@
     <div class="page-content">
         <div class="row">
             <div class="col-12">
+                <div class="page-title-box d-flex align-items-center justify-content-between mb-4 mt-2">
+                    <div class="d-flex align-items-center">
+                        <a href="<?= base_url('empleado/inasistencias') ?>" class="btn btn-outline-secondary btn-sm me-3" title="Volver al Dashboard">
+                            <i class="ti ti-arrow-left"></i> Volver
+                        </a>
+                        <h4 class="page-title mb-0">Análisis de Inasistencias</h4>
+                    </div>
+                </div>
+                
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="card-title">Reporte de Mis Inasistencias</h4>
+                        <h4 class="card-title">Generar Reporte</h4>
                         <p class="card-subtitle">Análisis detallado de tu historial de inasistencias</p>
                     </div>
                     <div class="card-body">
@@ -331,56 +340,65 @@ function generarReporte() {
     const fechaFin = document.getElementById('fecha_fin').value;
     const tipoInasistencia = document.getElementById('tipo_inasistencia').value;
 
-    // Mostrar loading
     mostrarLoading();
+    
+    // Convertir el tipo seleccionado al formato manejado por la BD o el filtro
+    let tipoParam = '';
+    if (tipoInasistencia === '1') tipoParam = 'JUSTIFICADA';
+    if (tipoInasistencia === '2') tipoParam = 'NO_JUSTIFICADA';
+    if (tipoInasistencia === '3') tipoParam = 'PENDIENTE_JUSTIFICACION';
 
-    // Simular llamada a API (en producción sería una llamada real)
-    setTimeout(() => {
-        cargarDatosReporte(fechaInicio, fechaFin, tipoInasistencia);
+    const params = new URLSearchParams();
+    if (fechaInicio) params.append('fecha_desde', fechaInicio);
+    if (fechaFin) params.append('fecha_hasta', fechaFin);
+    if (tipoParam) params.append('tipo', tipoParam);
+
+    fetch(`<?= base_url('empleado/inasistencias/obtener-mis-inasistencias') ?>?${params.toString()}`)
+    .then(r => r.json())
+    .then(data => {
+        if(!data.success) {
+            Swal.fire({icon: 'error', title: 'Error', text: data.message || 'Error al obtener datos'});
+            ocultarLoading();
+            return;
+        }
+
+        const noJusti = (data.total || 0) - (data.justificadas || 0) - (data.pendientes || 0);
+
+        // 1. Estadísticas
+        document.getElementById('total_inasistencias').textContent = data.total || 0;
+        document.getElementById('inasistencias_justificadas').textContent = data.justificadas || 0;
+        document.getElementById('inasistencias_pendientes').textContent = data.pendientes || 0;
+        document.getElementById('inasistencias_no_justificadas').textContent = noJusti;
+
+        // 2. Gráficos
+        // Gráfico Mensual (Array de 12 meses)
+        let mensuales = Array(12).fill(0);
+        (data.data || []).forEach(item => {
+            const fecha = new Date(item.fecha_inasistencia);
+            const mes = fecha.getMonth(); // 0-11
+            if(!isNaN(mes)) mensuales[mes]++;
+        });
+        chartInasistenciasMensuales.updateSeries([{ name: 'Inasistencias', data: mensuales }]);
+
+        // Gráfico de Tipos: [Justificadas, No Justificadas, Pendientes]
+        chartTiposInasistencia.updateSeries([
+            parseInt(data.justificadas || 0),
+            noJusti,
+            parseInt(data.pendientes || 0)
+        ]);
+
+        // Gráfico Tendencia: Usaremos los mismos meses para dar una curva
+        chartTendenciaAnual.updateSeries([{ name: 'Inasistencias', data: mensuales }]);
+
+        // 3. Tabla
+        actualizarTabla(data.data || []);
+        
         ocultarLoading();
-    }, 1000);
-}
-
-function cargarDatosReporte(fechaInicio, fechaFin, tipoInasistencia) {
-    // Datos simulados para el reporte
-    const datosSimulados = {
-        estadisticas: {
-            total: 12,
-            justificadas: 8,
-            noJustificadas: 2,
-            pendientes: 2
-        },
-        inasistenciasMensuales: [2, 1, 3, 0, 1, 2, 0, 1, 1, 0, 1, 0],
-        tiposInasistencia: [8, 2, 2],
-        tendenciaAnual: [15, 18, 12, 10, 8, 12],
-        inasistencias: [
-            {
-                id: 1,
-                fecha: '2025-01-15',
-                tipo: 'Justificada',
-                motivo: 'Consulta médica',
-                estado: 'Aprobada',
-                justificacion: 'Certificado médico presentado'
-            },
-            {
-                id: 2,
-                fecha: '2025-01-20',
-                tipo: 'No Justificada',
-                motivo: 'Retraso en transporte',
-                estado: 'Rechazada',
-                justificacion: 'Sin documentación'
-            }
-        ]
-    };
-
-    // Actualizar estadísticas
-    actualizarEstadisticas(datosSimulados.estadisticas);
-    
-    // Actualizar gráficos
-    actualizarGraficos(datosSimulados);
-    
-    // Actualizar tabla
-    actualizarTabla(datosSimulados.inasistencias);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        ocultarLoading();
+    });
 }
 
 function actualizarEstadisticas(estadisticas) {
@@ -411,26 +429,36 @@ function actualizarTabla(inasistencias) {
     const tbody = document.getElementById('tbodyInasistencias');
     tbody.innerHTML = '';
 
-    inasistencias.forEach(inasistencia => {
+    inasistencias.forEach(i => {
         const row = document.createElement('tr');
+        
+        const isJustificada = parseInt(i.justificada) === 1;
+        
+        let badgeColor = 'secondary';
+        if(isJustificada) badgeColor = 'success';
+        else if (i.tipo_inasistencia === 'PENDIENTE_JUSTIFICACION') badgeColor = 'warning';
+        else badgeColor = 'danger';
+
+        let justificacionTxt = i.archivo_justificacion ? 'Documento Adjunto' : 'Sin documentar';
+
         row.innerHTML = `
-            <td>${formatearFecha(inasistencia.fecha)}</td>
+            <td>${formatearFecha(i.fecha_inasistencia)}</td>
             <td>
-                <span class="badge bg-${getBadgeColor(inasistencia.tipo)}">
-                    ${inasistencia.tipo}
+                <span class="badge bg-${badgeColor}">
+                    ${i.tipo_inasistencia || '—'}
                 </span>
             </td>
-            <td>${inasistencia.motivo}</td>
+            <td>${i.motivo || '—'}</td>
             <td>
-                <span class="badge bg-${getEstadoBadgeColor(inasistencia.estado)}">
-                    ${inasistencia.estado}
+                <span class="badge bg-${badgeColor}">
+                    ${isJustificada ? 'Justificada' : 'Sin Justificar / Rechazada'}
                 </span>
             </td>
-            <td>${inasistencia.justificacion}</td>
+            <td>${justificacionTxt}</td>
             <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="verDetalles(${inasistencia.id})">
+                <a href="<?= base_url('empleado/inasistencias/ver/') ?>${i.id}" class="btn btn-sm btn-outline-primary" title="Ver Detalle">
                     <i class="ti ti-eye"></i>
-                </button>
+                </a>
             </td>
         `;
         tbody.appendChild(row);

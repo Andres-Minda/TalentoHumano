@@ -167,6 +167,7 @@ $sidebar = 'sidebar_empleado';
 <script>
 // Variables globales
 let capacitacionesData = [];
+let capacitacionesDisponiblesData = [];   // caché de las tarjetas disponibles
 let filtroActual = 'todas';
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -273,42 +274,61 @@ function renderizarDisponibles(capacitaciones) {
         return;
     }
     
+    capacitacionesDisponiblesData = capacitaciones;   // guardar en caché global
+
     capacitaciones.forEach(c => {
         const esEnCurso = c.estado === 'EN_CURSO';
-        const esActiva = c.estado === 'ACTIVA';
-        
-        // Botón de inscripción: deshabilitado si EN_CURSO, habilitado solo si ACTIVA
+        const esActiva  = c.estado === 'ACTIVA';
+
+        const btnDetalle = `<button type="button" class="btn btn-outline-secondary btn-sm flex-grow-1"
+                                    onclick="verDetalleCapacitacionDisponible(${c.id_capacitacion})">
+                                <i class="ti ti-eye"></i> Ver Detalles
+                            </button>`;
+
         let botonHtml = '';
         if (esEnCurso) {
-            botonHtml = `<button type="button" class="btn btn-secondary btn-sm w-100" disabled>
-                            <i class="ti ti-lock"></i> Capacitación en curso (Cerrada)
-                         </button>`;
+            botonHtml = `
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm flex-grow-1" disabled>
+                        <i class="ti ti-lock"></i> En Curso (Cerrada)
+                    </button>
+                    ${btnDetalle}
+                </div>`;
         } else if (esActiva) {
-            botonHtml = `<button type="button" class="btn btn-primary btn-sm w-100" onclick="inscribirseCapacitacion(${c.id_capacitacion})">
-                            <i class="ti ti-plus"></i> Inscribirse
-                         </button>`;
+            botonHtml = `
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary btn-sm flex-grow-1"
+                            onclick="inscribirseCapacitacion(${c.id_capacitacion})">
+                        <i class="ti ti-plus"></i> Inscribirse
+                    </button>
+                    ${btnDetalle}
+                </div>`;
         } else {
-            botonHtml = `<button type="button" class="btn btn-secondary btn-sm w-100" disabled>
-                            No disponible
-                         </button>`;
+            botonHtml = `
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm flex-grow-1" disabled>
+                        No disponible
+                    </button>
+                    ${btnDetalle}
+                </div>`;
         }
-        
+
         const card = document.createElement('div');
         card.className = 'col-md-6 col-lg-4 mb-3';
         card.innerHTML = `
             <div class="card h-100 ${esEnCurso ? 'border-warning' : ''}">
-                <div class="card-body">
+                <div class="card-body d-flex flex-column">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <h6 class="card-title mb-0">${c.nombre}</h6>
                         ${obtenerBadgeEstado(c.estado)}
                     </div>
-                    <p class="card-text text-muted small">${c.descripcion || 'Sin descripción'}</p>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    <p class="card-text text-muted small flex-grow-1">${(c.descripcion || 'Sin descripción').substring(0, 90)}${(c.descripcion && c.descripcion.length > 90) ? '…' : ''}</p>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
                         <small class="text-muted"><i class="ti ti-clock"></i> ${c.duracion_horas || '-'} hrs</small>
                         <small class="text-muted"><i class="ti ti-device-laptop"></i> ${c.modalidad || '-'}</small>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <small class="text-muted">${formatearFecha(c.fecha_inicio)} - ${formatearFecha(c.fecha_fin)}</small>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <small class="text-muted">${formatearFecha(c.fecha_inicio)} — ${formatearFecha(c.fecha_fin)}</small>
                         <span class="badge bg-light text-dark">${c.total_inscritos || 0} inscritos</span>
                     </div>
                     ${botonHtml}
@@ -370,25 +390,66 @@ function filtrarCapacitaciones(filtro) {
     }
 }
 
-// Ver detalle de capacitación
+// Ver detalle de capacitación inscrita (tabla superior)
 function verDetalleCapacitacion(id) {
     const c = capacitacionesData.find(cap => cap.id_capacitacion == id);
     if (!c) return;
-    
+
     Swal.fire({
-        title: c.nombre,
+        title: `<i class="ti ti-book text-primary me-2"></i>${c.nombre}`,
         html: `
             <div class="text-start">
-                <p><strong>Descripción:</strong> ${c.descripcion || 'Sin descripción'}</p>
-                <p><strong>Modalidad:</strong> ${c.modalidad || '-'}</p>
-                <p><strong>Duración:</strong> ${c.duracion_horas || '-'} horas</p>
-                <p><strong>Estado:</strong> ${c.estado}</p>
-                <p><strong>Inicio:</strong> ${formatearFecha(c.fecha_inicio)}</p>
-                <p><strong>Fin:</strong> ${formatearFecha(c.fecha_fin)}</p>
-            </div>
-        `,
-        icon: 'info',
-        confirmButtonText: 'Cerrar'
+                <p class="mb-2"><i class="ti ti-align-left text-muted me-1"></i><strong>Descripción:</strong><br>
+                    <span class="text-muted">${c.descripcion || 'Sin descripción'}</span></p>
+                <hr class="my-2">
+                <div class="row g-2">
+                    <div class="col-6"><p class="mb-1"><strong><i class="ti ti-device-laptop me-1"></i>Modalidad:</strong><br><span class="text-muted">${c.modalidad || '-'}</span></p></div>
+                    <div class="col-6"><p class="mb-1"><strong><i class="ti ti-clock me-1"></i>Duración:</strong><br><span class="text-muted">${c.duracion_horas || '-'} horas</span></p></div>
+                    <div class="col-6"><p class="mb-1"><strong><i class="ti ti-calendar me-1"></i>Inicio:</strong><br><span class="text-muted">${formatearFecha(c.fecha_inicio)}</span></p></div>
+                    <div class="col-6"><p class="mb-1"><strong><i class="ti ti-calendar-off me-1"></i>Fin:</strong><br><span class="text-muted">${formatearFecha(c.fecha_fin)}</span></p></div>
+                </div>
+            </div>`,
+        confirmButtonText: '<i class="ti ti-x me-1"></i>Cerrar',
+        confirmButtonColor: '#6c757d',
+        showClass: { popup: 'animate__animated animate__fadeInDown animate__faster' }
+    });
+}
+
+// Ver detalle de capacitación disponible (tarjetas inferiores)
+function verDetalleCapacitacionDisponible(id) {
+    const c = capacitacionesDisponiblesData.find(cap => cap.id_capacitacion == id);
+    if (!c) return;
+
+    const badgeEstado = obtenerBadgeEstado(c.estado);
+    const institucion = c.institucion ? `<p class="mb-1"><strong><i class="ti ti-building me-1"></i>Institución:</strong><br><span class="text-muted">${c.institucion}</span></p>` : '';
+
+    Swal.fire({
+        title: `<i class="ti ti-mortarboard text-primary me-2"></i>${c.nombre}`,
+        html: `
+            <div class="text-start">
+                <div class="mb-2">${badgeEstado} <small class="text-muted ms-2">${c.total_inscritos || 0} personas inscritas</small></div>
+                <p class="mb-2"><i class="ti ti-align-left text-muted me-1"></i><strong>Descripción:</strong><br>
+                    <span class="text-muted">${c.descripcion || 'Sin descripción disponible.'}</span></p>
+                <hr class="my-2">
+                <div class="row g-2">
+                    <div class="col-6"><p class="mb-1"><strong><i class="ti ti-device-laptop me-1"></i>Modalidad:</strong><br><span class="text-muted">${c.modalidad || '-'}</span></p></div>
+                    <div class="col-6"><p class="mb-1"><strong><i class="ti ti-clock me-1"></i>Duración:</strong><br><span class="text-muted">${c.duracion_horas || '-'} horas</span></p></div>
+                    <div class="col-6"><p class="mb-1"><strong><i class="ti ti-calendar me-1"></i>Inicio:</strong><br><span class="text-muted">${formatearFecha(c.fecha_inicio)}</span></p></div>
+                    <div class="col-6"><p class="mb-1"><strong><i class="ti ti-calendar-off me-1"></i>Fin:</strong><br><span class="text-muted">${formatearFecha(c.fecha_fin)}</span></p></div>
+                </div>
+                ${institucion}
+            </div>`,
+        confirmButtonText: '<i class="ti ti-x me-1"></i>Cerrar',
+        confirmButtonColor: '#6c757d',
+        showCancelButton: c.estado === 'ACTIVA',
+        cancelButtonText: '<i class="ti ti-plus me-1"></i>Inscribirme',
+        cancelButtonColor: '#0d6efd',
+        showClass: { popup: 'animate__animated animate__fadeInDown animate__faster' }
+    }).then((result) => {
+        // Si pulsó «Inscribirme» desde el modal de detalles
+        if (result.isDismissed && result.dismiss === Swal.DismissReason.cancel) {
+            inscribirseCapacitacion(id);
+        }
     });
 }
 

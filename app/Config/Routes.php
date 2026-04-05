@@ -110,6 +110,7 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->get('inasistencias/editar/(:num)', 'AdminTH\AdminTHController::editarInasistencia/$1');
     $routes->post('inasistencias/actualizar/(:num)', 'AdminTH\AdminTHController::actualizarInasistencia/$1');
     $routes->get('inasistencias/listar-json', 'AdminTH\AdminTHController::listarInasistenciasJSON');
+    $routes->get('inasistencias/estadisticas-globales', 'AdminTH\AdminTHController::getEstadisticasGlobalesInasistencias');
     $routes->post('inasistencias/actualizar', 'AdminTH\AdminTHController::actualizarInasistencia');
     $routes->post('inasistencias/cambiar-estado', 'AdminTH\AdminTHController::cambiarEstadoInasistencia');
     $routes->get('inasistencias/justificar/(:num)', 'AdminTH\AdminTHController::justificarInasistencia/$1');
@@ -176,12 +177,17 @@ $routes->group('empleado', ['filter' => 'auth'], function($routes) {
     
     // Títulos académicos
     $routes->get('titulos-academicos', 'Empleado\EmpleadoController::titulosAcademicos');
+    $routes->get('titulos-academicos/mis-titulos', 'TituloAcademicoController::obtenerMisTitulos');
+    $routes->post('titulos-academicos/guardar', 'TituloAcademicoController::guardarMiTitulo');
+    $routes->post('titulos-academicos/actualizar', 'TituloAcademicoController::actualizarMiTitulo');
+    $routes->post('titulos-academicos/eliminar', 'TituloAcademicoController::eliminarMiTitulo');
     
     // Evaluaciones
     $routes->get('evaluaciones', 'Empleado\EmpleadoController::evaluaciones');
     $routes->get('evaluaciones/mis-evaluaciones', 'Empleado\EmpleadoController::misEvaluacionesJSON');
     $routes->get('evaluaciones/detalle/(:num)', 'Empleado\EmpleadoController::detalleEvaluacionJSON/$1');
     $routes->post('evaluaciones/guardar-rubrica', 'Empleado\EmpleadoController::guardarRubrica');
+    $routes->post('evaluaciones/ocultar', 'Empleado\EmpleadoController::ocultarEvaluacion');
     
     // Evaluaciones entre Pares (Docentes)
     $routes->get('evaluaciones-pares', 'DocenteController::evaluacionesPares');
@@ -191,11 +197,13 @@ $routes->group('empleado', ['filter' => 'auth'], function($routes) {
     $routes->get('evaluaciones-pares/obtener-retroalimentacion', 'DocenteController::obtenerRetroalimentacion');
     
     // Inasistencias
-    $routes->get('inasistencias', 'Empleado\EmpleadoController::inasistencias');
-    $routes->get('inasistencias/mis-inasistencias', 'Empleado\EmpleadoController::misInasistencias');
-    $routes->post('inasistencias/justificar', 'Empleado\EmpleadoController::justificarInasistencia');
-    $routes->get('inasistencias/ver/(:num)', 'Empleado\EmpleadoController::verInasistencia/$1');
-    $routes->get('inasistencias/estadisticas', 'Empleado\EmpleadoController::estadisticasInasistencias');
+    $routes->get('inasistencias', 'InasistenciaController::dashboard');
+    $routes->get('inasistencias/mis-inasistencias', 'InasistenciaController::misInasistencias');
+    $routes->get('inasistencias/obtener-mis-inasistencias', 'InasistenciaController::obtenerMisInasistencias');
+    $routes->get('inasistencias/ver/(:num)', 'InasistenciaController::verInasistencia/$1');
+    $routes->post('inasistencias/subir-justificacion', 'InasistenciaController::subirJustificacion');
+    $routes->get('inasistencias/justificar', 'InasistenciaController::subirJustificacion');
+    $routes->get('inasistencias/reporte', 'InasistenciaController::reporteInasistencias');
     
     // Solicitudes Administrativas (Reemplaza capacitaciones/generales antiguas)
     // $routes->get('solicitudes-capacitacion', 'Empleado\EmpleadoController::solicitudesCapacitacion');

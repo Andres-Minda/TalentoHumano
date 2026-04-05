@@ -1,0 +1,113 @@
+PRUEBAS FUNCIONALES DEL SISTEMA
+===============================
+
+Las pruebas funcionales del Sistema de Gestión Digital de Talento Humano (SGD-TH) tienen como objetivo verificar que cada módulo desarrollado cumple con los requerimientos funcionales definidos en el backlog del producto (BP-01 a BP-11) y con los criterios de aceptación establecidos en las historias de usuario (HU-01 a HU-12). 
+
+Las pruebas fueron ejecutadas al término del Sprint 4, una vez concluida la implementación integral del sistema, siguiendo el enfoque iterativo e incremental de la metodología Scrum adaptada al proyecto. Cada caso de prueba se diseñó a partir de las funcionalidades descritas para cada módulo, verificando el comportamiento del sistema ante entradas válidas e inválidas, con el fin de garantizar la adecuación funcional establecida por la norma ISO/IEC 25010.
+
+--------------------------------------------------------------------------------
+
+MÓDULO 1: AUTENTICACIÓN Y CONTROL DE ACCESO
+--------------------------------------------------------------------------------
+| ID | Historia de Usuario | Descripción de la prueba | Datos de entrada | Resultado esperado | Resultado obtenido | Estado |
+|----|---------------------|--------------------------|------------------|--------------------|--------------------|--------|
+| PF-01-01 | HU-01 - Sesión rol Jefatura | Verificar que perfil de jefatura puede autenticarse y acceder al dashboard administrativo. | Usuario: jefatura@itsi.edu.ec / Pass: válida | Redirige al dashboard administrativo con todos los módulos habilitados. | Redirige correctamente al dashboard con acceso a los módulos. | Aprobado |
+| PF-01-02 | HU-01 - Sesión rol Empleado | Verificar que perfil de empleado accede al panel personalizado, sin módulos administrativos. | Usuario: empleado@itsi.edu.ec / Pass: válida | Redirige al panel del empleado con opciones limitadas. | Muestra el panel del empleado sin acceso a vistas de administración. | Aprobado |
+| PF-01-03 | HU-01 - Bloqueo credenciales | Verificar el bloqueo al ingresar credenciales incorrectas. | Usuario: usu@itsi.edu.ec / Pass: incorrecta | Muestra error y no permite el acceso. | Muestra el mensaje de error y permanece en el login. | Aprobado |
+| PF-01-04 | HU-01 - Cierre de sesión | Verificar cierre de sesión activa y redirección. | Acción: clic en "Cerrar sesión" | Se invalida el token y redirige al login. | Sesión destruida y redirección exitosa. | Aprobado |
+
+
+MÓDULO 2: GESTIÓN DE USUARIOS
+--------------------------------------------------------------------------------
+| ID | Historia de Usuario | Descripción de la prueba | Datos de entrada | Resultado esperado | Resultado obtenido | Estado |
+|----|---------------------|--------------------------|------------------|--------------------|--------------------|--------|
+| PF-02-01 | HU-02 - Crear con rol | Jefatura puede crear nuevo usuario y asignar rol. | Nombre, Email, Rol: Empleado | Registra usuario y aplica permisos para futuro login. | Usuario creado y permisos aplicados exitosamente. | Aprobado |
+| PF-02-02 | HU-02 - Editar datos | Jefatura puede modificar datos o roles. | Cambio de correo o rol. | Actualiza datos y aplica rol en la próxima sesión. | Datos actualizados correctamente en base de datos. | Aprobado |
+| PF-02-03 | HU-02 - Eliminar usuario | Jefatura puede eliminar (o desactivar) usuario. | Acción: eliminar. | Elimina registro y bloquea acceso. | Usuario eliminado; arroja error al intentar ingresar. | Aprobado |
+| PF-02-04 | HU-02 - Datos incompletos | El sistema valida campos obligatorios. | Formulario con correo vacío. | Muestra error indicando campo requerido, no guarda. | Valida formulario frontend/backend con su alerta. | Aprobado |
+
+
+MÓDULO 3: GESTIÓN DEL EXPEDIENTE DEL EMPLEADO
+--------------------------------------------------------------------------------
+| ID | Historia de Usuario | Descripción de la prueba | Datos de entrada | Resultado esperado | Resultado obtenido | Estado |
+|----|---------------------|--------------------------|------------------|--------------------|--------------------|--------|
+| PF-03-01 | HU-03 - Nuevo empleado | Registrar un nuevo empleado en el sistema. | Nombre, Cargo, Cédula, Ingreso | Almacena expediente y lo muestra en el listado. | Expediente creado y listado actualizado. | Aprobado |
+| PF-03-02 | HU-03 - Editar expediente | Editar datos personales o laborales. | Cambio en domicilio o cargo. | Actualiza información y refleja en el expediente. | Información actualizada en tiempo real. | Aprobado |
+| PF-03-03 | HU-03 - Búsqueda de emp. | Buscar empleado por nombre o cédula. | Cédula o nombre. | Despliega resultados coincidentes. | Realiza filtrado correcto y muestra el expediente. | Aprobado |
+| PF-03-04 | HU-03 - Validar vacíos | Validar ingreso de campos obligatorios. | Sin número de cédula. | Muestra mensaje de validación. | Muestra notificación de error y detiene el proceso. | Aprobado |
+
+
+MÓDULO 4: INASISTENCIAS Y PERMISOS
+--------------------------------------------------------------------------------
+| ID | Historia de Usuario | Descripción de la prueba | Datos de entrada | Resultado esperado | Resultado obtenido | Estado |
+|----|---------------------|--------------------------|------------------|--------------------|--------------------|--------|
+| PF-04-01 | HU-04 - Inasistencia Jef. | Jefatura registra inasistencia. | Empleado, Fecha, Injustificada | Almacena y vincula inasistencia al expediente. | Inasistencia registrada en el historial. | Aprobado |
+| PF-04-02 | HU-11 - Solicitar permiso | Empleado solicita permiso desde su panel. | Tipo permiso, Fechas, Motivo | Estado "En revisión" y notifica a Jefatura. | Registra estado inicial en revisión en ambos paneles. | Aprobado |
+| PF-04-03 | HU-04 - Resolver permiso | Jefatura aprueba o rechaza permiso. | Acción: Aprobar/Rechazar | Actualiza estado y el empleado lo ve reflejado. | Actualización exitosa en base de datos. | Aprobado |
+
+
+MÓDULO 5: CERTIFICADOS LABORALES
+--------------------------------------------------------------------------------
+| ID | Historia de Usuario | Descripción de la prueba | Datos de entrada | Resultado esperado | Resultado obtenido | Estado |
+|----|---------------------|--------------------------|------------------|--------------------|--------------------|--------|
+| PF-05-01 | HU-05 - Emisión Jefatura | Jefatura genera certificado laboral en PDF. | Acción: Generar certificado | Genera PDF con datos institucionales y expediente. | PDF generado con los datos formateados correctamente. | Aprobado |
+| PF-05-02 | HU-12 - Descarga Emp. | Empleado descarga certificado disponible. | Acción: Descargar certificado | Abre cuadro de descarga para el archivo PDF. | Descarga exitosa del archivo final en PDF. | Aprobado |
+| PF-05-03 | HU-05 - Faltan datos | Generar certificado de empleado con expediente incompleto. | Empleado incompleto | Muestra advertencia indicando que el expediente tiene datos faltantes y bloquea emisión. | Sistema detecta vacíos y muestra la alerta cancelando la exportación PDF. | Aprobado |
+
+
+MÓDULO 6: POSTULACIONES Y RECLUTAMIENTO
+--------------------------------------------------------------------------------
+| ID | Historia de Usuario | Descripción de la prueba | Datos de entrada | Resultado esperado | Resultado obtenido | Estado |
+|----|---------------------|--------------------------|------------------|--------------------|--------------------|--------|
+| PF-06-01 | HU-06 - Formulario público | Postulante externo envía solicitud vía URL. | Datos personales, CV adjunto. | Registra postulación y lanza mensaje de éxito. | Postulación insertada en BD correctamente. | Aprobado |
+| PF-06-02 | HU-06 - Listado Jefatura | Jefatura visualiza postulaciones vigentes. | Acceso al módulo de postulaciones | Expone datos de postulantes y estado actual. | Listado HTML renderizado con la información enviada. | Aprobado |
+| PF-06-03 | HU-06 - Validación vacíos | Envío de formulario público sin datos clave. | Nombre o CV vacío. | Bloquea envío y muestra los errores en los campos. | Script detiene el submit e indica correcciones. | Aprobado |
+
+
+MÓDULO 7: CAPACITACIONES Y TÍTULOS ACADÉMICOS
+--------------------------------------------------------------------------------
+| ID | Historia de Usuario | Descripción de la prueba | Datos de entrada | Resultado esperado | Resultado obtenido | Estado |
+|----|---------------------|--------------------------|------------------|--------------------|--------------------|--------|
+| PF-07-01 | HU-07 - Registrar cap. | Asociar capacitación a expediente. | Nombre, Fechas, Institución | Guarda capacitación anclada al empleado. | Capacitación almacenada y visible en expediente. | Aprobado |
+| PF-07-02 | HU-07 - Registrar título | Registrar formación de tercer/cuarto nivel. | Título, Instituto, Año de fin | El título se inserta en perfil académico del empleado. | Título procesado y asociado correctamente. | Aprobado |
+| PF-07-03 | HU-07 - Historial format. | Consultar listado académico por empleado. | Selección de empleado. | Renderiza lista de cursos y títulos vinculados. | Tablas muestran todo el historial relacional. | Aprobado |
+
+
+MÓDULO 8: LOG DE AUDITORÍA
+--------------------------------------------------------------------------------
+| ID | Historia de Usuario | Descripción de la prueba | Datos de entrada | Resultado esperado | Resultado obtenido | Estado |
+|----|---------------------|--------------------------|------------------|--------------------|--------------------|--------|
+| PF-08-01 | HU-08 - Auto-registro log | Ejecutar acción crítica (edición) como Jefatura. | Edición de un número de CI | Inserta un registro silencioso en tabla de logs. | Inserción capturada: quién, cuándo, en qué módulo. | Aprobado |
+| PF-08-02 | HU-08 - Filtro por usuario | Filtrar la bitácora según correo ejecutor. | Filtro: jperez@itsi.edu.ec | Muestra solo transacciones de la cuenta buscada. | La tabla de auditoría aísla correctamente los eventos. | Aprobado |
+| PF-08-03 | HU-08 - Filtro fecha | Limitar resultados entre dos fechas (rango). | Fecha Inicio / Fecha Fin | Restringe auditoría a los eventos del periodo. | La consulta WHERE devuelve los logs exactos. | Aprobado |
+
+
+MÓDULO 9: DASHBOARD GLOBAL Y REPORTES
+--------------------------------------------------------------------------------
+| ID | Historia de Usuario | Descripción de la prueba | Datos de entrada | Resultado esperado | Resultado obtenido | Estado |
+|----|---------------------|--------------------------|------------------|--------------------|--------------------|--------|
+| PF-09-01 | HU-09 - Métricas Jefatura | Ingresar al inicio administrativo. | Acceso raíz de Jefatura. | Muestra contadores actualizados (Total Empleados, etc). | Widgets estadísticos consultan y exponen totales reales. | Aprobado |
+| PF-09-02 | HU-09 - Reporte individual | Extraer historial laboral e información. | Acción: Reporte empleado | Genera resumen unificado del personal. | Motor de reportes consolida expediente en el archivo. | Aprobado |
+| PF-09-03 | HU-09 - Reporte genérico | Filtrar incidencias consolidadas. | Trámite: "Permisos", Rango de fechas | Construye informe filtrado por las métricas pedidas. | Los filtros condicionales generan resultados correctos. | Aprobado |
+
+
+MÓDULO 10: GESTIÓN DE RESPALDOS DE BASE DE DATOS
+--------------------------------------------------------------------------------
+| ID | Historia de Usuario | Descripción de la prueba | Datos de entrada | Resultado esperado | Resultado obtenido | Estado |
+|----|---------------------|--------------------------|------------------|--------------------|--------------------|--------|
+| PF-10-01 | BP-10 - Respaldo manual | Trigger a la creación de backup inmediato. | Clic en "Generar respaldo ahora" | Exporta .sql y añade al historial de tabla respaldos. | El motor mysqldump genera archivo y queda indexado. | Aprobado |
+| PF-10-02 | RNF-07 - Backup auto | Confirmación de tarea programada/automática. | Cumplimiento del umbral del cron. | Se emite .sql automático al directorio destino. | Script crontab/scheduler arroja backup rutinario en BD. | Aprobado |
+| PF-10-03 | BP-10 - Restauración | Recuperar el motor tras un backup. | Selección de backup / Restaurar | La Base de Datos recibe la inyección de datos limpia. | Tablas se sobrescriben al estado confiable del backup. | Aprobado |
+
+
+MÓDULO 11: PANEL FUNCIONAL DEL EMPLEADO
+--------------------------------------------------------------------------------
+| ID | Historia de Usuario | Descripción de la prueba | Datos de entrada | Resultado esperado | Resultado obtenido | Estado |
+|----|---------------------|--------------------------|------------------|--------------------|--------------------|--------|
+| PF-11-01 | HU-10 - Autogestión | Validación visual del panel de Empleado puro. | Credenciales Empleado | Vista sin opciones de CRUD general; solo yo-mismo. | Rutas administrativas negadas por Role-Middleware. | Aprobado |
+| PF-11-02 | HU-11 - Historial permisos| Empleado revisa si le aprobaron su permiso. | Acceso a "Mis Solicitudes" | Muestra su badge (color) si fue Autorizado/Rechazado. | Listado personal recupera foreign key y lee su estado. | Aprobado |
+| PF-11-03 | HU-12 - Receptar cert. | El Empleado descarga oficios firmados digitalmente. | Clic en Descargar PDF | Envía las cabeceras application/pdf forzando la bajada. | El navegador del usuario recibe file stream correcto. | Aprobado |
+
+================================================================================
+FIN DEL DOCUMENTO DE PRUEBAS FUNCIONALES
+================================================================================

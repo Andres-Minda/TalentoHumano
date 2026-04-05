@@ -449,11 +449,11 @@
                                                                 data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Perfil">
                                                             <i class="bi bi-eye"></i>
                                                         </button>
-                                                        <button type="button" class="btn btn-sm btn-outline-warning" 
-                                                                onclick="enDesarrollo()"
+                                                        <a href="mailto:<?= $empleado['correo'] ?? '' ?>?subject=Sobre tu inasistencia" 
+                                                                class="btn btn-sm btn-outline-warning" 
                                                                 data-bs-toggle="tooltip" data-bs-placement="top" title="Contactar">
                                                             <i class="bi bi-chat"></i>
-                                                        </button>
+                                                        </a>
                                                         <a href="<?= site_url('admin-th/inasistencias/reporte-empleado/' . ($empleado['empleado_id'] ?? 0)) ?>" 
                                                            target="_blank"
                                                            class="btn btn-sm btn-outline-danger" 
@@ -527,76 +527,62 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Preparar variables desde PHP (Req 4)
-    const labelsDeptos = <?= json_encode($graficos['departamentos']['labels'] ?? ['Sin Datos']) ?>;
-    const valoresDeptos = <?= json_encode($graficos['departamentos']['valores'] ?? [1]) ?>;
-    
-    const labelsTendencia = <?= json_encode($graficos['tendencia']['labels'] ?? []) ?>;
-    const valoresTendencia = <?= json_encode($graficos['tendencia']['valores'] ?? []) ?>;
+    const botonesVerPerfil = document.querySelectorAll('.btn-ver-perfil');
 
-    // Gráfico por departamentos
-    const canvasDeptos = document.getElementById('graficoDepartamentos');
-    if (canvasDeptos) {
-        const ctxDepartamentos = canvasDeptos.getContext('2d');
-        new Chart(ctxDepartamentos, {
-            type: 'doughnut',
-            data: {
-                labels: labelsDeptos,
-                datasets: [{
-                    data: valoresDeptos,
-                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d', '#17a2b8', '#e83e8c', '#6f42c1'],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' }
-                }
+    // Fetch Estadísticas Dinámicamente para Charts
+    fetch('<?= site_url("admin-th/inasistencias/estadisticas-globales") ?>')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                renderCharts(data.departamentos, data.tendencia);
             }
-        });
+        })
+        .catch(err => console.error("Error loading charts:", err));
+
+    function renderCharts(deptosData, tendenciaData) {
+        // Gráfico por departamentos
+        const canvasDeptos = document.getElementById('graficoDepartamentos');
+        if (canvasDeptos) {
+            new Chart(canvasDeptos.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: deptosData.labels,
+                    datasets: [{
+                        data: deptosData.valores,
+                        backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d', '#17a2b8', '#e83e8c', '#6f42c1'],
+                        borderWidth: 2, borderColor: '#fff'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        // Gráfico de tendencia
+        const canvasTendencia = document.getElementById('graficoTendencia');
+        if (canvasTendencia) {
+            new Chart(canvasTendencia.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: tendenciaData.labels,
+                    datasets: [{
+                        label: 'Inasistencias por Día',
+                        data: tendenciaData.valores,
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        tension: 0.4, fill: true
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            });
+        }
     }
 
-    // Gráfico de tendencia
-    const canvasTendencia = document.getElementById('graficoTendencia');
-    if (canvasTendencia) {
-        const ctxTendencia = canvasTendencia.getContext('2d');
-        new Chart(ctxTendencia, {
-            type: 'line',
-            data: {
-                labels: labelsTendencia,
-                datasets: [{
-                    label: 'Inasistencias por Día',
-                    data: valoresTendencia,
-                    borderColor: '#007bff',
-                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1 }
-                    }
-                }
-            }
-        });
-    }
-
-    // Inicializar Tooltips (Req 2)
+    // Inicializar Tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
       return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
-    // Lógica AJAX para Ver Perfil de Empleado
-    const botonesVerPerfil = document.querySelectorAll('.btn-ver-perfil');
     botonesVerPerfil.forEach(btn => {
         btn.addEventListener('click', function() {
             const empleadoId = this.getAttribute('data-id');

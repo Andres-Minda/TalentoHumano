@@ -1,0 +1,208 @@
+﻿    /**
+     * ==========================================
+     * GESTIÓN DE INASISTENCIAS (MÓDULO ADMINTH)
+     * ==========================================
+     */
+
+    public function inasistencias()
+    {
+        \ = \Config\Database::connect();
+
+        // Obtener datos globales para las tarjetas
+        \ = \->table('inasistencias')->countAllResults();
+        \ = \->table('inasistencias')->where('justificada', 0)->countAllResults();
+        \ = \->table('inasistencias')->where('tipo_inasistencia', 'Injustificada')->countAllResults();
+        \ = \ > 0 ? round(((\ - \) / \) * 100) : 0;
+
+        // Inasistencias Recientes (últimas 5)
+        \ = \->table('inasistencias i')->select('i.*, e.nombres, e.apellidos, e.tipo_empleado, e.departamento')->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')->orderBy('i.fecha_inasistencia', 'DESC')->limit(5);
+        \ = [];
+        foreach (\->get()->getResultArray() as \) {
+            \[] = [
+                'id' => \['id'],
+                'empleado_nombre' => \['nombres'] . ' ' . \['apellidos'],
+                'empleado_tipo' => \['tipo_empleado'],
+                'fecha' => \['fecha_inasistencia'],
+                'tipo_nombre' => \['tipo_inasistencia'],
+                'estado' => (\['justificada'] == 1) ? 'JUSTIFICADA' : 'PENDIENTE',
+                'departamento' => \['departamento']
+            ];
+        }
+
+        // Empleados críticos (con más faltas)
+        \ = \->table('inasistencias i')
+            ->select('e.id_empleado, e.nombres, e.apellidos, e.tipo_empleado, e.departamento, COUNT(i.id) as total_inasistencias, SUM(CASE WHEN i.justificada = 1 THEN 1 ELSE 0 END) as justificadas, SUM(CASE WHEN i.justificada = 0 THEN 1 ELSE 0 END) as sin_justificar')
+            ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+            ->groupBy('e.id_empleado')
+            ->orderBy('total_inasistencias', 'DESC')
+            ->limit(5);
+        \ = [];
+        foreach (\->get()->getResultArray() as \) {
+             \[] = [
+                 'empleado_id' => \['id_empleado'],
+                 'nombre' => \['nombres'] . ' ' . \['apellidos'],
+                 'tipo' => \['tipo_empleado'],
+                 'departamento' => \['departamento'],
+                 'total_inasistencias' => \['total_inasistencias'],
+                 'justificadas' => \['justificadas'],
+                 'sin_justificar' => \['sin_justificar']
+             ];
+        }
+
+        \ = [
+            'titulo' => 'Dashboard Inasistencias',
+            'estadisticas' => [
+                'total' => \,
+                'tendencia_total' => 5, // mock data
+                'pendientes' => \,
+                'sin_justificar' => \,
+                'tasa_justificacion' => \
+            ],
+            'alertas' => [],
+            'inasistencias_recientes' => \,
+            'empleados_criticos' => \,
+            'graficos' => ['departamentos' => ['labels'=>[], 'valores'=>[]], 'tendencia'=>['labels'=>[], 'valores'=>[]]]
+        ];
+
+        return view('Roles/AdminTH/inasistencias/dashboard', \);
+    }
+
+    public function getEstadisticasGlobalesInasistencias()
+    {
+        try {
+            \ = \Config\Database::connect();
+            
+            // Inasistencias por Departamento
+            \ = \->table('inasistencias i')
+                ->select('e.departamento, COUNT(i.id) as cantidad')
+                ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+                ->groupBy('e.departamento')
+                ->get()->getResultArray();
+                
+            \ = []; \ = [];
+            foreach (\ as \) {
+                \[] = \['departamento'] ?? 'N/A';
+                \[] = (int)\['cantidad'];
+            }
+
+            // Tendencia diaria
+            \ = \->table('inasistencias')
+                ->select('fecha_inasistencia, COUNT(id) as cantidad')
+                ->groupBy('fecha_inasistencia')
+                ->orderBy('fecha_inasistencia', 'ASC')
+                ->limit(7)
+                ->get()->getResultArray();
+            \ = []; \ = [];
+            foreach (\ as \) {
+                \[] = date('d/m', strtotime(\['fecha_inasistencia']));
+                \[] = (int)\['cantidad'];
+            }
+
+            return \->response->setJSON([
+                'success' => true,
+                'departamentos' => ['labels' => \, 'valores' => \],
+                'tendencia' => ['labels' => \, 'valores' => \]
+            ]);
+        } catch (\Exception \) {
+            return \->response->setJSON(['success' => false, 'message' => \->getMessage()]);
+        }
+    }
+
+    public function detalles(\)
+    {
+        try {
+            \ = \Config\Database::connect();
+            \ = \->table('inasistencias i')
+                ->select('i.*, e.nombres, e.apellidos')
+                ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+                ->where('i.id', \)
+                ->get()->getRowArray();
+
+            if (!\) {
+                return \->response->setJSON(['success' => false, 'message' => 'Inasistencia no encontrada.']);
+            }
+            return \->response->setJSON(['success' => true, 'inasistencia' => \]);
+        } catch (\Exception \) {
+            return \->response->setJSON(['success' => false, 'message' => \->getMessage()]);
+        }
+    }
+
+    public function eliminar(\)
+    {
+        try {
+            \->inasistenciaModel->delete(\);
+            return \->response->setJSON(['success' => true, 'message' => 'Eliminado']);
+        } catch (\Exception \) {
+            return \->response->setJSON(['success' => false, 'message' => \->getMessage()]);
+        }
+    }
+
+    public function listarInasistencias()
+    {
+        \ = \Config\Database::connect();
+        \ = \->table('inasistencias i')
+            ->select('i.*, e.nombres, e.apellidos, e.tipo_empleado, e.departamento')
+            ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+            ->orderBy('i.fecha_inasistencia', 'DESC')
+            ->get()->getResultArray();
+        return view('Roles/AdminTH/inasistencias/index', ['inasistencias' => \]);
+    }
+
+    public function editarInasistencia(\)
+    {
+        \ = \Config\Database::connect();
+        \ = \->table('inasistencias i')
+            ->select('i.*, e.nombres, e.apellidos')
+            ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+            ->where('i.id', \)->get()->getRowArray();
+        return view('Roles/AdminTH/inasistencias/editar', ['inasistencia' => \]);
+    }
+
+    public function actualizarInasistencia(\ = null)
+    {
+        if (!\) {
+            \ = \->request->getPost('id');
+        }
+        \ = [
+            'justificada' => \->request->getPost('justificada') ? 1 : 0,
+            'tipo_inasistencia' => \->request->getPost('tipo_inasistencia'),
+            'motivo' => \->request->getPost('motivo')
+        ];
+        if (\->inasistenciaModel->update(\, \)) {
+            return redirect()->to('/admin-th/inasistencias/listar')->with('success', 'Inasistencia actualizada.');
+        }
+        return redirect()->back()->with('error', 'Error al actualizar.');
+    }
+
+    public function obtenerPerfilEmpleado(\)
+    {
+        try {
+            \ = \Config\Database::connect();
+            \ = \->table('empleados e')
+                ->select('e.*, u.email as correo, u.cedula')
+                ->join('usuarios u', 'u.id_usuario = e.id_usuario', 'left')
+                ->where('e.id_empleado', \)
+                ->get()->getRowArray();
+            if (\) {
+                return \->response->setJSON([
+                    'success' => true,
+                    'nombre_completo' => \['nombres'] . ' ' . \['apellidos'],
+                    'tipo_empleado' => \['tipo_empleado'],
+                    'cedula' => \['cedula'],
+                    'departamento' => \['departamento'],
+                    'correo' => \['correo'],
+                    'telefono' => \['telefono'],
+                    'fecha_contratacion' => \['fecha_ingreso']
+                ]);
+            }
+            return \->response->setJSON(['success' => false, 'message' => 'No encontrado']);
+        } catch (\Exception \) {
+            return \->response->setJSON(['success' => false, 'message' => \->getMessage()]);
+        }
+    }
+
+    public function reporteEmpleado(\)
+    {
+        return view('Roles/AdminTH/inasistencias/reporte_empleado', ['id_empleado' => \]);
+    }
+}

@@ -7,14 +7,15 @@ use CodeIgniter\Model;
 class TituloAcademicoModel extends Model
 {
     protected $table            = 'titulos_academicos';
-    protected $primaryKey       = 'id_titulo_academico';
+    protected $primaryKey       = 'id';           // PK real en BD: 'id'
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'empleado_id', 'universidad', 'tipo_titulo', 'nombre_titulo', 
-        'fecha_obtencion', 'pais', 'archivo_titulo', 'observaciones', 'creado_por'
+        // Columnas reales verificadas con DESCRIBE
+        'empleado_id', 'universidad', 'tipo_titulo', 'nombre_titulo',
+        'fecha_obtencion', 'pais', 'archivo_certificado',
     ];
 
     // Dates
@@ -25,13 +26,13 @@ class TituloAcademicoModel extends Model
 
     // Validation
     protected $validationRules      = [
-        'empleado_id' => 'required|integer|greater_than[0]',
-        'universidad' => 'required|min_length[2]|max_length[255]',
-        'tipo_titulo' => 'required|in_list[Tercer Nivel,Cuarto Nivel,Ph.D.,Doctorado,Maestría,Especialización,Otro]',
-        'nombre_titulo' => 'required|min_length[5]|max_length[255]',
-        'fecha_obtencion' => 'required|valid_date',
-        'pais' => 'permit_empty|min_length[2]|max_length[100]',
-        'observaciones' => 'permit_empty|max_length[1000]'
+        'empleado_id'    => 'required|integer|greater_than[0]',
+        'universidad'    => 'required|min_length[2]|max_length[255]',
+        // ENUM real: BACHILLER, LICENCIADO, INGENIERO, MASTER, DOCTOR, POSTDOCTOR
+        'tipo_titulo'    => 'required|in_list[BACHILLER,LICENCIADO,INGENIERO,MASTER,DOCTOR,POSTDOCTOR]',
+        'nombre_titulo'  => 'required|min_length[3]|max_length[255]',
+        'fecha_obtencion'=> 'required|valid_date',
+        'pais'           => 'required|min_length[2]|max_length[100]',
     ];
     protected $validationMessages   = [
         'empleado_id' => [
@@ -75,10 +76,18 @@ class TituloAcademicoModel extends Model
 
     protected function setCreadoPor(array $data)
     {
-        if (isset($data['data']['creado_por'])) {
-            $data['data']['creado_por'] = session()->get('id_usuario') ?? 1;
-        }
+        // creado_por no existe en la tabla real — callback sin efecto
         return $data;
+    }
+
+    /**
+     * Obtener títulos del empleado por su id_empleado (usa PK real 'id')
+     */
+    public function getTitulosPorEmpleadoReal(int $idEmpleado): array
+    {
+        return $this->where('empleado_id', $idEmpleado)
+                    ->orderBy('fecha_obtencion', 'DESC')
+                    ->findAll();
     }
 
     /**

@@ -1,0 +1,571 @@
+MODELO DE BASE DE DATOS: talent_human_db
+========================================
+
+TABLA: asistencias
+------------------
+- id_asistencia (int(11) NOT NULL)
+- id_empleado (int(11) NOT NULL)
+- fecha (date NOT NULL)
+- hora_entrada (time DEFAULT NULL)
+- hora_salida (time DEFAULT NULL)
+- tipo (varchar(20) DEFAULT NULL CHECK (`tipo` in ('Normal','Vacaciones','Licencia','Permiso')))
+- estado (varchar(20) DEFAULT NULL CHECK (`estado` in ('Puntual','Tardanza','Ausente','Justificado','Injustificado')))
+- tipo_inasistencia (enum('Justificada','Injustificada','Permiso','Vacaciones','Licencia Médica') DEFAULT NULL)
+- observaciones (text DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- horas_trabajadas (decimal(4,2) DEFAULT NULL)
+
+TABLA: candidatos
+-----------------
+- id_candidato (int(11) NOT NULL)
+- nombres (varchar(100) NOT NULL)
+- apellidos (varchar(100) NOT NULL)
+- cedula (varchar(20) NOT NULL)
+- email (varchar(100) NOT NULL)
+- telefono (varchar(20) DEFAULT NULL)
+- cv_url (varchar(255) DEFAULT NULL)
+- estado (varchar(20) NOT NULL CHECK (`estado` in ('En revisión','Entrevista','Contratado','Rechazado')))
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+TABLA: capacitaciones
+---------------------
+- id_capacitacion (int(11) NOT NULL)
+- nombre (varchar(100) NOT NULL)
+- descripcion (text DEFAULT NULL)
+- tipo (varchar(50) DEFAULT NULL)
+- fecha_inicio (date NOT NULL)
+- fecha_fin (date DEFAULT NULL)
+- costo (decimal(10,2) DEFAULT NULL)
+- proveedor (varchar(100) DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- estado (enum('Planificada','En curso','Completada','Cancelada') DEFAULT 'Planificada')
+- cupo_maximo (int(11) DEFAULT 20)
+- periodo_academico_id (int(11) DEFAULT NULL)
+
+Relaciones:
+-> periodo_academico_id referencia a periodos_academicos (id_periodo)
+
+TABLA: capacitaciones_disponibles
+---------------------------------
+- id (int(11) NOT NULL)
+- titulo (varchar(255) NOT NULL)
+- descripcion (text DEFAULT NULL)
+- institucion (varchar(255) NOT NULL)
+- tipo_capacitacion (enum('CURSO','DIPLOMADO','CERTIFICACION','CONFERENCIA','SEMINARIO','WORKSHOP') NOT NULL)
+- fecha_inicio (date NOT NULL)
+- fecha_fin (date NOT NULL)
+- horas_totales (int(11) NOT NULL)
+- costo (decimal(10,2) DEFAULT NULL)
+- cupos_disponibles (int(11) DEFAULT 0)
+- estado (enum('ACTIVA','INACTIVA','COMPLETADA') DEFAULT 'ACTIVA')
+- requisitos (text DEFAULT NULL)
+- beneficios (text DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- updated_at (timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp())
+
+TABLA: capacitaciones_empleados
+-------------------------------
+- id (int(11) NOT NULL)
+- empleado_id (int(11) NOT NULL)
+- nombre_capacitacion (varchar(255) NOT NULL)
+- institucion (varchar(255) NOT NULL)
+- tipo_capacitacion (enum('CURSO','DIPLOMADO','CERTIFICACION','CONFERENCIA','SEMINARIO','WORKSHOP') NOT NULL)
+- fecha_inicio (date NOT NULL)
+- fecha_fin (date NOT NULL)
+- horas_totales (int(11) NOT NULL)
+- costo (decimal(10,2) DEFAULT NULL)
+- estado (enum('EN_PROGRESO','COMPLETADA','CANCELADA') DEFAULT 'EN_PROGRESO')
+- certificado_url (varchar(255) DEFAULT NULL)
+- observaciones (text DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- updated_at (timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp())
+
+Relaciones:
+-> empleado_id referencia a empleados (id_empleado)
+
+TABLA: categorias
+-----------------
+- id_categoria (int(11) NOT NULL)
+- nombre (varchar(100) NOT NULL)
+- descripcion (text DEFAULT NULL)
+- activo (tinyint(1) DEFAULT 1)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+TABLA: categorias_evaluacion
+----------------------------
+- id (int(11) NOT NULL)
+- nombre (varchar(100) NOT NULL)
+- descripcion (text DEFAULT NULL)
+- peso (decimal(3,2) DEFAULT 1.00)
+- activa (tinyint(1) DEFAULT 1)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- updated_at (timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp())
+
+TABLA: certificados
+-------------------
+- id_certificado (int(11) NOT NULL)
+- id_empleado (int(11) DEFAULT NULL)
+- id_capacitacion (int(11) DEFAULT NULL)
+- titulo (varchar(200) NOT NULL)
+- institucion (varchar(200) DEFAULT NULL)
+- fecha_emision (date DEFAULT NULL)
+- fecha_vencimiento (date DEFAULT NULL)
+- url_certificado (varchar(255) DEFAULT NULL)
+- estado (enum('Vigente','Vencido','Próximo a vencer') DEFAULT 'Vigente')
+- activo (tinyint(1) DEFAULT 1)
+
+Relaciones:
+-> id_empleado referencia a empleados (id_empleado)
+
+TABLA: competencias
+-------------------
+- id_competencia (int(11) NOT NULL)
+- nombre (varchar(100) NOT NULL)
+- descripcion (text DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+TABLA: contratos
+----------------
+- id_contrato (int(11) NOT NULL)
+- id_empleado (int(11) NOT NULL)
+- id_puesto (int(11) NOT NULL)
+- tipo_contrato (varchar(50) NOT NULL)
+- fecha_inicio (date NOT NULL)
+- fecha_fin (date DEFAULT NULL)
+- salario (decimal(10,2) NOT NULL)
+- horas_semanales (int(11) DEFAULT NULL)
+- archivo_url (varchar(255) DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+Relaciones:
+-> id_empleado referencia a empleados (id_empleado)
+
+TABLA: departamentos
+--------------------
+- id_departamento (int(11) NOT NULL)
+- nombre (varchar(100) NOT NULL)
+- descripcion (text DEFAULT NULL)
+- id_jefe (int(11) DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- responsable (varchar(100) DEFAULT NULL)
+- email_contacto (varchar(100) DEFAULT NULL)
+- telefono (varchar(20) DEFAULT NULL)
+- ubicacion (varchar(200) DEFAULT NULL)
+- estado (enum('Activo','Inactivo','Suspendido') DEFAULT 'Activo')
+- activo (tinyint(1) DEFAULT 1)
+- updated_at (timestamp NULL DEFAULT NULL ON UPDATE current_timestamp())
+
+Relaciones:
+-> id_jefe referencia a empleados (id_empleado)
+
+TABLA: detalles_evaluacion
+--------------------------
+- id_detalle_evaluacion (int(11) NOT NULL)
+- id_evaluacion_empleado (int(11) NOT NULL)
+- id_competencia (int(11) NOT NULL)
+- puntaje (decimal(5,2) NOT NULL)
+- comentarios (text DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+Relaciones:
+-> id_evaluacion_empleado referencia a evaluaciones_empleados (id_evaluacion_empleado)
+
+TABLA: detalles_nomina
+----------------------
+- id_detalle (int(11) NOT NULL)
+- id_nomina (int(11) NOT NULL)
+- id_empleado (int(11) NOT NULL)
+- salario_base (decimal(10,2) NOT NULL)
+- horas_extras (decimal(10,2) DEFAULT 0.00)
+- valor_horas_extras (decimal(10,2) DEFAULT 0.00)
+- bonos (decimal(10,2) DEFAULT 0.00)
+- comisiones (decimal(10,2) DEFAULT 0.00)
+- otros_ingresos (decimal(10,2) DEFAULT 0.00)
+- salud (decimal(10,2) DEFAULT 0.00)
+- pension (decimal(10,2) DEFAULT 0.00)
+- prestamos (decimal(10,2) DEFAULT 0.00)
+- otros_descuentos (decimal(10,2) DEFAULT 0.00)
+- neto_pagar (decimal(10,2) NOT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+Relaciones:
+-> id_nomina referencia a nominas (id_nomina)
+
+TABLA: documentos
+-----------------
+- id_documento (int(11) NOT NULL)
+- id_empleado (int(11) NOT NULL)
+- tipo_documento (varchar(50) NOT NULL)
+- nombre (varchar(100) NOT NULL)
+- descripcion (text DEFAULT NULL)
+- archivo_url (varchar(255) NOT NULL)
+- fecha_emision (date DEFAULT NULL)
+- fecha_vencimiento (date DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+Relaciones:
+-> id_empleado referencia a empleados (id_empleado)
+
+TABLA: empleados
+----------------
+- id_empleado (int(11) NOT NULL)
+- id_usuario (int(11) NOT NULL)
+- tipo_empleado (varchar(20) NOT NULL)
+- tipo_docente (enum('Tiempo completo','Medio tiempo','Tiempo parcial') DEFAULT NULL)
+- departamento (varchar(255) DEFAULT NULL)
+- nombres (varchar(100) NOT NULL)
+- apellidos (varchar(100) NOT NULL)
+- fecha_nacimiento (date NOT NULL)
+- genero (varchar(15) DEFAULT NULL)
+- estado_civil (varchar(20) DEFAULT NULL)
+- direccion (text DEFAULT NULL)
+- telefono (varchar(20) DEFAULT NULL)
+- fecha_ingreso (date NOT NULL)
+- activo (tinyint(1) DEFAULT 1)
+- foto_url (varchar(255) DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- updated_at (timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp())
+- id_departamento (int(11) DEFAULT NULL)
+- id_puesto (int(11) DEFAULT NULL)
+- salario (decimal(10,2) DEFAULT NULL)
+- estado (enum('Activo','Inactivo','Vacaciones','Licencia') DEFAULT 'Activo')
+- periodo_academico_id (int(11) DEFAULT NULL)
+
+Relaciones:
+-> id_usuario referencia a usuarios (id_usuario)
+
+TABLA: empleados_capacitaciones
+-------------------------------
+- id_empleado_capacitacion (int(11) NOT NULL)
+- id_capacitacion (int(11) NOT NULL)
+- id_empleado (int(11) NOT NULL)
+- asistio (tinyint(1) DEFAULT 0)
+- aprobo (tinyint(1) DEFAULT 0)
+- certificado_url (varchar(255) DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+Relaciones:
+-> id_capacitacion referencia a capacitaciones (id_capacitacion)
+
+TABLA: empleados_competencias
+-----------------------------
+- id_empleado_competencia (int(11) NOT NULL)
+- id_empleado (int(11) DEFAULT NULL)
+- id_competencia (int(11) DEFAULT NULL)
+- nivel_actual (enum('Básico','Intermedio','Avanzado','Experto') DEFAULT 'Básico')
+- fecha_evaluacion (date DEFAULT NULL)
+- comentarios (text DEFAULT NULL)
+
+Relaciones:
+-> id_empleado referencia a empleados (id_empleado)
+
+TABLA: evaluaciones
+-------------------
+- id_evaluacion (int(11) NOT NULL)
+- nombre (varchar(100) NOT NULL)
+- descripcion (text DEFAULT NULL)
+- fecha_inicio (date NOT NULL)
+- fecha_fin (date NOT NULL)
+- estado (varchar(20) NOT NULL CHECK (`estado` in ('Planificada','En curso','Finalizada')))
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+TABLA: evaluaciones_empleados
+-----------------------------
+- id_evaluacion_empleado (int(11) NOT NULL)
+- id_evaluacion (int(11) NOT NULL)
+- id_empleado (int(11) NOT NULL)
+- id_evaluador (int(11) NOT NULL)
+- fecha_evaluacion (date NOT NULL)
+- puntaje_total (decimal(5,2) DEFAULT NULL)
+- observaciones (text DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+Relaciones:
+-> id_evaluacion referencia a evaluaciones (id_evaluacion)
+
+TABLA: historial_laboral
+------------------------
+- id_historial (int(11) NOT NULL)
+- id_empleado (int(11) NOT NULL)
+- id_puesto_anterior (int(11) DEFAULT NULL)
+- id_puesto_nuevo (int(11) NOT NULL)
+- tipo_cambio (varchar(50) NOT NULL)
+- fecha_cambio (date NOT NULL)
+- motivo (text DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+Relaciones:
+-> id_empleado referencia a empleados (id_empleado)
+
+TABLA: inasistencias
+--------------------
+- id (int(11) NOT NULL)
+- empleado_id (int(11) NOT NULL)
+- fecha_inasistencia (date NOT NULL)
+- hora_inasistencia (time DEFAULT NULL)
+- motivo (text NOT NULL)
+- justificada (tinyint(1) DEFAULT 0)
+- tipo_inasistencia (enum('Justificada','Injustificada','Permiso','Vacaciones','Licencia Médica') DEFAULT NULL)
+- archivo_justificacion (varchar(255) DEFAULT NULL)
+- registrado_por (int(11) NOT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- updated_at (timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp())
+
+Relaciones:
+-> empleado_id referencia a empleados (id_empleado)
+
+TABLA: migrations
+-----------------
+- id (bigint(20) UNSIGNED NOT NULL)
+- version (varchar(255) NOT NULL)
+- class (varchar(255) NOT NULL)
+- group (varchar(255) NOT NULL)
+- namespace (varchar(255) NOT NULL)
+- time (int(11) NOT NULL)
+- batch (int(11) UNSIGNED NOT NULL)
+
+TABLA: nominas
+--------------
+- id_nomina (int(11) NOT NULL)
+- periodo (varchar(20) NOT NULL)
+- fecha_generacion (date NOT NULL)
+- fecha_pago (date NOT NULL)
+- estado (varchar(20) NOT NULL CHECK (`estado` in ('Generada','Pagada','Anulada')))
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+TABLA: periodos_academicos
+--------------------------
+- id_periodo (int(11) NOT NULL)
+- nombre (varchar(100) NOT NULL)
+- fecha_inicio (date NOT NULL)
+- fecha_fin (date NOT NULL)
+- estado (enum('Activo','Inactivo','Cerrado') DEFAULT 'Inactivo')
+- descripcion (text DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+TABLA: permisos
+---------------
+- id_permiso (int(11) NOT NULL)
+- id_empleado (int(11) NOT NULL)
+- tipo_permiso (varchar(50) NOT NULL)
+- fecha_inicio (date NOT NULL)
+- fecha_fin (date NOT NULL)
+- dias (int(11) NOT NULL)
+- estado (varchar(20) NOT NULL CHECK (`estado` in ('Solicitado','Aprobado','Rechazado')))
+- motivo (text DEFAULT NULL)
+- archivo_url (varchar(255) DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+Relaciones:
+-> id_empleado referencia a empleados (id_empleado)
+
+TABLA: politicas_inasistencia
+-----------------------------
+- id_politica (int(11) UNSIGNED NOT NULL)
+- nombre_politica (varchar(200) NOT NULL)
+- descripcion (text DEFAULT NULL)
+- max_inasistencias_mes (int(11) NOT NULL DEFAULT 3)
+- max_inasistencias_trimestre (int(11) NOT NULL DEFAULT 9)
+- max_inasistencias_anio (int(11) NOT NULL DEFAULT 36)
+- requiere_accion_disciplinaria (tinyint(1) NOT NULL DEFAULT 0)
+- activo (tinyint(1) NOT NULL DEFAULT 1)
+- created_at (datetime NOT NULL)
+- updated_at (datetime NOT NULL)
+
+TABLA: postulaciones
+--------------------
+- id_postulacion (int(11) NOT NULL)
+- id_vacante (int(11) NOT NULL)
+- id_candidato (int(11) NOT NULL)
+- fecha_postulacion (date NOT NULL)
+- puntaje_prueba (decimal(5,2) DEFAULT NULL)
+- observaciones (text DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+Relaciones:
+-> id_vacante referencia a vacantes (id_vacante)
+
+TABLA: postulantes
+------------------
+- id_postulante (int(11) NOT NULL)
+- id_usuario (int(11) NOT NULL)
+- id_puesto (int(11) NOT NULL)
+- nombres (varchar(100) NOT NULL)
+- apellidos (varchar(100) NOT NULL)
+- cedula (varchar(10) NOT NULL)
+- email (varchar(100) NOT NULL)
+- telefono (varchar(15) NOT NULL)
+- fecha_nacimiento (date NOT NULL)
+- genero (enum('Masculino','Femenino','No especificado') NOT NULL)
+- estado_civil (enum('Soltero','Casado','Divorciado','Viudo','Unión libre') NOT NULL)
+- direccion (varchar(200) NOT NULL)
+- ciudad (varchar(100) NOT NULL)
+- provincia (varchar(100) NOT NULL)
+- codigo_postal (varchar(10) DEFAULT NULL)
+- nacionalidad (varchar(100) NOT NULL)
+- estado_postulacion (enum('Pendiente','En revisión','Aprobada','Rechazada','Contratado') DEFAULT 'Pendiente')
+- fecha_postulacion (date NOT NULL)
+- cv_path (varchar(500) DEFAULT NULL)
+- carta_motivacion (text DEFAULT NULL)
+- experiencia_laboral (text DEFAULT NULL)
+- educacion (text DEFAULT NULL)
+- habilidades (text DEFAULT NULL)
+- idiomas (text DEFAULT NULL)
+- certificaciones (text DEFAULT NULL)
+- referencias (text DEFAULT NULL)
+- disponibilidad_inmediata (enum('Sí','No','En 2 semanas','En 1 mes') NOT NULL)
+- expectativa_salarial (decimal(10,2) DEFAULT NULL)
+- notas_admin (text DEFAULT NULL)
+- activo (tinyint(1) DEFAULT 1)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- updated_at (timestamp NULL DEFAULT NULL ON UPDATE current_timestamp())
+
+Relaciones:
+-> id_puesto referencia a puestos (id_puesto)
+
+TABLA: preguntas_evaluacion
+---------------------------
+- id (int(11) NOT NULL)
+- categoria_id (int(11) NOT NULL)
+- pregunta (text NOT NULL)
+- tipo_pregunta (enum('OPCION_MULTIPLE','ESCALA_LIKERT','TEXTO_LIBRE','VERDADERO_FALSO') NOT NULL)
+- opciones (longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`opciones`)))
+- peso (decimal(3,2) DEFAULT 1.00)
+- activa (tinyint(1) DEFAULT 1)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- updated_at (timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp())
+
+Relaciones:
+-> categoria_id referencia a categorias_evaluacion (id)
+
+TABLA: puestos
+--------------
+- id_puesto (int(11) NOT NULL)
+- nombre (varchar(100) NOT NULL)
+- descripcion (text DEFAULT NULL)
+- salario_base (decimal(10,2) NOT NULL)
+- id_departamento (int(11) DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- salario_min (decimal(10,2) DEFAULT 0.00)
+- salario_max (decimal(10,2) DEFAULT 0.00)
+- titulo (varchar(200) NOT NULL)
+- tipo_contrato (enum('Tiempo Completo','Tiempo Parcial','Contrato Fijo','Contrato Indefinido','Por Proyecto','Prácticas') DEFAULT NULL)
+- experiencia_requerida (text DEFAULT NULL)
+- educacion_requerida (text DEFAULT NULL)
+- habilidades_requeridas (text DEFAULT NULL)
+- responsabilidades (text DEFAULT NULL)
+- beneficios (text DEFAULT NULL)
+- estado (enum('Abierto','Cerrado','En Revisión','Pausado') DEFAULT 'Abierto')
+- activo (tinyint(1) DEFAULT 1)
+- url_postulacion (varchar(500) DEFAULT NULL)
+- fecha_limite (date DEFAULT NULL)
+- vacantes_disponibles (int(11) DEFAULT 1)
+- nivel_experiencia (enum('Sin Experiencia','Junior (1-2 años)','Semi-Senior (3-5 años)','Senior (5+ años)','Experto (8+ años)') DEFAULT NULL)
+- modalidad_trabajo (enum('Presencial','Remoto','Híbrido') DEFAULT 'Presencial')
+- ubicacion_trabajo (varchar(200) DEFAULT NULL)
+- updated_at (timestamp NULL DEFAULT NULL ON UPDATE current_timestamp())
+
+Relaciones:
+-> id_departamento referencia a departamentos (id_departamento)
+
+TABLA: roles
+------------
+- id_rol (int(11) NOT NULL)
+- nombre_rol (varchar(50) NOT NULL)
+- descripcion (text DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+
+TABLA: solicitudes
+------------------
+- id_solicitud (int(11) NOT NULL)
+- id_empleado (int(11) DEFAULT NULL)
+- tipo_solicitud (enum('Permiso','Capacitación','Beneficio','Cambio de horario','Otro') DEFAULT 'Otro')
+- titulo (varchar(200) NOT NULL)
+- descripcion (text NOT NULL)
+- fecha_solicitud (timestamp NOT NULL DEFAULT current_timestamp())
+- fecha_resolucion (timestamp NULL DEFAULT NULL)
+- estado (enum('Pendiente','En revisión','Aprobada','Rechazada','Cancelada') DEFAULT 'Pendiente')
+- resuelto_por (int(11) DEFAULT NULL)
+- comentarios_resolucion (text DEFAULT NULL)
+- activo (tinyint(1) DEFAULT 1)
+
+Relaciones:
+-> id_empleado referencia a empleados (id_empleado)
+
+TABLA: solicitudes_generales
+----------------------------
+- id (int(11) NOT NULL)
+- empleado_id (int(11) NOT NULL)
+- tipo_solicitud (enum('SOLICITUD_INFORMACION','SOLICITUD_DOCUMENTO','SOLICITUD_CAMBIO','SOLICITUD_APOYO','OTRO') NOT NULL)
+- titulo (varchar(255) NOT NULL)
+- descripcion (text NOT NULL)
+- estado (enum('PENDIENTE','EN_REVISION','APROBADA','RECHAZADA','COMPLETADA') DEFAULT 'PENDIENTE')
+- fecha_solicitud (timestamp NOT NULL DEFAULT current_timestamp())
+- respuesta_admin (text DEFAULT NULL)
+- respondido_por (int(11) DEFAULT NULL)
+- fecha_respuesta (timestamp NULL DEFAULT NULL)
+- prioridad (enum('BAJA','MEDIA','ALTA','URGENTE') DEFAULT 'MEDIA')
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- updated_at (timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp())
+
+Relaciones:
+-> empleado_id referencia a empleados (id_empleado)
+
+TABLA: tipos_inasistencia
+-------------------------
+- id_tipo (int(11) UNSIGNED NOT NULL)
+- nombre_tipo (varchar(100) NOT NULL)
+- descripcion (text DEFAULT NULL)
+- requiere_justificacion (tinyint(1) NOT NULL DEFAULT 0)
+- activo (tinyint(1) NOT NULL DEFAULT 1)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp())
+
+TABLA: titulos_academicos
+-------------------------
+- id (int(11) NOT NULL)
+- empleado_id (int(11) NOT NULL)
+- universidad (varchar(255) NOT NULL)
+- tipo_titulo (enum('BACHILLER','LICENCIADO','INGENIERO','MASTER','DOCTOR','POSTDOCTOR') NOT NULL)
+- nombre_titulo (varchar(255) NOT NULL)
+- fecha_obtencion (date NOT NULL)
+- pais (varchar(100) NOT NULL)
+- archivo_certificado (varchar(255) DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- updated_at (timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp())
+
+Relaciones:
+-> empleado_id referencia a empleados (id_empleado)
+
+TABLA: usuarios
+---------------
+- id_usuario (int(11) NOT NULL)
+- cedula (varchar(20) NOT NULL)
+- email (varchar(100) NOT NULL)
+- password_hash (varchar(255) NOT NULL)
+- id_rol (int(11) NOT NULL)
+- activo (tinyint(1) DEFAULT 1)
+- last_login (timestamp NULL DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- updated_at (timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp())
+- password_changed (tinyint(1) DEFAULT 0 COMMENT '0: contrase±a original, 1: contrase±a cambiada')
+
+Relaciones:
+-> id_rol referencia a roles (id_rol)
+
+TABLA: vacantes
+---------------
+- id_vacante (int(11) NOT NULL)
+- id_puesto (int(11) NOT NULL)
+- fecha_publicacion (date NOT NULL)
+- fecha_cierre (date DEFAULT NULL)
+- estado (varchar(20) NOT NULL CHECK (`estado` in ('Abierta','Cerrada','Cancelada')))
+- descripcion (text DEFAULT NULL)
+- requisitos (text DEFAULT NULL)
+- created_at (timestamp NOT NULL DEFAULT current_timestamp())
+- nombre (varchar(200) DEFAULT NULL)
+- salario_min (decimal(10,2) DEFAULT 0.00)
+- salario_max (decimal(10,2) DEFAULT 0.00)
+
+Relaciones:
+-> id_puesto referencia a puestos (id_puesto)
+

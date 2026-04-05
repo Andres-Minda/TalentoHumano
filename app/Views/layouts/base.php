@@ -61,6 +61,29 @@
     <script src="<?= base_url('sistema/assets/js/sidebarmenu.js') ?>"></script>
     <script src="<?= base_url('sistema/assets/js/app.min.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/iconify-icon@1.0.8/dist/iconify-icon.min.js"></script>
+
+    <!-- Global SweetAlert2 Flash Messages -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            <?php if (session()->getFlashdata('success')) : ?>
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: '<?= esc(session()->getFlashdata('success')) ?>',
+                    confirmButtonColor: '#3085d6'
+                });
+            <?php endif; ?>
+
+            <?php if (session()->getFlashdata('error')) : ?>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: '<?= esc(session()->getFlashdata('error')) ?>',
+                    confirmButtonColor: '#d33'
+                });
+            <?php endif; ?>
+        });
+    </script>
     
     <!-- Scripts específicos de la página -->
     <?= $this->renderSection('scripts') ?>

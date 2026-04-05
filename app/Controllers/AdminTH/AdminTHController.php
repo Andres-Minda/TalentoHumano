@@ -1615,7 +1615,7 @@ class AdminTHController extends Controller
 
         // 2. Top Empleados (Este Mes)
         $topEmpleados = $db->table('inasistencias i')
-            ->select('i.empleado_id, e.nombres, e.apellidos, e.tipo_empleado as tipo, e.departamento, COUNT(i.id) as total_inasistencias, SUM(i.justificada) as justificadas')
+            ->select('i.empleado_id, e.nombres, e.apellidos, e.tipo_empleado as tipo, e.departamento, u.email as correo, COUNT(i.id) as total_inasistencias, SUM(i.justificada) as justificadas')
             ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
             ->like('i.fecha_inasistencia', $mesActual, 'after')
             ->groupBy('i.empleado_id, e.nombres, e.apellidos, e.tipo_empleado, e.departamento')
@@ -4501,6 +4501,53 @@ class AdminTHController extends Controller
         } catch (\Exception $e) {
             log_message('error', 'Error al obtener tokens: ' . $e->getMessage());
             return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+
+    /**
+     * Endpoint API para gráficos de inasistencias en el dashboard AdminTH
+     */
+    public function getEstadisticasGlobalesInasistencias()
+    {
+        try {
+            $db = \Config\Database::connect();
+            
+            // Inasistencias por Departamento
+            $deptos = $db->table('inasistencias i')
+                ->select('e.departamento, COUNT(i.id) as cantidad')
+                ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+                ->groupBy('e.departamento')
+                ->orderBy('cantidad', 'DESC')
+                ->get()->getResultArray();
+                
+            $labelsDeptos = []; $valoresDeptos = [];
+            foreach ($deptos as $d) {
+                $labelsDeptos[] = $d['departamento'] ?? 'N/A';
+                $valoresDeptos[] = (int)$d['cantidad'];
+            }
+
+            // Tendencia diaria
+            $tendencia = $db->table('inasistencias')
+                ->select('fecha_inasistencia, COUNT(id) as cantidad')
+                ->groupBy('fecha_inasistencia')
+                ->orderBy('fecha_inasistencia', 'ASC')
+                ->limit(10)
+                ->get()->getResultArray();
+                
+            $labelsTendencia = []; $valoresTendencia = [];
+            foreach ($tendencia as $t) {
+                $labelsTendencia[] = date('d/m', strtotime($t['fecha_inasistencia']));
+                $valoresTendencia[] = (int)$t['cantidad'];
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'departamentos' => ['labels' => $labelsDeptos, 'valores' => $valoresDeptos],
+                'tendencia' => ['labels' => $labelsTendencia, 'valores' => $valoresTendencia]
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 }

@@ -170,28 +170,85 @@ class EmpleadoController extends Controller
     }
 
     /**
-     * Obtener capacitaciones del empleado (AJAX) - Req 2
+     * Obtener las capacitaciones en las que el empleado está inscrito (AJAX)
+     * Ruta: GET empleado/capacitaciones/obtener
+     *
+     * Estructura real de la BD (verificada con DESCRIBE):
+     *   - empleados_capacitaciones: id_empleado_capacitacion, id_capacitacion, id_empleado,
+     *                               asistio (tinyint, default 0), aprobo (tinyint, default 0),
+     *                               certificado_url, created_at
+     *   - capacitaciones: id_capacitacion, nombre, descripcion, tipo, fecha_inicio, fecha_fin,
+     *                     duracion_horas, modalidad, institucion, estado, ...
      */
     public function obtenerCapacitacionesEmpleado()
     {
         try {
-            $idEmpleado = session()->get('id_empleado');
-            $capModel = new CapacitacionModel();
-            
-            $misCapacitaciones = [];
-            if ($idEmpleado) {
-                $misCapacitaciones = $capModel->getCapacitacionesPorEmpleado($idEmpleado);
+            // Resolver id_empleado desde la BD (session solo guarda id_usuario en el login)
+            $idUsuario = session()->get('id_usuario');
+            if (!$idUsuario) {
+                return $this->response->setJSON(['success' => true, 'capacitaciones' => []]);
             }
 
+            $db = \Config\Database::connect();
+
+            $empleado = $db->table('empleados')
+                           ->where('id_usuario', $idUsuario)
+                           ->get()
+                           ->getRowArray();
+
+            if (!$empleado) {
+                return $this->response->setJSON(['success' => true, 'capacitaciones' => []]);
+            }
+
+            $idEmpleado = $empleado['id_empleado'];
+
+            // JOIN entre la tabla de inscripciones y capacitaciones
+            $inscripciones = $db->table('empleados_capacitaciones ec')
+                ->select([
+                    'c.id_capacitacion',
+                    'c.nombre',
+                    'c.descripcion',
+                    'c.modalidad',
+                    'c.fecha_inicio',
+                    'c.fecha_fin',
+                    'c.duracion_horas',
+                    'c.institucion',
+                    'c.estado AS estado_capacitacion',
+                    'ec.asistio',
+                    'ec.aprobo',
+                    'ec.certificado_url',
+                    'ec.created_at AS fecha_inscripcion',
+                ])
+                ->join('capacitaciones c', 'c.id_capacitacion = ec.id_capacitacion', 'inner')
+                ->where('ec.id_empleado', $idEmpleado)
+                ->orderBy('ec.created_at', 'DESC')
+                ->get()
+                ->getResultArray();
+
+            // Derivar el campo 'estado' para el frontend desde asistio/aprobo
+            // (la tabla EC no tiene columna estado propia)
+            foreach ($inscripciones as &$row) {
+                if ($row['aprobo'] == 1) {
+                    $row['estado'] = 'COMPLETADA';
+                } elseif ($row['asistio'] == 1) {
+                    $row['estado'] = 'EN_CURSO';
+                } else {
+                    $row['estado'] = 'Inscrito';
+                }
+            }
+            unset($row);
+
             return $this->response->setJSON([
-                'success' => true,
-                'capacitaciones' => $misCapacitaciones
+                'success'        => true,
+                'capacitaciones' => $inscripciones,
             ]);
+
         } catch (\Exception $e) {
-            log_message('error', 'Error obteniendo capacitaciones del empleado: ' . $e->getMessage());
+            log_message('error', 'obtenerCapacitacionesEmpleado: ' . $e->getMessage());
             return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error al obtener capacitaciones: ' . $e->getMessage()
+                'success'        => true,   // no romper el frontend
+                'capacitaciones' => [],
+                'debug'          => $e->getMessage(),
             ]);
         }
     }
@@ -220,21 +277,47 @@ class EmpleadoController extends Controller
 
     /**
      * Inscribir empleado en una capacitación (AJAX) - Req 4
-     * Solo permite inscripción si el estado de la capacitación es ACTIVA
+     * Solo permite inscripción si el estado de la capacitación es ACTIVA.
+     * El id_empleado se resuelve desde la BD usando el id_usuario de sesión,
+     * ya que AuthController::setSession() no persiste id_empleado en sesión.
      */
     public function inscribirCapacitacion()
     {
         try {
             $idCapacitacion = $this->request->getPost('id_capacitacion');
-            $idEmpleado = session()->get('id_empleado');
 
-            if (empty($idCapacitacion) || empty($idEmpleado)) {
+            if (empty($idCapacitacion)) {
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Datos de inscripción incompletos'
                 ]);
             }
 
+            // Resolver id_empleado desde la BD usando id_usuario de sesión
+            $idUsuario = session()->get('id_usuario');
+            if (!$idUsuario) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Sesión no válida. Por favor, inicie sesión nuevamente.'
+                ]);
+            }
+
+            $db = \Config\Database::connect();
+            $empleado = $db->table('empleados')
+                           ->where('id_usuario', $idUsuario)
+                           ->get()
+                           ->getRowArray();
+
+            if (!$empleado) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No se encontró el registro de empleado asociado a su cuenta.'
+                ]);
+            }
+
+            $idEmpleado = $empleado['id_empleado'];
+
+            // Validar que la capacitación existe
             $capModel = new CapacitacionModel();
             $capacitacion = $capModel->find($idCapacitacion);
 
@@ -248,37 +331,48 @@ class EmpleadoController extends Controller
             // Validación de negocio: solo se puede inscribir si está ACTIVA
             if ($capacitacion['estado'] !== 'ACTIVA') {
                 $mensajes = [
-                    'EN_CURSO' => 'La capacitación está en curso y las inscripciones están cerradas.',
-                    'INACTIVA' => 'La capacitación está inactiva y no acepta inscripciones.',
+                    'EN_CURSO'   => 'La capacitación está en curso y las inscripciones están cerradas.',
+                    'INACTIVA'   => 'La capacitación está inactiva y no acepta inscripciones.',
                     'COMPLETADA' => 'La capacitación ya finalizó.',
-                    'CANCELADA' => 'La capacitación fue cancelada.'
+                    'CANCELADA'  => 'La capacitación fue cancelada.'
                 ];
                 $msg = $mensajes[$capacitacion['estado']] ?? 'La capacitación no está disponible para inscripción.';
-                
+
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => $msg
                 ]);
             }
 
-            // Verificar si ya está inscrito
-            if ($capModel->empleadoInscrito($idCapacitacion, $idEmpleado)) {
+            // Verificar inscripción duplicada en la tabla real
+            $yaInscrito = $db->table('empleados_capacitaciones')
+                             ->where('id_capacitacion', $idCapacitacion)
+                             ->where('id_empleado', $idEmpleado)
+                             ->countAllResults() > 0;
+
+            if ($yaInscrito) {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Ya estás inscrito en esta capacitación'
+                    'message' => 'Ya estás inscrito en esta capacitación.'
                 ]);
             }
 
-            // Inscribir
-            if ($capModel->asignarEmpleado($idCapacitacion, $idEmpleado)) {
+            // Insertar — la tabla solo requiere id_capacitacion e id_empleado.
+            // asistio=0, aprobo=0 y created_at son manejados por defaults de la BD.
+            $resultado = $db->table('empleados_capacitaciones')->insert([
+                'id_capacitacion' => $idCapacitacion,
+                'id_empleado'     => $idEmpleado,
+            ]);
+
+            if ($resultado) {
                 return $this->response->setJSON([
                     'success' => true,
-                    'message' => 'Te has inscrito exitosamente en la capacitación'
+                    'message' => 'Inscripción realizada con éxito.'
                 ]);
             } else {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Error al inscribirse en la capacitación'
+                    'message' => 'Error al inscribirse en la capacitación.'
                 ]);
             }
 
@@ -337,6 +431,7 @@ class EmpleadoController extends Controller
                 ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
                 ->join('empleados emp', 'emp.id_empleado = ee.id_empleado', 'left')
                 ->where('ee.id_evaluador', $idEmpleado)
+                ->where('ee.oculto_para_empleado', 0)   // excluir las archivadas
                 ->orderBy('ee.fecha_evaluacion', 'DESC')
                 ->get()
                 ->getResultArray();
@@ -656,7 +751,7 @@ class EmpleadoController extends Controller
             $idEmpleado = $empleado['id_empleado'];
             session()->set('id_empleado', $idEmpleado);
 
-            // Evaluaciones donde el empleado es el EVALUADOR
+            // Evaluaciones donde el empleado es el EVALUADOR (excluye archivadas)
             $evaluaciones = $db->table('evaluaciones_empleados ee')
                 ->select('ee.id_evaluacion_empleado as id, ee.id_evaluacion, ee.id_empleado, ee.id_evaluador,
                           ee.fecha_evaluacion, ee.puntaje_total, ee.observaciones,
@@ -667,6 +762,7 @@ class EmpleadoController extends Controller
                 ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
                 ->join('empleados emp', 'emp.id_empleado = ee.id_empleado', 'left')
                 ->where('ee.id_evaluador', $idEmpleado)
+                ->where('ee.oculto_para_empleado', 0)   // excluir las archivadas
                 ->orderBy('ee.fecha_evaluacion', 'DESC')
                 ->get()
                 ->getResultArray();
@@ -697,30 +793,105 @@ class EmpleadoController extends Controller
     }
 
     /**
-     * Obtener detalle de una evaluación específica (AJAX)
+     * Obtener detalle de una evaluación específica (AJAX) — con verificación strict de propiedad
+     * Sólo devuelve datos si el registro le pertenece al empleado de la sesión activa.
      */
     public function detalleEvaluacionJSON($id)
     {
         try {
+            $idUsuario = session()->get('id_usuario');
+            if (!$idUsuario) {
+                return $this->response->setStatusCode(401)
+                    ->setJSON(['success' => false, 'message' => 'Sesión no válida']);
+            }
+
             $db = \Config\Database::connect();
+
+            // Resolver id_empleado desde la sesión para el filtro de seguridad
+            $empleado = $db->table('empleados')->where('id_usuario', $idUsuario)->get()->getRowArray();
+            if (!$empleado) {
+                return $this->response->setStatusCode(403)
+                    ->setJSON(['success' => false, 'message' => 'Empleado no encontrado']);
+            }
+            $idEmpleadoSesion = $empleado['id_empleado'];
+
+            // Filtro estricto: el registro DEBE pertenecer al evaluador de la sesión
             $eval = $db->table('evaluaciones_empleados ee')
                 ->select('ee.*, e.nombre as nombre_evaluacion, e.tipo_evaluacion, e.estado as evaluacion_estado,
-                          emp.nombres as nombres_evaluado, emp.apellidos as apellidos_evaluado,
-                          CONCAT(evaluador.nombres, " ", evaluador.apellidos) as nombre_evaluador')
+                          emp.nombres as nombres_evaluado, emp.apellidos as apellidos_evaluado')
                 ->join('evaluaciones e', 'e.id_evaluacion = ee.id_evaluacion', 'left')
                 ->join('empleados emp', 'emp.id_empleado = ee.id_empleado', 'left')
-                ->join('empleados evaluador', 'evaluador.id_empleado = ee.id_evaluador', 'left')
-                ->where('ee.id_evaluacion_empleado', $id)
+                ->where('ee.id_evaluacion_empleado', (int)$id)
+                ->where('ee.id_evaluador', $idEmpleadoSesion)  // FILTRO DE PRIVACIDAD ESTRICTO
                 ->get()
                 ->getRowArray();
 
             if (!$eval) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Evaluación no encontrada']);
+                return $this->response->setStatusCode(403)
+                    ->setJSON(['success' => false, 'message' => 'No tienes permiso para ver esta evaluación o no existe']);
             }
 
             return $this->response->setJSON(['success' => true, 'evaluacion' => $eval]);
 
         } catch (\Exception $e) {
+            return $this->response->setStatusCode(500)
+                ->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Ocultar evaluación completada de la vista del empleado (soft-hide)
+     * Ruta: POST empleado/evaluaciones/ocultar
+     * NO elimina datos. El administrador sigue viendo todo.
+     */
+    public function ocultarEvaluacion()
+    {
+        try {
+            $idUsuario = session()->get('id_usuario');
+            if (!$idUsuario) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Sesión no válida']);
+            }
+
+            $idEval = (int) $this->request->getPost('id');
+            if (!$idEval) {
+                return $this->response->setJSON(['success' => false, 'message' => 'ID de evaluación no especificado']);
+            }
+
+            $db = \Config\Database::connect();
+
+            // Resolver id_empleado desde sesión
+            $empleado = $db->table('empleados')->where('id_usuario', $idUsuario)->get()->getRowArray();
+            if (!$empleado) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Empleado no encontrado']);
+            }
+            $idEmpleado = $empleado['id_empleado'];
+
+            // Verificar que la evaluación le pertenece y está completada
+            $eval = $db->table('evaluaciones_empleados')
+                ->where('id_evaluacion_empleado', $idEval)
+                ->where('id_evaluador', $idEmpleado)
+                ->get()->getRowArray();
+
+            if (!$eval) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Evaluación no encontrada o sin permiso']);
+            }
+
+            if ($eval['puntaje_total'] === null || (float)$eval['puntaje_total'] == 0) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Solo se pueden archivar evaluaciones completadas']);
+            }
+
+            // Soft-hide: marca oculto_para_empleado = 1 (admin sigue viendo el registro)
+            $db->table('evaluaciones_empleados')
+               ->where('id_evaluacion_empleado', $idEval)
+               ->update(['oculto_para_empleado' => 1]);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Evaluación archivada correctamente. El administrador mantiene acceso a los datos.'
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'ocultarEvaluacion: ' . $e->getMessage());
             return $this->response->setJSON(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }

@@ -105,11 +105,27 @@
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <button type="button" class="btn btn-sm btn-outline-info" 
-                                                                onclick="verDetalle(<?= $ina['id'] ?>)"
-                                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
-                                                            <i class="bi bi-eye"></i>
-                                                        </button>
+                                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                                        onclick="verDetalle(<?= $ina['id'] ?>)"
+                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary btn-ver-perfil" 
+                                                        data-id="<?= $ina['empleado_id'] ?>"
+                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Perfil">
+                                                    <i class="bi bi-person-badge"></i>
+                                                </button>
+                                                <a href="mailto:<?= $ina['correo'] ?? '' ?>?subject=Sobre tu inasistencia" 
+                                                        class="btn btn-sm btn-outline-warning" 
+                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Contactar">
+                                                    <i class="bi bi-chat"></i>
+                                                </a>
+                                                <a href="<?= site_url('admin-th/inasistencias/reporte-empleado/' . ($ina['empleado_id'] ?? 0)) ?>" 
+                                                   target="_blank"
+                                                   class="btn btn-sm btn-outline-danger" 
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Reporte Completo">
+                                                   <i class="bi bi-file-earmark-pdf"></i>
+                                                </a>
                                                         <a href="<?= site_url('admin-th/inasistencias/editar/' . $ina['id']) ?>" class="btn btn-sm btn-outline-warning" 
                                                                 data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                                             <i class="bi bi-pencil"></i>
@@ -134,13 +150,44 @@
     </div>
 </div>
 
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <!-- Bootstap Icons for table Actions -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <!-- SweetAlert2 Plugin -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11">    const botonesVerPerfilIndex = document.querySelectorAll('.btn-ver-perfil');
+    botonesVerPerfilIndex.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const empleadoId = this.getAttribute('data-id');
+            const url = `<?= site_url('admin-th/inasistencias/perfil-empleado/') ?>${empleadoId}`;
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        document.getElementById('perfil-nombre').textContent = data.nombre_completo || 'N/A';
+                        document.getElementById('perfil-cedula').textContent = data.cedula || 'N/A';
+                        document.getElementById('perfil-tipo').textContent = data.tipo_empleado || 'N/A';
+                        document.getElementById('perfil-departamento').textContent = data.departamento || 'N/A';
+                        document.getElementById('perfil-correo').textContent = data.correo || 'N/A';
+                        document.getElementById('perfil-telefono').textContent = data.telefono || 'N/A';
+                        document.getElementById('perfil-fecha').textContent = data.fecha_contratacion || 'N/A';
+                        
+                        const myModal = new bootstrap.Modal(document.getElementById('modalVerPerfil'));
+                        myModal.show();
+                    } else {
+                        Swal.fire('Error', data.message || 'No se pudo cargar el perfil', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching profile:', error);
+                    Swal.fire('Error', 'Problema de conexión', 'error');
+                });
+        });
+    });
+</script>
 <!-- Modal Ver Detalles -->
 <div class="modal fade" id="modalVerDetalle" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -161,8 +208,68 @@
 
 <!-- DataTables (Opcional si se requiere búsqueda/paginación nativa) -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js">    const botonesVerPerfilIndex = document.querySelectorAll('.btn-ver-perfil');
+    botonesVerPerfilIndex.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const empleadoId = this.getAttribute('data-id');
+            const url = `<?= site_url('admin-th/inasistencias/perfil-empleado/') ?>${empleadoId}`;
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        document.getElementById('perfil-nombre').textContent = data.nombre_completo || 'N/A';
+                        document.getElementById('perfil-cedula').textContent = data.cedula || 'N/A';
+                        document.getElementById('perfil-tipo').textContent = data.tipo_empleado || 'N/A';
+                        document.getElementById('perfil-departamento').textContent = data.departamento || 'N/A';
+                        document.getElementById('perfil-correo').textContent = data.correo || 'N/A';
+                        document.getElementById('perfil-telefono').textContent = data.telefono || 'N/A';
+                        document.getElementById('perfil-fecha').textContent = data.fecha_contratacion || 'N/A';
+                        
+                        const myModal = new bootstrap.Modal(document.getElementById('modalVerPerfil'));
+                        myModal.show();
+                    } else {
+                        Swal.fire('Error', data.message || 'No se pudo cargar el perfil', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching profile:', error);
+                    Swal.fire('Error', 'Problema de conexión', 'error');
+                });
+        });
+    });
+</script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js">    const botonesVerPerfilIndex = document.querySelectorAll('.btn-ver-perfil');
+    botonesVerPerfilIndex.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const empleadoId = this.getAttribute('data-id');
+            const url = `<?= site_url('admin-th/inasistencias/perfil-empleado/') ?>${empleadoId}`;
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        document.getElementById('perfil-nombre').textContent = data.nombre_completo || 'N/A';
+                        document.getElementById('perfil-cedula').textContent = data.cedula || 'N/A';
+                        document.getElementById('perfil-tipo').textContent = data.tipo_empleado || 'N/A';
+                        document.getElementById('perfil-departamento').textContent = data.departamento || 'N/A';
+                        document.getElementById('perfil-correo').textContent = data.correo || 'N/A';
+                        document.getElementById('perfil-telefono').textContent = data.telefono || 'N/A';
+                        document.getElementById('perfil-fecha').textContent = data.fecha_contratacion || 'N/A';
+                        
+                        const myModal = new bootstrap.Modal(document.getElementById('modalVerPerfil'));
+                        myModal.show();
+                    } else {
+                        Swal.fire('Error', data.message || 'No se pudo cargar el perfil', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching profile:', error);
+                    Swal.fire('Error', 'Problema de conexión', 'error');
+                });
+        });
+    });
+</script>
 <script>
 $(document).ready(function() {
     $('#tablaInasistenciasCompletas').DataTable({
@@ -216,7 +323,49 @@ function eliminarInasistencia(id) {
         cancelButtonColor: '#6c757d',
         confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar'
-    }).then((result) => {
+    }
+
+    // Lógica AJAX para Ver Perfil de Empleado
+    const botonesVerPerfil = document.querySelectorAll('.btn-ver-perfil');
+    botonesVerPerfil.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const empleadoId = this.getAttribute('data-id');
+            const tooltip = bootstrap.Tooltip.getInstance(this);
+            if(tooltip) tooltip.hide();
+            
+            // Mostrar modal y spinner
+            const modal = new bootstrap.Modal(document.getElementById('modalPerfilEmpleado'));
+            const contenido = document.getElementById('contenidoPerfil');
+            contenido.innerHTML = '<div class="text-center py-4 text-primary"><div class="spinner-border" role="status"></div><p class="mt-2">Cargando datos...</p></div>';
+            modal.show();
+            
+            fetch(`<?= site_url('admin-th/inasistencias/perfil-empleado/') ?>${empleadoId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        contenido.innerHTML = `
+                            <ul class="list-group list-group-flush mb-3">
+                                <li class="list-group-item"><strong>Nombre:</strong> ${data.nombre_completo}</li>
+                                <li class="list-group-item"><strong>Cédula:</strong> ${data.cedula ?? 'N/A'}</li>
+                                <li class="list-group-item"><strong>Departamento:</strong> ${data.departamento ?? 'N/A'}</li>
+                                <li class="list-group-item"><strong>Cargo / Rol:</strong> ${data.tipo_empleado ?? 'N/A'}</li>
+                                <li class="list-group-item"><strong>Email:</strong> <a href="mailto:${data.correo}">${data.correo ?? 'N/A'}</a></li>
+                                <li class="list-group-item"><strong>Teléfono:</strong> <a href="tel:${data.telefono}">${data.telefono ?? 'N/A'}</a></li>
+                                <li class="list-group-item"><strong>Contratación:</strong> ${data.fecha_contratacion ?? 'N/A'}</li>
+                            </ul>
+                            <div class="text-center">
+                                <a href="<?= site_url('admin-th/empleados/editar/') ?>${empleadoId}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil me-1"></i>Gestionar Perfil Completo</a>
+                            </div>
+                        `;
+                    } else {
+                        contenido.innerHTML = `<div class="alert alert-danger">${data.message || 'No se encontró el empleado.'}</div>`;
+                    }
+                })
+                .catch(err => {
+                    contenido.innerHTML = '<div class="alert alert-danger">Error de conexión con el servidor.</div>';
+                });
+        });
+    });).then((result) => {
         if (result.isConfirmed) {
             Swal.fire({ title: 'Eliminando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
             
@@ -335,5 +484,36 @@ function procesarEliminacionAjaxMasiva(ids) {
     });
 }
 // ==================== FIN [ESTANDARIZACIÓN] ====================
+    const botonesVerPerfilIndex = document.querySelectorAll('.btn-ver-perfil');
+    botonesVerPerfilIndex.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const empleadoId = this.getAttribute('data-id');
+            const url = `<?= site_url('admin-th/inasistencias/perfil-empleado/') ?>${empleadoId}`;
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        document.getElementById('perfil-nombre').textContent = data.nombre_completo || 'N/A';
+                        document.getElementById('perfil-cedula').textContent = data.cedula || 'N/A';
+                        document.getElementById('perfil-tipo').textContent = data.tipo_empleado || 'N/A';
+                        document.getElementById('perfil-departamento').textContent = data.departamento || 'N/A';
+                        document.getElementById('perfil-correo').textContent = data.correo || 'N/A';
+                        document.getElementById('perfil-telefono').textContent = data.telefono || 'N/A';
+                        document.getElementById('perfil-fecha').textContent = data.fecha_contratacion || 'N/A';
+                        
+                        const myModal = new bootstrap.Modal(document.getElementById('modalVerPerfil'));
+                        myModal.show();
+                    } else {
+                        Swal.fire('Error', data.message || 'No se pudo cargar el perfil', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching profile:', error);
+                    Swal.fire('Error', 'Problema de conexión', 'error');
+                });
+        });
+    });
 </script>
+
 <?= $this->endSection() ?>

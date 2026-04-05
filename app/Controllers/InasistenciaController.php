@@ -39,10 +39,10 @@ class InasistenciaController extends Controller
         $empleado = $this->empleadoModel->getEmpleadoByUsuarioId($idUsuario);
 
         if (!$empleado) {
-            return redirect()->to('/empleado/dashboard')->with('error', 'No se encontró información del empleado');
+            return redirect()->to('/empleado/dashboard')->with('error', 'No se encontrÃ³ informaciÃ³n del empleado');
         }
 
-        // Obtener estadísticas del empleado
+        // Obtener estadÃ­sticas del empleado
         $estadisticas = $this->inasistenciaModel->getEstadisticasInasistencias($empleado['id_empleado']);
         
         // Obtener inasistencias recientes
@@ -52,7 +52,7 @@ class InasistenciaController extends Controller
             null
         );
 
-        // Verificar límites según política
+        // Verificar lÃ­mites segÃºn polÃ­tica
         $verificacionLimites = $this->politicaInasistenciaModel->verificarLimites(
             $empleado['id_empleado'], 
             $this->inasistenciaModel
@@ -60,7 +60,7 @@ class InasistenciaController extends Controller
 
         $data = [
             'title' => 'Dashboard de Inasistencias',
-            'sidebar' => 'sidebar_empleado',
+            'sidebar' => 'partials/sidebar_empleado',
             'empleado' => $empleado,
             'estadisticas' => $estadisticas,
             'inasistencias_recientes' => array_slice($inasistenciasRecientes, 0, 5),
@@ -79,7 +79,7 @@ class InasistenciaController extends Controller
         $empleado = $this->empleadoModel->getEmpleadoByUsuarioId($idUsuario);
 
         if (!$empleado) {
-            return redirect()->to('/empleado/dashboard')->with('error', 'No se encontró información del empleado');
+            return redirect()->to('/empleado/dashboard')->with('error', 'No se encontrÃ³ informaciÃ³n del empleado');
         }
 
         // Obtener filtros
@@ -103,7 +103,7 @@ class InasistenciaController extends Controller
 
         $data = [
             'title' => 'Mis Inasistencias',
-            'sidebar' => 'sidebar_empleado',
+            'sidebar' => 'partials/sidebar_empleado',
             'empleado' => $empleado,
             'inasistencias' => $inasistencias,
             'filtros' => [
@@ -125,19 +125,19 @@ class InasistenciaController extends Controller
         $empleado = $this->empleadoModel->getEmpleadoByUsuarioId($idUsuario);
 
         if (!$empleado) {
-            return redirect()->to('/empleado/dashboard')->with('error', 'No se encontró información del empleado');
+            return redirect()->to('/empleado/dashboard')->with('error', 'No se encontrÃ³ informaciÃ³n del empleado');
         }
 
         // Obtener inasistencia
         $inasistencia = $this->inasistenciaModel->find($idInasistencia);
 
-        if (!$inasistencia || $inasistencia['id_empleado'] != $empleado['id_empleado']) {
-            return redirect()->to('/empleado/inasistencias')->with('error', 'Inasistencia no encontrada');
+        if (!$inasistencia || $inasistencia['empleado_id'] != $empleado['id_empleado']) {
+            return redirect()->to('/empleado/inasistencias')->with('error', 'Inasistencia no encontrada o sin acceso.');
         }
 
         $data = [
             'title' => 'Detalle de Inasistencia',
-            'sidebar' => 'sidebar_empleado',
+            'sidebar' => 'partials/sidebar_empleado',
             'empleado' => $empleado,
             'inasistencia' => $inasistencia
         ];
@@ -146,7 +146,7 @@ class InasistenciaController extends Controller
     }
 
     /**
-     * Subir justificación
+     * Subir justificaciÃ³n
      */
     public function subirJustificacion()
     {
@@ -154,7 +154,7 @@ class InasistenciaController extends Controller
         $empleado = $this->empleadoModel->getEmpleadoByUsuarioId($idUsuario);
 
         if (!$empleado) {
-            return redirect()->to('/empleado/dashboard')->with('error', 'No se encontró información del empleado');
+            return redirect()->to('/empleado/dashboard')->with('error', 'No se encontrÃ³ informaciÃ³n del empleado');
         }
 
         if ($this->request->getMethod() === 'post') {
@@ -163,40 +163,122 @@ class InasistenciaController extends Controller
 
             // Verificar que la inasistencia pertenece al empleado
             $inasistencia = $this->inasistenciaModel->find($idInasistencia);
-            if (!$inasistencia || $inasistencia['id_empleado'] != $empleado['id_empleado']) {
+            if (!$inasistencia || $inasistencia['empleado_id'] != $empleado['id_empleado']) {
                 return redirect()->back()->with('error', 'Inasistencia no válida');
             }
 
-            // Procesar archivo si se subió
+            // ===== Subir archivo a Google Drive =====
             $archivo = $this->request->getFile('documento');
-            $nombreArchivo = null;
+            $driveLink = null;
 
             if ($archivo && $archivo->isValid() && !$archivo->hasMoved()) {
-                $nombreArchivo = $archivo->getRandomName();
-                $archivo->move(WRITEPATH . 'uploads/justificaciones', $nombreArchivo);
+                $clientSecretsPath = WRITEPATH . 'client_secrets.json';
+                $tokenPath = WRITEPATH . 'token.json';
+
+                if (!file_exists($clientSecretsPath) || !file_exists($tokenPath)) {
+                    return redirect()->back()->with('error', 'Error del servidor: Google Drive no está configurado (faltan credenciales/token).');
+                }
+
+                try {
+                    $client = new \Google\Client();
+                    $client->setAuthConfig($clientSecretsPath);
+                    $client->addScope(\Google\Service\Drive::DRIVE_FILE);
+
+                    $accessToken = json_decode(file_get_contents($tokenPath), true);
+                    $client->setAccessToken($accessToken);
+
+                    if ($client->isAccessTokenExpired()) {
+                        if ($client->getRefreshToken()) {
+                            $newToken = $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+                            if (isset($newToken['error'])) throw new \Exception('Token inválido');
+                            file_put_contents($tokenPath, json_encode($client->getAccessToken()));
+                        } else {
+                            throw new \Exception('Token expirado sin refresh_token');
+                        }
+                    }
+
+                    $driveService = new \Google\Service\Drive($client);
+                    
+                    $extension = strtolower($archivo->getExtension());
+                    $nombreLimpio = preg_replace('/[^A-Za-z0-9_]/', '_', ($empleado['nombres'] ?? '') . '_' . ($empleado['apellidos'] ?? ''));
+                    $nombreFinal = 'Justificativo_' . $nombreLimpio . '_' . date('Ymd_His') . '.' . $extension;
+
+                    // IMPORTANTE: PONER EL ID DE LA CARPETA "Justificantes - Google Drive" AQUÍ
+                    $carpetaJustificantesId = '1dt77sqzWrHehQbAMA0vHrplXU-dxIxUZ';
+
+                    $fileMetadata = new \Google\Service\Drive\DriveFile([
+                        'name' => $nombreFinal,
+                        'parents' => [$carpetaJustificantesId]
+                    ]);
+
+                    $content = file_get_contents($archivo->getTempName());
+                    
+                    $mime = 'application/octet-stream';
+                    if (in_array($extension, ['jpg', 'jpeg'])) $mime = 'image/jpeg';
+                    elseif ($extension == 'png') $mime = 'image/png';
+                    elseif ($extension == 'pdf') $mime = 'application/pdf';
+                    elseif (in_array($extension, ['doc', 'docx'])) $mime = 'application/msword';
+
+                    $uploadedFile = $driveService->files->create($fileMetadata, [
+                        'data' => $content,
+                        'mimeType' => $mime,
+                        'uploadType' => 'multipart',
+                        'fields' => 'id, webViewLink'
+                    ]);
+
+                    $permission = new \Google\Service\Drive\Permission([
+                        'role' => 'reader',
+                        'type' => 'anyone'
+                    ]);
+                    $driveService->permissions->create($uploadedFile->id, $permission);
+
+                    $driveLink = $uploadedFile->webViewLink;
+
+                } catch (\Exception $e) {
+                    log_message('error', 'Error Drive Justificación: ' . $e->getMessage());
+                    return redirect()->back()->with('error', 'No se pudo subir el archivo: ' . $e->getMessage());
+                }
             }
 
-            // Actualizar inasistencia
+            // Actualizar inasistencia (Usando nombres reales de la BD)
             $data = [
-                'justificacion' => $justificacion,
                 'tipo_inasistencia' => 'PENDIENTE_JUSTIFICACION'
             ];
+            
+            // Si el empleado escribió una justificación, la concatenamos al motivo existente para no perderla
+            if (!empty($justificacion)) {
+                $motivoPrevio = $inasistencia['motivo'] ?? '';
+                $data['motivo'] = $motivoPrevio . "\n\nJustificación del empleado:\n" . $justificacion;
+            }
 
-            if ($nombreArchivo) {
-                $data['documento_justificacion'] = $nombreArchivo;
+            if ($driveLink) {
+                // El campo correcto de la base de datos es archivo_justificacion
+                $data['archivo_justificacion'] = $driveLink;
             }
 
             if ($this->inasistenciaModel->update($idInasistencia, $data)) {
-                return redirect()->to('/empleado/inasistencias')->with('success', 'Justificación enviada exitosamente');
+                return redirect()->to('/empleado/inasistencias')->with('success', 'Justificante subido a Google Drive exitosamente.');
             } else {
-                return redirect()->back()->with('error', 'Error al enviar la justificación');
+                return redirect()->back()->with('error', 'Error al actualizar la base de datos de inasistencias.');
             }
         }
 
+        // Obtener inasistencias pendientes de justificación para el dropdown
+        $builder = $this->inasistenciaModel->builder();
+        $builder->where('empleado_id', $empleado['id_empleado'])
+                ->groupStart()
+                    ->where('tipo_inasistencia', 'Injustificada')
+                    ->orWhere('tipo_inasistencia', 'NO_JUSTIFICADA')
+                    ->orWhere('justificada', 0)
+                ->groupEnd()
+                ->orderBy('fecha_inasistencia', 'DESC');
+        $inasistenciasPendientes = $builder->get()->getResultArray();
+
         $data = [
             'title' => 'Subir Justificación',
-            'sidebar' => 'sidebar_empleado',
-            'empleado' => $empleado
+            'sidebar' => 'partials/sidebar_empleado',
+            'empleado' => $empleado,
+            'inasistencias_pendientes' => $inasistenciasPendientes
         ];
 
         return view('Roles/Empleado/inasistencias/subir_justificacion', $data);
@@ -211,13 +293,13 @@ class InasistenciaController extends Controller
         $empleado = $this->empleadoModel->getEmpleadoByUsuarioId($idUsuario);
 
         if (!$empleado) {
-            return redirect()->to('/empleado/dashboard')->with('error', 'No se encontró información del empleado');
+            return redirect()->to('/empleado/dashboard')->with('error', 'No se encontrÃ³ informaciÃ³n del empleado');
         }
 
-        // Obtener período del reporte
+        // Obtener perÃ­odo del reporte
         $periodo = $this->request->getGet('periodo') ?: 'MENSUAL';
         
-        // Calcular fechas según período
+        // Calcular fechas segÃºn perÃ­odo
         switch ($periodo) {
             case 'MENSUAL':
                 $fechaInicio = date('Y-m-01');
@@ -238,21 +320,21 @@ class InasistenciaController extends Controller
                 $fechaFin = date('Y-m-t');
         }
 
-        // Obtener estadísticas
+        // Obtener estadÃ­sticas
         $estadisticas = $this->inasistenciaModel->getEstadisticasInasistencias(
             $empleado['id_empleado'],
             $fechaInicio,
             $fechaFin
         );
 
-        // Obtener inasistencias del período
+        // Obtener inasistencias del perÃ­odo
         $inasistencias = $this->inasistenciaModel->getInasistenciasEmpleado(
             $empleado['id_empleado'],
             $fechaInicio,
             $fechaFin
         );
 
-        // Verificar límites
+        // Verificar lÃ­mites
         $verificacionLimites = $this->politicaInasistenciaModel->verificarLimites(
             $empleado['id_empleado'], 
             $this->inasistenciaModel
@@ -260,7 +342,7 @@ class InasistenciaController extends Controller
 
         $data = [
             'title' => 'Reporte de Inasistencias',
-            'sidebar' => 'sidebar_empleado',
+            'sidebar' => 'partials/sidebar_empleado',
             'empleado' => $empleado,
             'periodo' => $periodo,
             'fecha_inicio' => $fechaInicio,
@@ -274,7 +356,7 @@ class InasistenciaController extends Controller
     }
 
     /**
-     * API: Obtener estadísticas de inasistencias
+     * API: Obtener estadÃ­sticas de inasistencias
      */
     public function getEstadisticas()
     {
@@ -294,7 +376,50 @@ class InasistenciaController extends Controller
     }
 
     /**
-     * API: Obtener inasistencias por período
+     * API AJAX: Obtener mis inasistencias (datos + estadÃ­sticas) â€” Empleado logueado
+     * GET empleado/inasistencias/obtener-mis-inasistencias
+     */
+    public function obtenerMisInasistencias()
+    {
+        try {
+            $idUsuario = session()->get('id_usuario');
+            if (!$idUsuario) {
+                return $this->response->setJSON(['success' => false, 'message' => 'SesiÃ³n no vÃ¡lida']);
+            }
+
+            $empleado = $this->empleadoModel->getEmpleadoByUsuarioId($idUsuario);
+            if (!$empleado) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Registro de empleado no encontrado']);
+            }
+
+            $idEmpleado = $empleado['id_empleado'];
+
+            // Leer filtros opcionales del query string
+            $fechaDesde = $this->request->getGet('fecha_desde') ?: null;
+            $fechaHasta = $this->request->getGet('fecha_hasta') ?: null;
+            $tipo       = $this->request->getGet('tipo')        ?: null;
+            $estado     = $this->request->getGet('estado')      ?: null;
+
+            $resultado = $this->inasistenciaModel->getMisInasistencias(
+                $idEmpleado, $fechaDesde, $fechaHasta, $tipo, $estado
+            );
+
+            return $this->response->setJSON([
+                'success'     => true,
+                'data'        => $resultado['data'],
+                'total'       => $resultado['total'],
+                'justificadas'=> $resultado['justificadas'],
+                'pendientes'  => $resultado['pendientes'],
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'obtenerMisInasistencias: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error al obtener inasistencias: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * API: Obtener inasistencias por perÃ­odo
      */
     public function getInasistenciasPeriodo()
     {
@@ -320,3 +445,4 @@ class InasistenciaController extends Controller
         ]);
     }
 }
+

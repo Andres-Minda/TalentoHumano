@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 $sidebar = 'sidebar_empleado';
 ?>
 
@@ -156,9 +156,14 @@ $sidebar = 'sidebar_empleado';
                                                 <td><small><?= !empty($e['fecha_evaluacion']) ? date('d/m/Y', strtotime($e['fecha_evaluacion'])) : '—' ?></small></td>
                                                 <td><span class="badge bg-<?= $pColor ?>"><?= $puntaje ?>/25</span></td>
                                                 <td class="text-center">
-                                                    <button class="btn btn-sm btn-outline-info" onclick="verDetalleRubrica(<?= $e['id'] ?>)" title="Ver detalle">
-                                                        <i class="ti ti-eye"></i>
-                                                    </button>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <button class="btn btn-outline-info" onclick="verDetalleEvaluacion(<?= $e['id'] ?>)" title="Ver detalle">
+                                                            <i class="ti ti-eye"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-danger" onclick="archivarEvaluacion(<?= $e['id'] ?>, this)" title="Archivar (ocultar de mi vista)">
+                                                            <i class="ti ti-archive"></i>
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -404,11 +409,7 @@ $sidebar = 'sidebar_empleado';
 
 <?= $this->section('scripts') ?>
 <script>
-    // Las funciones de render dinámico JS ya no son necesarias por primera carga usando PHP
-    // Sin embargo, si 'cargarMisEvaluaciones' se llama luego de guardar rúbrica, aquí están las de update:
-
-
-// ==================== RÚBRICA ====================
+// ==================== RÚB RICA ====================
 function abrirRubrica(id, nombre) {
     document.getElementById('rubrica_id').value = id;
     document.getElementById('nombreEvaluado').textContent = nombre;
@@ -425,23 +426,19 @@ function enviarRubrica() {
         if (!sel.value) { sel.classList.add('is-invalid'); todosLlenos = false; }
         else { sel.classList.remove('is-invalid'); }
     });
-
     if (!todosLlenos) {
         Swal.fire({icon:'warning', title:'Campos incompletos', text:'Debe calificar todos los 5 criterios'});
         return;
     }
-
     Swal.fire({ title:'Enviando evaluación...', allowOutsideClick:false, didOpen:() => Swal.showLoading() });
-
     const fd = new FormData(form);
     fetch('<?= base_url('index.php/empleado/evaluaciones/guardar-rubrica') ?>', { method:'POST', body: fd })
     .then(r => r.json())
     .then(data => {
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('modalRealizarEvaluacion')).hide();
-            Swal.fire({icon:'success', title:'¡Evaluación enviada!', text: data.message, timer:2500, showConfirmButton:false}).then(() => {
-                window.location.reload(); // Recargar página por seguridad para ver los resultados actualizados
-            });
+            Swal.fire({icon:'success', title:'¡Evaluación enviada!', text: data.message, timer:2500, showConfirmButton:false})
+                .then(() => window.location.reload());
         } else {
             Swal.fire({icon:'error', title:'Error', text: data.message});
         }
@@ -464,23 +461,19 @@ function enviarAutoevaluacion() {
         if (!sel.value) { sel.classList.add('is-invalid'); todosLlenos = false; }
         else { sel.classList.remove('is-invalid'); }
     });
-
     if (!todosLlenos) {
         Swal.fire({icon:'warning', title:'Campos incompletos', text:'Debes calificar todos los 5 criterios'});
         return;
     }
-
     Swal.fire({ title:'Enviando autoevaluación...', allowOutsideClick:false, didOpen:() => Swal.showLoading() });
-
     const fd = new FormData(form);
     fetch('<?= base_url('index.php/empleado/evaluaciones/guardar-rubrica') ?>', { method:'POST', body: fd })
     .then(r => r.json())
     .then(data => {
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('modalAutoevaluacion')).hide();
-            Swal.fire({icon:'success', title:'¡Autoevaluación enviada!', text: data.message, timer:2500, showConfirmButton:false}).then(() => {
-                window.location.reload(); // Recargar página para reflejar el estado completado
-            });
+            Swal.fire({icon:'success', title:'¡Autoevaluación enviada!', text: data.message, timer:2500, showConfirmButton:false})
+                .then(() => window.location.reload());
         } else {
             Swal.fire({icon:'error', title:'Error', text: data.message});
         }
@@ -488,53 +481,126 @@ function enviarAutoevaluacion() {
     .catch(() => Swal.fire({icon:'error', title:'Error', text:'Error de conexión'}));
 }
 
-function verDetalleRubrica(id) {
+// ==================== VER DETALLE (PRIVADO) ====================
+/**
+ * Muestra el detalle de UNA evaluación completada.
+ * El backend verifica ESTRICTAMENTE que el id_evaluacion_empleado pertenece
+ * al empleado de la sesión activa. Un 403 indica intento de acceso a datos ajenos.
+ */
+function verDetalleEvaluacion(id) {
+    Swal.fire({ title:'Cargando...', allowOutsideClick:false, didOpen:() => Swal.showLoading() });
+
     fetch(`<?= base_url('index.php/empleado/evaluaciones/detalle') ?>/${id}`)
-    .then(r => r.json())
+    .then(r => {
+        if (r.status === 403) throw new Error('Acceso denegado');
+        if (r.status === 401) throw new Error('Sesión no válida');
+        return r.json();
+    })
     .then(data => {
-        if (data.success) {
-            const e = data.evaluacion;
-            const criterios = [
-                { nombre:'Responsabilidad', valor: e.puntaje_responsabilidad, color:'primary', icono:'shield-check' },
-                { nombre:'Trabajo en Equipo', valor: e.puntaje_equipo, color:'success', icono:'users' },
-                { nombre:'Ética y Valores', valor: e.puntaje_etica, color:'warning', icono:'heart' },
-                { nombre:'Comunicación', valor: e.puntaje_comunicacion, color:'info', icono:'message-circle' },
-                { nombre:'Compromiso', valor: e.puntaje_compromiso, color:'danger', icono:'building' }
-            ];
-            const detHTML = criterios.map(c => `
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span><i class="ti ti-${c.icono} text-${c.color} me-1"></i>${c.nombre}</span>
-                    <div>
-                        <span class="badge bg-${c.color}">${c.valor || 0}/5</span>
-                        <div class="progress d-inline-block ms-2" style="width:80px;height:8px;vertical-align:middle;">
-                            <div class="progress-bar bg-${c.color}" style="width:${((c.valor||0)/5)*100}%"></div>
-                        </div>
+        if (!data.success) {
+            Swal.fire({icon:'error', title:'Sin acceso', text: data.message});
+            return;
+        }
+        const e = data.evaluacion;
+        const criterios = [
+            { nombre:'Responsabilidad',      valor: e.puntaje_responsabilidad, color:'primary',  icono:'shield-check'   },
+            { nombre:'Trabajo en Equipo',    valor: e.puntaje_equipo,          color:'success',  icono:'users'          },
+            { nombre:'Ética y Valores',      valor: e.puntaje_etica,           color:'warning',  icono:'heart'          },
+            { nombre:'Comunicación',         valor: e.puntaje_comunicacion,    color:'info',     icono:'message-circle' },
+            { nombre:'Compromiso Inst.',     valor: e.puntaje_compromiso,      color:'danger',   icono:'building'       }
+        ];
+        const puntajeTotal = parseFloat(e.puntaje_total) || 0;
+        const pColor = puntajeTotal >= 20 ? 'success' : puntajeTotal >= 15 ? 'primary' : puntajeTotal >= 10 ? 'warning' : 'danger';
+
+        const desglose = criterios.map(c => `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span><i class="ti ti-${c.icono} text-${c.color} me-1"></i>${c.nombre}</span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-${c.color}">${c.valor ?? 0}/5</span>
+                    <div class="progress" style="width:80px;height:8px;">
+                        <div class="progress-bar bg-${c.color}" style="width:${((c.valor??0)/5)*100}%"></div>
                     </div>
                 </div>
-            `).join('');
+            </div>`).join('');
 
-            Swal.fire({
-                title: `Evaluación de ${esc(e.nombres_evaluado)} ${esc(e.apellidos_evaluado)}`,
-                html: `
-                    <div class="text-start">
-                        ${detHTML}
-                        <hr>
-                        <div class="d-flex justify-content-between fw-bold">
-                            <span>Puntaje Total</span>
-                            <span class="badge bg-dark fs-6">${e.puntaje_total || 0}/25</span>
-                        </div>
-                        ${e.observaciones ? `<hr><p class="text-muted small"><strong>Observaciones:</strong> ${esc(e.observaciones)}</p>` : ''}
+        Swal.fire({
+            title: esc(e.nombre_evaluacion || 'Resultado de evaluación'),
+            html: `
+                <div class="text-start">
+                    <p class="text-muted mb-3 small">
+                        <i class="ti ti-calendar me-1"></i>Fecha: ${formatFecha(e.fecha_evaluacion)}
+                        &nbsp;|&nbsp;
+                        <i class="ti ti-tag me-1"></i>Tipo: ${esc(e.tipo_evaluacion || '—')}
+                    </p>
+                    <hr class="mt-0">
+                    ${desglose}
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center fw-bold fs-6">
+                        <span><i class="ti ti-award me-1"></i>Puntaje Total</span>
+                        <span class="badge bg-${pColor} fs-6">${puntajeTotal}/25</span>
                     </div>
-                `, width:'550px', confirmButtonText:'Cerrar'
-            });
-        }
+                    ${e.observaciones ? `<hr><p class="text-muted small"><strong>Observaciones:</strong> ${esc(e.observaciones)}</p>` : ''}
+                </div>`,
+            width: '560px',
+            confirmButtonText: 'Cerrar',
+            confirmButtonColor: '#6c757d'
+        });
+    })
+    .catch(err => Swal.fire({icon:'error', title:'Error', text: err.message || 'Error de conexión'}));
+}
+
+// ==================== ARCHIVAR (SOFT HIDE) ====================
+/**
+ * Oculta la evaluación completada de la vista del empleado.
+ * El administrador sigue viendo los datos; sólo es una marca visual.
+ */
+function archivarEvaluacion(id, btn) {
+    Swal.fire({
+        title: '¿Archivar esta evaluación?',
+        html: `<p class="text-muted mb-0">Dejará de aparecer en tu bandeja.<br>
+               <strong>El administrador mantiene acceso a todos los resultados.</strong></p>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="ti ti-archive me-1"></i>Sí, archivar',
+        cancelButtonText: 'Cancelar'
+    }).then(result => {
+        if (!result.isConfirmed) return;
+
+        const fd = new FormData();
+        fd.append('id', id);
+
+        fetch('<?= base_url('index.php/empleado/evaluaciones/ocultar') ?>', { method:'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                // Eliminar la fila del DOM sin recargar la página
+                const fila = btn.closest('tr');
+                fila.style.transition = 'opacity 0.4s';
+                fila.style.opacity = '0';
+                setTimeout(() => {
+                    fila.remove();
+                    // Actualizar contador de completadas
+                    const statEl = document.getElementById('stat_completadas');
+                    if (statEl) statEl.textContent = Math.max(0, parseInt(statEl.textContent) - 1);
+                    const statTotal = document.getElementById('stat_total');
+                    if (statTotal) statTotal.textContent = Math.max(0, parseInt(statTotal.textContent) - 1);
+                }, 400);
+                Swal.fire({icon:'success', title:'Archivada', text: data.message, timer:2000, showConfirmButton:false});
+            } else {
+                Swal.fire({icon:'error', title:'Error', text: data.message});
+            }
+        })
+        .catch(() => Swal.fire({icon:'error', title:'Error', text:'Error de conexión'}));
     });
 }
 
 // ==================== HELPERS ====================
 function formatFecha(f) {
     if (!f) return '—';
-    return new Date(f).toLocaleDateString('es-EC', {day:'2-digit', month:'short', year:'numeric'});
+    const [y, m, d] = f.split('-');
+    return d ? `${d}/${m}/${y}` : f;
 }
 function esc(s) {
     if (!s) return '';

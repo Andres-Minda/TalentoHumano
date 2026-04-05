@@ -269,4 +269,218 @@ class TituloAcademicoController extends Controller
             'Chipre', 'Eslovenia', 'Eslovaquia', 'Croacia', 'Letonia', 'Lituania', 'Estonia', 'Otro'
         ];
     }
+
+    // =========================================================================
+    // MÉTODOS AJAX — Perfil Empleado
+    // Resuelven id_empleado desde sesión (id_usuario → empleados)
+    // Usan la estructura real de la tabla verificada con DESCRIBE:
+    //   id, empleado_id, universidad, tipo_titulo (ENUM), nombre_titulo,
+    //   fecha_obtencion, pais, archivo_certificado, created_at, updated_at
+    // =========================================================================
+
+    /**
+     * GET empleado/titulos-academicos/mis-titulos
+     * Devuelve los títulos del empleado logueado en JSON.
+     */
+    public function obtenerMisTitulos()
+    {
+        try {
+            $idUsuario = session()->get('id_usuario');
+            if (!$idUsuario) {
+                return $this->response->setJSON(['success' => true, 'titulos' => []]);
+            }
+
+            $db = \Config\Database::connect();
+            $empleado = $db->table('empleados')
+                           ->where('id_usuario', $idUsuario)
+                           ->get()->getRowArray();
+
+            if (!$empleado) {
+                return $this->response->setJSON(['success' => true, 'titulos' => []]);
+            }
+
+            $titulos = $db->table('titulos_academicos')
+                          ->where('empleado_id', $empleado['id_empleado'])
+                          ->orderBy('fecha_obtencion', 'DESC')
+                          ->get()->getResultArray();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'titulos' => $titulos,
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'obtenerMisTitulos: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => true, 'titulos' => []]);
+        }
+    }
+
+    /**
+     * POST empleado/titulos-academicos/guardar
+     * Crea un nuevo título para el empleado logueado.
+     */
+    public function guardarMiTitulo()
+    {
+        try {
+            $idUsuario = session()->get('id_usuario');
+            $db = \Config\Database::connect();
+
+            $empleado = $db->table('empleados')
+                           ->where('id_usuario', $idUsuario)
+                           ->get()->getRowArray();
+
+            if (!$empleado) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Empleado no encontrado.']);
+            }
+
+            $nombre    = trim($this->request->getPost('nombre_titulo') ?? '');
+            $tipo      = trim($this->request->getPost('tipo_titulo') ?? '');
+            $univ      = trim($this->request->getPost('universidad') ?? '');
+            $pais      = trim($this->request->getPost('pais') ?? '');
+            $fecha     = trim($this->request->getPost('fecha_obtencion') ?? '');
+
+            if (empty($nombre) || empty($tipo) || empty($univ) || empty($pais) || empty($fecha)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Todos los campos obligatorios deben estar completos.']);
+            }
+
+            // Validar que tipo_titulo sea uno de los valores del ENUM real
+            $tiposValidos = ['BACHILLER', 'LICENCIADO', 'INGENIERO', 'MASTER', 'DOCTOR', 'POSTDOCTOR'];
+            if (!in_array($tipo, $tiposValidos)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Tipo de título no válido.']);
+            }
+
+            $db->table('titulos_academicos')->insert([
+                'empleado_id'     => $empleado['id_empleado'],
+                'nombre_titulo'   => $nombre,
+                'tipo_titulo'     => $tipo,
+                'universidad'     => $univ,
+                'pais'            => $pais,
+                'fecha_obtencion' => $fecha,
+            ]);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Título registrado correctamente.',
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'guardarMiTitulo: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error al guardar: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * POST empleado/titulos-academicos/actualizar
+     * Actualiza un título existente que pertenece al empleado logueado.
+     */
+    public function actualizarMiTitulo()
+    {
+        try {
+            $idTitulo  = (int) $this->request->getPost('id');
+            $idUsuario = session()->get('id_usuario');
+
+            if (!$idTitulo) {
+                return $this->response->setJSON(['success' => false, 'message' => 'ID de título no especificado.']);
+            }
+
+            $db = \Config\Database::connect();
+            $empleado = $db->table('empleados')
+                           ->where('id_usuario', $idUsuario)
+                           ->get()->getRowArray();
+
+            if (!$empleado) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Empleado no encontrado.']);
+            }
+
+            // Verificar que el título pertenece a este empleado
+            $titulo = $db->table('titulos_academicos')
+                         ->where('id', $idTitulo)
+                         ->where('empleado_id', $empleado['id_empleado'])
+                         ->get()->getRowArray();
+
+            if (!$titulo) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Título no encontrado o sin permiso.']);
+            }
+
+            $nombre = trim($this->request->getPost('nombre_titulo') ?? '');
+            $tipo   = trim($this->request->getPost('tipo_titulo') ?? '');
+            $univ   = trim($this->request->getPost('universidad') ?? '');
+            $pais   = trim($this->request->getPost('pais') ?? '');
+            $fecha  = trim($this->request->getPost('fecha_obtencion') ?? '');
+
+            if (empty($nombre) || empty($tipo) || empty($univ) || empty($pais) || empty($fecha)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Todos los campos obligatorios deben estar completos.']);
+            }
+
+            $tiposValidos = ['BACHILLER', 'LICENCIADO', 'INGENIERO', 'MASTER', 'DOCTOR', 'POSTDOCTOR'];
+            if (!in_array($tipo, $tiposValidos)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Tipo de título no válido.']);
+            }
+
+            $db->table('titulos_academicos')
+               ->where('id', $idTitulo)
+               ->update([
+                   'nombre_titulo'   => $nombre,
+                   'tipo_titulo'     => $tipo,
+                   'universidad'     => $univ,
+                   'pais'            => $pais,
+                   'fecha_obtencion' => $fecha,
+               ]);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Título actualizado correctamente.',
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'actualizarMiTitulo: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error al actualizar: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * POST empleado/titulos-academicos/eliminar
+     * Elimina (físicamente) un título que pertenece al empleado logueado.
+     */
+    public function eliminarMiTitulo()
+    {
+        try {
+            $idTitulo  = (int) $this->request->getPost('id');
+            $idUsuario = session()->get('id_usuario');
+
+            if (!$idTitulo) {
+                return $this->response->setJSON(['success' => false, 'message' => 'ID de título no especificado.']);
+            }
+
+            $db = \Config\Database::connect();
+            $empleado = $db->table('empleados')
+                           ->where('id_usuario', $idUsuario)
+                           ->get()->getRowArray();
+
+            if (!$empleado) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Empleado no encontrado.']);
+            }
+
+            // Verificar propiedad del registro antes de eliminar
+            $existe = $db->table('titulos_academicos')
+                         ->where('id', $idTitulo)
+                         ->where('empleado_id', $empleado['id_empleado'])
+                         ->countAllResults();
+
+            if (!$existe) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Título no encontrado o sin permiso.']);
+            }
+
+            $db->table('titulos_academicos')->where('id', $idTitulo)->delete();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Título eliminado correctamente.',
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'eliminarMiTitulo: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error al eliminar: ' . $e->getMessage()]);
+        }
+    }
 }

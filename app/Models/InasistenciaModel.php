@@ -34,7 +34,7 @@ class InasistenciaModel extends Model
         'motivo'             => 'required|min_length[5]|max_length[500]',
         'justificada'        => 'permit_empty|in_list[0,1]',
         'tipo_inasistencia'  => 'permit_empty|in_list[Justificada,Injustificada,Permiso,Vacaciones,Licencia Médica]',
-        'archivo_justificacion' => 'permit_empty|max_length[255]',
+        'archivo_justificacion' => 'permit_empty|max_length[1000]',
         'registrado_por'     => 'required|integer'
     ];
 
@@ -73,25 +73,88 @@ class InasistenciaModel extends Model
     protected $cleanValidationRules = true;
 
     /**
-     * Obtener inasistencias de un empleado
+     * Obtener inasistencias de un empleado con todos los campos reales de la BD
+     * Devuelve también estadísticas calculadas en el mismo resultado.
      */
     public function getInasistenciasEmpleado($idEmpleado, $fechaInicio = null, $fechaFin = null)
     {
         $builder = $this->builder();
         $builder->where('empleado_id', $idEmpleado);
-        
+
         if ($fechaInicio) {
             $builder->where('fecha_inasistencia >=', $fechaInicio);
         }
-        
         if ($fechaFin) {
             $builder->where('fecha_inasistencia <=', $fechaFin);
         }
-        
+
         $builder->orderBy('fecha_inasistencia', 'DESC');
-        
         return $builder->get()->getResultArray();
     }
+
+    /**
+     * Obtener mis inasistencias para el endpoint AJAX del empleado.
+     * Usa los nombres reales de columnas de la tabla `inasistencias`.
+     * Permite filtrar por fecha y tipo. Devuelve datos + estadísticas.
+     */
+    public function getMisInasistencias($idEmpleado, $fechaDesde = null, $fechaHasta = null, $tipo = null, $estado = null)
+    {
+        $builder = $this->db->table('inasistencias i');
+        $builder->select('
+            i.id,
+            i.empleado_id,
+            i.fecha_inasistencia,
+            i.hora_inasistencia,
+            i.motivo,
+            i.justificada,
+            i.tipo_inasistencia,
+            i.archivo_justificacion,
+            i.created_at,
+            e.nombres as emp_nombres,
+            e.apellidos as emp_apellidos
+        ');
+        $builder->join('empleados e', 'e.id_empleado = i.empleado_id', 'left');
+        $builder->where('i.empleado_id', $idEmpleado);
+
+        if ($fechaDesde) {
+            $builder->where('i.fecha_inasistencia >=', $fechaDesde);
+        }
+        if ($fechaHasta) {
+            $builder->where('i.fecha_inasistencia <=', $fechaHasta);
+        }
+        if ($tipo) {
+            $builder->where('i.tipo_inasistencia', $tipo);
+        }
+        // Filtro de estado basado en campo `justificada`
+        if ($estado === 'justificada') {
+            $builder->where('i.justificada', 1);
+        } elseif ($estado === 'pendiente') {
+            $builder->where('i.justificada', 0);
+        }
+
+        $builder->orderBy('i.fecha_inasistencia', 'DESC');
+        $registros = $builder->get()->getResultArray();
+
+        // Calcular estadísticas en PHP (evita doble query)
+        $total       = count($registros);
+        $justificadas = 0;
+        $pendientes   = 0;
+        foreach ($registros as $r) {
+            if ((int)$r['justificada'] === 1) {
+                $justificadas++;
+            } else {
+                $pendientes++;
+            }
+        }
+
+        return [
+            'data'        => $registros,
+            'total'       => $total,
+            'justificadas'=> $justificadas,
+            'pendientes'  => $pendientes,
+        ];
+    }
+
 
     /**
      * Obtener inasistencias por período

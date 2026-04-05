@@ -6,8 +6,13 @@
     <div class="page-content">
         <div class="row">
             <div class="col-12">
-                <div class="page-title-box d-flex align-items-center justify-content-between">
-                    <h4 class="page-title mb-0">Mis Inasistencias</h4>
+                <div class="page-title-box d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center">
+                        <a href="<?= base_url('empleado/inasistencias') ?>" class="btn btn-outline-secondary btn-sm me-3" title="Volver al Dashboard">
+                            <i class="ti ti-arrow-left"></i> Volver
+                        </a>
+                        <h4 class="page-title mb-0">Mis Inasistencias</h4>
+                    </div>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
                             <li class="breadcrumb-item"><a href="<?= base_url('empleado/dashboard') ?>">Dashboard</a></li>
@@ -27,12 +32,12 @@
                         <div class="d-flex">
                             <div class="flex-grow-1">
                                 <p class="text-muted fw-medium">Total Inasistencias</p>
-                                <h4 class="mb-0"><?= $totalInasistencias ?? 0 ?></h4>
+                                <h4 class="mb-0" id="stat_total">0</h4>
                             </div>
                             <div class="flex-shrink-0 align-self-center">
                                 <div class="mini-stat-icon avatar-sm rounded-circle bg-primary">
                                     <span class="avatar-title">
-                                        <i class="bi bi-calendar-x font-size-24"></i>
+                                        <i class="ti ti-calendar-x fs-4"></i>
                                     </span>
                                 </div>
                             </div>
@@ -40,18 +45,18 @@
                     </div>
                 </div>
             </div>
-            <div class="col-xl-3 col-md-6">
+            <div class="col-xl-4 col-md-4">
                 <div class="card mini-stats-wid">
                     <div class="card-body">
                         <div class="d-flex">
                             <div class="flex-grow-1">
                                 <p class="text-muted fw-medium">Justificadas</p>
-                                <h4 class="mb-0 text-success"><?= $inasistenciasJustificadas ?? 0 ?></h4>
+                                <h4 class="mb-0 text-success" id="stat_justificadas">0</h4>
                             </div>
                             <div class="flex-shrink-0 align-self-center">
                                 <div class="mini-stat-icon avatar-sm rounded-circle bg-success">
                                     <span class="avatar-title">
-                                        <i class="bi bi-check-circle font-size-24"></i>
+                                        <i class="ti ti-check fs-4"></i>
                                     </span>
                                 </div>
                             </div>
@@ -59,37 +64,18 @@
                     </div>
                 </div>
             </div>
-            <div class="col-xl-3 col-md-6">
+            <div class="col-xl-4 col-md-4">
                 <div class="card mini-stats-wid">
                     <div class="card-body">
                         <div class="d-flex">
                             <div class="flex-grow-1">
-                                <p class="text-muted fw-medium">Sin Justificar</p>
-                                <h4 class="mb-0 text-warning"><?= $inasistenciasSinJustificar ?? 0 ?></h4>
+                                <p class="text-muted fw-medium">Pendientes (Sin justificar)</p>
+                                <h4 class="mb-0 text-warning" id="stat_pendientes">0</h4>
                             </div>
                             <div class="flex-shrink-0 align-self-center">
                                 <div class="mini-stat-icon avatar-sm rounded-circle bg-warning">
                                     <span class="avatar-title">
-                                        <i class="bi bi-exclamation-triangle font-size-24"></i>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card mini-stats-wid">
-                    <div class="card-body">
-                        <div class="d-flex">
-                            <div class="flex-grow-1">
-                                <p class="text-muted fw-medium">Pendientes</p>
-                                <h4 class="mb-0 text-info"><?= $inasistenciasPendientes ?? 0 ?></h4>
-                            </div>
-                            <div class="flex-shrink-0 align-self-center">
-                                <div class="mini-stat-icon avatar-sm rounded-circle bg-info">
-                                    <span class="avatar-title">
-                                        <i class="bi bi-clock font-size-24"></i>
+                                        <i class="ti ti-clock fs-4"></i>
                                     </span>
                                 </div>
                             </div>
@@ -166,90 +152,15 @@
                                         <th>Motivo</th>
                                         <th>Estado</th>
                                         <th>Justificación</th>
-                                        <th>Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <?php if (isset($inasistencias) && !empty($inasistencias)): ?>
-                                        <?php foreach ($inasistencias as $inasistencia): ?>
-                                            <tr>
-                                                <td>
-                                                    <span class="badge bg-light text-dark">
-                                                        <?= date('d/m/Y', strtotime($inasistencia['fecha'])) ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span class="badge bg-info">
-                                                        <?= $inasistencia['tipo_nombre'] ?? 'N/A' ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <?= $inasistencia['motivo'] ?? 'No especificado' ?>
-                                                </td>
-                                                <td>
-                                                    <?php
-                                                    $estadoClass = '';
-                                                    $estadoText = '';
-                                                    switch ($inasistencia['estado']) {
-                                                        case 'JUSTIFICADA':
-                                                            $estadoClass = 'bg-success';
-                                                            $estadoText = 'Justificada';
-                                                            break;
-                                                        case 'SIN_JUSTIFICAR':
-                                                            $estadoClass = 'bg-warning';
-                                                            $estadoText = 'Sin Justificar';
-                                                            break;
-                                                        case 'PENDIENTE':
-                                                            $estadoClass = 'bg-info';
-                                                            $estadoText = 'Pendiente';
-                                                            break;
-                                                        default:
-                                                            $estadoClass = 'bg-secondary';
-                                                            $estadoText = 'Desconocido';
-                                                    }
-                                                    ?>
-                                                    <span class="badge <?= $estadoClass ?>">
-                                                        <?= $estadoText ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <?php if ($inasistencia['estado'] === 'JUSTIFICADA' && !empty($inasistencia['justificacion'])): ?>
-                                                        <button type="button" class="btn btn-sm btn-outline-info" 
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#modalJustificacion" 
-                                                                data-justificacion="<?= htmlspecialchars($inasistencia['justificacion']) ?>">
-                                                            <i class="bi bi-eye"></i> Ver
-                                                        </button>
-                                                    <?php elseif ($inasistencia['estado'] === 'SIN_JUSTIFICAR'): ?>
-                                                        <span class="text-muted">Sin justificación</span>
-                                                    <?php else: ?>
-                                                        <span class="text-muted">Pendiente</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <?php if ($inasistencia['estado'] === 'SIN_JUSTIFICAR'): ?>
-                                                        <button type="button" class="btn btn-sm btn-primary" 
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#modalSubirJustificacion" 
-                                                                data-inasistencia-id="<?= $inasistencia['id'] ?>">
-                                                            <i class="bi bi-upload"></i> Justificar
-                                                        </button>
-                                                    <?php endif; ?>
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary" 
-                                                            onclick="verDetalle(<?= $inasistencia['id'] ?>)">
-                                                        <i class="bi bi-eye"></i> Ver
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <tr>
-                                            <td colspan="6" class="text-center text-muted">
-                                                <i class="bi bi-inbox fs-1"></i>
-                                                <p class="mt-2">No hay inasistencias registradas</p>
-                                            </td>
-                                        </tr>
-                                    <?php endif; ?>
+                                <tbody id="tablaInasistenciasBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">
+                                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                            Cargando inasistencias...
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -316,9 +227,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    cargarInasistencias();
+
     // Filtros
     document.getElementById('btnFiltrar').addEventListener('click', function() {
-        aplicarFiltros();
+        cargarInasistencias();
     });
 
     document.getElementById('btnLimpiar').addEventListener('click', function() {
@@ -346,23 +259,87 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function aplicarFiltros() {
+function cargarInasistencias() {
+    const tbody = document.getElementById('tablaInasistenciasBody');
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4"><div class="spinner-border text-primary me-2"></div>Cargando...</td></tr>`;
+
     const fechaDesde = document.getElementById('fecha_desde').value;
     const fechaHasta = document.getElementById('fecha_hasta').value;
     const tipo = document.getElementById('tipo_inasistencia').value;
     const estado = document.getElementById('estado').value;
 
-    // Aquí implementar la lógica de filtrado
-    console.log('Aplicando filtros:', { fechaDesde, fechaHasta, tipo, estado });
-    
-    // Recargar la página con los filtros aplicados
     const params = new URLSearchParams();
     if (fechaDesde) params.append('fecha_desde', fechaDesde);
     if (fechaHasta) params.append('fecha_hasta', fechaHasta);
     if (tipo) params.append('tipo', tipo);
     if (estado) params.append('estado', estado);
+
+    fetch(`<?= base_url('empleado/inasistencias/obtener-mis-inasistencias') ?>?${params.toString()}`)
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            Swal.fire({icon: 'error', title: 'Error', text: data.message});
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-danger">Error al cargar datos</td></tr>`;
+            return;
+        }
+
+        // Actualizar estadísticas
+        document.getElementById('stat_total').textContent = data.total || 0;
+        document.getElementById('stat_justificadas').textContent = data.justificadas || 0;
+        document.getElementById('stat_pendientes').textContent = data.pendientes || 0;
+
+        renderizarTabla(data.data);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-danger">Error de conexión</td></tr>`;
+    });
+}
+
+function renderizarTabla(inasistencias) {
+    const tbody = document.getElementById('tablaInasistenciasBody');
     
-    window.location.href = '<?= base_url('empleado/inasistencias/mis-inasistencias') ?>?' + params.toString();
+    if (!inasistencias || inasistencias.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted"><i class="ti ti-inbox fs-1 mb-2 d-block"></i>No tienes inasistencias registradas.</td></tr>`;
+        return;
+    }
+
+    let html = '';
+    inasistencias.forEach(i => {
+        const isJustificada = parseInt(i.justificada) === 1;
+        const estadoBadge = isJustificada 
+            ? `<span class="badge bg-success"><i class="ti ti-check me-1"></i>Justificada</span>` 
+            : `<span class="badge bg-warning"><i class="ti ti-clock me-1"></i>Pendiente</span>`;
+            
+        const fechaFormat = new Date(i.fecha_inasistencia).toLocaleDateString('es-EC', {day: '2-digit', month: 'short', year: 'numeric'});
+        
+        let justificacionContent = '';
+        if (isJustificada && i.archivo_justificacion) {
+             justificacionContent = `
+                <button type="button" class="btn btn-sm btn-outline-info" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#modalJustificacion" 
+                        data-justificacion="${htmlEscape(i.archivo_justificacion)}">
+                    <i class="ti ti-eye"></i> Ver
+                </button>`;
+        } else if (!isJustificada) {
+             justificacionContent = `<span class="text-muted small">Falta evidencia</span>`;
+        } else {
+             justificacionContent = `<span class="text-muted small">—</span>`;
+        }
+
+        html += `
+            <tr>
+                <td><strong>${fechaFormat}</strong></td>
+                <td><span class="badge bg-secondary">${htmlEscape(i.tipo_inasistencia || '—')}</span></td>
+                <td><small class="text-truncate d-inline-block" style="max-width:200px;" title="${htmlEscape(i.motivo)}">${htmlEscape(i.motivo)}</small></td>
+                <td>${estadoBadge}</td>
+                <td>${justificacionContent}</td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
 }
 
 function limpiarFiltros() {
@@ -370,9 +347,7 @@ function limpiarFiltros() {
     document.getElementById('fecha_hasta').value = '';
     document.getElementById('tipo_inasistencia').value = '';
     document.getElementById('estado').value = '';
-    
-    // Recargar sin filtros
-    window.location.href = '<?= base_url('empleado/inasistencias/mis-inasistencias') ?>';
+    cargarInasistencias();
 }
 
 function subirJustificacion() {
@@ -385,20 +360,29 @@ function subirJustificacion() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Justificación enviada exitosamente');
-            location.reload();
+            bootstrap.Modal.getInstance(document.getElementById('modalSubirJustificacion')).hide();
+            Swal.fire({icon: 'success', title: 'Guardado', text: 'Justificación enviada exitosamente', timer: 2000, showConfirmButton: false});
+            cargarInasistencias();
         } else {
-            alert('Error al enviar la justificación: ' + data.message);
+            Swal.fire({icon: 'error', title: 'Error', text: data.message || 'Error al enviar'});
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Error al enviar la justificación');
+        Swal.fire({icon: 'error', title: 'Error', text: 'Error de conexión'});
     });
 }
 
-function verDetalle(id) {
-    window.location.href = '<?= base_url('empleado/inasistencias/ver/') ?>' + id;
+function htmlEscape(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>'"]/g, match => {
+        return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[match];
+    });
 }
 </script>
 

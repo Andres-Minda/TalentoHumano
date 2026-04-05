@@ -28,7 +28,7 @@
                     <div class="card-header">
                         <h5 class="card-title mb-0">
                             <i class="bi bi-calendar-x text-danger me-2"></i>
-                            Inasistencia del <?= date('d/m/Y', strtotime($inasistencia['fecha'])) ?>
+                            Inasistencia del <?= date('d/m/Y', strtotime($inasistencia['fecha_inasistencia'])) ?>
                         </h5>
                     </div>
                     <div class="card-body">
@@ -37,7 +37,7 @@
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Fecha de Inasistencia:</label>
                                     <p class="form-control-plaintext">
-                                        <?= date('l, d \d\e F \d\e Y', strtotime($inasistencia['fecha'])) ?>
+                                        <?= date('l, d \d\e F \d\e Y', strtotime($inasistencia['fecha_inasistencia'])) ?>
                                     </p>
                                 </div>
                             </div>
@@ -46,7 +46,7 @@
                                     <label class="form-label fw-bold">Tipo de Inasistencia:</label>
                                     <p class="form-control-plaintext">
                                         <span class="badge bg-info fs-6">
-                                            <?= $inasistencia['tipo_nombre'] ?? 'N/A' ?>
+                                            <?= $inasistencia['tipo_inasistencia'] ?? 'N/A' ?>
                                         </span>
                                     </p>
                                 </div>
@@ -56,31 +56,21 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">Estado:</label>
+                                    <label class="form-label fw-bold">Estado / Categoría:</label>
                                     <p class="form-control-plaintext">
                                         <?php
-                                        $estadoClass = '';
-                                        $estadoText = '';
-                                        switch ($inasistencia['estado']) {
-                                            case 'JUSTIFICADA':
-                                                $estadoClass = 'bg-success';
-                                                $estadoText = 'Justificada';
-                                                break;
-                                            case 'SIN_JUSTIFICAR':
-                                                $estadoClass = 'bg-warning';
-                                                $estadoText = 'Sin Justificar';
-                                                break;
-                                            case 'PENDIENTE':
-                                                $estadoClass = 'bg-info';
-                                                $estadoText = 'Pendiente';
-                                                break;
-                                            default:
-                                                $estadoClass = 'bg-secondary';
-                                                $estadoText = 'Desconocido';
+                                        $estadoClass = 'bg-secondary';
+                                        $estadoVal = strtoupper($inasistencia['tipo_inasistencia'] ?? '');
+                                        if (strpos($estadoVal, 'JUSTIFICADA') !== false && strpos($estadoVal, 'NO') === false) {
+                                            $estadoClass = 'bg-success';
+                                        } elseif (strpos($estadoVal, 'NO_JUSTIFICADA') !== false || strpos($estadoVal, 'INJUSTIFICADA') !== false) {
+                                            $estadoClass = 'bg-danger';
+                                        } elseif (strpos($estadoVal, 'PENDIENTE') !== false) {
+                                            $estadoClass = 'bg-warning text-dark';
                                         }
                                         ?>
                                         <span class="badge <?= $estadoClass ?> fs-6">
-                                            <?= $estadoText ?>
+                                            <?= $inasistencia['tipo_inasistencia'] ?? 'PENDIENTE' ?>
                                         </span>
                                     </p>
                                 </div>
@@ -116,7 +106,7 @@
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Fecha de Registro:</label>
                                     <p class="form-control-plaintext">
-                                        <?= date('d/m/Y H:i', strtotime($inasistencia['fecha_registro'])) ?>
+                                        <?= date('d/m/Y H:i', strtotime($inasistencia['created_at'] ?? 'now')) ?>
                                     </p>
                                 </div>
                             </div>
@@ -124,7 +114,7 @@
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Última Actualización:</label>
                                     <p class="form-control-plaintext">
-                                        <?= date('d/m/Y H:i', strtotime($inasistencia['fecha_actualizacion'])) ?>
+                                        <?= date('d/m/Y H:i', strtotime($inasistencia['updated_at'] ?? 'now')) ?>
                                     </p>
                                 </div>
                             </div>
@@ -191,7 +181,7 @@
                         </h6>
                     </div>
                     <div class="card-body">
-                        <?php if ($inasistencia['estado'] === 'SIN_JUSTIFICAR'): ?>
+                        <?php if (empty($inasistencia['justificada']) && strpos(strtoupper($inasistencia['tipo_inasistencia'] ?? ''), 'JUSTIFICADA') === false): ?>
                             <button type="button" class="btn btn-primary w-100 mb-2" 
                                     data-bs-toggle="modal" 
                                     data-bs-target="#modalSubirJustificacion">

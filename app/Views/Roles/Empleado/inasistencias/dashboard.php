@@ -156,8 +156,8 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="text-truncate d-inline-block" style="max-width: 200px;" title="<?= $inasistencia['motivo_inasistencia'] ?>">
-                                                <?= $inasistencia['motivo_inasistencia'] ?>
+                                            <span class="text-truncate d-inline-block" style="max-width: 200px;" title="<?= esc($inasistencia['motivo'] ?? '') ?>">
+                                                <?= esc($inasistencia['motivo'] ?? '') ?>
                                             </span>
                                         </td>
                                         <td>
@@ -171,7 +171,7 @@
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <a href="<?= base_url('empleado/inasistencias/ver/' . $inasistencia['id_inasistencia']) ?>" 
+                                                <a href="<?= base_url('empleado/inasistencias/ver/' . ($inasistencia['id'] ?? '')) ?>" 
                                                    class="btn btn-outline-primary btn-sm" 
                                                    title="Ver Detalle">
                                                     <i class="bi bi-eye"></i>
