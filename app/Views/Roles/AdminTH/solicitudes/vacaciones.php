@@ -83,6 +83,24 @@ Gestión de Vacaciones
                                             data-bs-toggle="tooltip" title="Gestionar (Aprobar/Rechazar)">
                                         <i class="bi bi-pencil-square"></i>
                                     </button>
+                                    <?php elseif ($sol['estado'] === 'Aprobada'): ?>
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled
+                                                data-bs-toggle="tooltip" title="Ya aprobada">
+                                            <i class="bi bi-lock"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                onclick="interrumpirVacaciones(
+                                                    <?= $sol['id_solicitud'] ?>,
+                                                    '<?= esc($sol['apellidos'] . ' ' . $sol['nombres']) ?>',
+                                                    '<?= $sol['fecha_inicio'] ?>',
+                                                    '<?= $sol['fecha_fin'] ?>',
+                                                    <?= (int) $sol['dias_solicitados'] ?>
+                                                )"
+                                                data-bs-toggle="tooltip" title="Interrumpir / Cancelar vacaciones">
+                                            <i class="bi bi-stop-circle"></i>
+                                        </button>
+                                    </div>
                                     <?php else: ?>
                                     <button type="button" class="btn btn-sm btn-outline-secondary" disabled>
                                         <i class="bi bi-lock"></i>
@@ -94,6 +112,36 @@ Gestión de Vacaciones
                     <?php endif; ?>
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Interrumpir Vacaciones -->
+<div class="modal fade" id="modalInterrumpir" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-stop-circle me-2"></i>Interrumpir Vacaciones</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="mb-3">
+                    Empleado: <strong id="intEmpleado"></strong><br>
+                    Periodo original: <strong id="intPeriodo"></strong>
+                </p>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Fecha de cancelación <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="intFechaCancelacion">
+                    <div class="form-text">Por defecto: hoy. Puedes elegir otra fecha dentro del periodo.</div>
+                </div>
+                <div id="intPreview" class="alert alert-info d-none py-2"></div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarInterrupcion">
+                    <i class="bi bi-stop-circle me-1"></i>Confirmar Interrupción
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -162,6 +210,122 @@ Gestión de Vacaciones
         });
     });
 
+    // ── Interrumpir / Cancelar Vacaciones ────────────────────────────────────
+    let _intSolicitudId  = null;
+    let _intFechaInicio  = null;
+    let _intFechaFin     = null;
+    let _intDiasTotales  = 0;
+
+    function interrumpirVacaciones(id, empleado, fechaInicio, fechaFin, diasSolicitados) {
+        _intSolicitudId = id;
+        _intFechaInicio = fechaInicio;
+        _intFechaFin    = fechaFin;
+        _intDiasTotales = diasSolicitados;
+
+        const hoy = new Date().toISOString().split('T')[0];
+
+        document.getElementById('intEmpleado').textContent = empleado;
+        document.getElementById('intPeriodo').textContent  =
+            formatFecha(fechaInicio) + ' al ' + formatFecha(fechaFin) +
+            ' (' + diasSolicitados + ' días)';
+
+        const inputFecha = document.getElementById('intFechaCancelacion');
+        inputFecha.value = hoy;
+        inputFecha.min   = fechaInicio;
+        inputFecha.max   = fechaFin;
+
+        actualizarPreview(hoy);
+        inputFecha.addEventListener('input', () => actualizarPreview(inputFecha.value));
+
+        new bootstrap.Modal(document.getElementById('modalInterrumpir')).show();
+    }
+
+    function actualizarPreview(fechaCancelStr) {
+        const preview   = document.getElementById('intPreview');
+        const cancelacion = new Date(fechaCancelStr + 'T00:00:00');
+        const inicio      = new Date(_intFechaInicio  + 'T00:00:00');
+        const fin         = new Date(_intFechaFin     + 'T00:00:00');
+
+        preview.classList.remove('d-none', 'alert-info', 'alert-warning', 'alert-danger');
+
+        if (cancelacion > fin) {
+            preview.classList.add('alert-danger');
+            preview.innerHTML = '<i class="bi bi-x-circle me-1"></i>Las vacaciones ya terminaron en esa fecha. No hay días que devolver.';
+            document.getElementById('btnConfirmarInterrupcion').disabled = true;
+            return;
+        }
+
+        document.getElementById('btnConfirmarInterrupcion').disabled = false;
+
+        let diasDevolver;
+        if (cancelacion <= inicio) {
+            diasDevolver = _intDiasTotales;
+            preview.classList.add('alert-warning');
+            preview.innerHTML = `<i class="bi bi-arrow-counterclockwise me-1"></i>Las vacaciones aún no empezaron. Se devolverán <strong>todos los ${diasDevolver} días</strong>.`;
+        } else {
+            diasDevolver = Math.round((fin - cancelacion) / (1000 * 60 * 60 * 24));
+            const diasUsados = _intDiasTotales - diasDevolver;
+            preview.classList.add('alert-info');
+            preview.innerHTML = `<i class="bi bi-info-circle me-1"></i>Días ya disfrutados: <strong>${diasUsados}</strong>. Se devolverán <strong>${diasDevolver} día(s)</strong> al empleado.`;
+        }
+    }
+
+    document.getElementById('btnConfirmarInterrupcion').addEventListener('click', function () {
+        const fechaCancelacion = document.getElementById('intFechaCancelacion').value;
+        if (!fechaCancelacion) {
+            Swal.fire('Atención', 'Debes seleccionar una fecha de cancelación.', 'warning');
+            return;
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('modalInterrumpir')).hide();
+
+        Swal.fire({
+            title: '¿Confirmar interrupción?',
+            html: 'Esta acción cambiará el estado a <strong>Cancelada</strong> y devolverá los días no utilizados al empleado.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="bi bi-stop-circle me-1"></i>Sí, interrumpir',
+            cancelButtonText: 'No, volver'
+        }).then(result => {
+            if (!result.isConfirmed) return;
+
+            Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            const formData = new FormData();
+            formData.append('fecha_cancelacion', fechaCancelacion);
+            formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+            fetch(`<?= site_url('admin-th/solicitudes/cancelar-vacaciones/') ?>${_intSolicitudId}`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Interrupción registrada!',
+                        html: `Se devolvieron <strong>${data.dias_devueltos} día(s)</strong> al saldo del empleado.`,
+                        confirmButtonColor: '#198754'
+                    }).then(() => window.location.reload());
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            })
+            .catch(() => Swal.fire('Error', 'Problema de conexión con el servidor.', 'error'));
+        });
+    });
+
+    function formatFecha(ymd) {
+        if (!ymd) return '';
+        const [y, m, d] = ymd.split('-');
+        return `${d}/${m}/${y}`;
+    }
+
+    // ── Gestionar (Aprobar / Rechazar) ────────────────────────────────────────
     function gestionarSolicitud(id, empleado, periodo) {
         // Llenar Modal
         $('#spanEmpleadoNombre').text(empleado);

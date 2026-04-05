@@ -52,44 +52,68 @@ class AdminTHController extends Controller
      */
     public function dashboard()
     {
-        $db = \Config\Database::connect();
+        $db         = \Config\Database::connect();
+        $anioActual = date('Y');
+        $mesActual  = date('Y-m');
 
-        // --- Tarjetas de resumen ---
-        $totalEmpleados = $db->table('empleados')->countAllResults();
-        $empleadosActivos = $db->table('empleados')->where('estado', 'Activo')->countAllResults();
-        $inasistenciasPendientes = $db->table('inasistencias')->where('justificada', 0)->countAllResults();
-        $capacitacionesActivas = $db->table('capacitaciones')->where('estado', 'En curso')->countAllResults();
+        // ── Tarjetas de resumen ───────────────────────────────────────────────
+        $totalEmpleados          = $db->table('empleados')->countAllResults();
+        $empleadosActivos        = $db->table('empleados')->where('estado', 'Activo')->countAllResults();
 
-        // --- Últimas 5 Inasistencias ---
+        // Inasistencias injustificadas del mes actual
+        $inasistenciasMesActual  = $db->table('inasistencias')
+            ->where('justificada', 0)
+            ->like('fecha_inasistencia', $mesActual, 'after')
+            ->countAllResults();
+
+        // Solicitudes pendientes (todos los tipos)
+        $solicitudesPendientes   = $db->table('solicitudes')
+            ->where('estado', 'Pendiente')
+            ->where('activo', 1)
+            ->countAllResults();
+
+        // Puestos abiertos
+        $puestosAbiertos         = $db->table('puestos')
+            ->where('estado', 'Abierto')
+            ->where('activo', 1)
+            ->countAllResults();
+
+        // Capacitaciones activas
+        $capacitacionesActivas   = $db->table('capacitaciones')
+            ->where('estado', 'ACTIVA')
+            ->countAllResults();
+
+        // ── Últimas 8 inasistencias ───────────────────────────────────────────
         $ultimasInasistencias = $db->table('inasistencias i')
-            ->select('e.nombres, e.apellidos, i.fecha_inasistencia, i.tipo_inasistencia, i.justificada')
+            ->select('e.nombres, e.apellidos, i.fecha_inasistencia, i.tipo_inasistencia, i.justificada, i.motivo')
             ->join('empleados e', 'e.id_empleado = i.empleado_id')
             ->orderBy('i.fecha_inasistencia', 'DESC')
+            ->limit(8)
+            ->get()->getResultArray();
+
+        // ── Últimas 5 solicitudes recibidas ──────────────────────────────────
+        $ultimasSolicitudes = $db->table('solicitudes s')
+            ->select('s.tipo_solicitud, s.titulo, s.estado, s.fecha_solicitud, e.nombres, e.apellidos')
+            ->join('empleados e', 'e.id_empleado = s.id_empleado', 'left')
+            ->where('s.activo', 1)
+            ->orderBy('s.fecha_solicitud', 'DESC')
             ->limit(5)
             ->get()->getResultArray();
 
-        // --- Últimas 5 inscripciones a capacitaciones ---
-        $solicitudesCapacitacion = $db->table('capacitaciones_empleados ce')
-            ->select('e.nombres, e.apellidos, ce.nombre_capacitacion as capacitacion, ce.estado')
-            ->join('empleados e', 'e.id_empleado = ce.empleado_id')
-            ->orderBy('ce.created_at', 'DESC')
-            ->limit(5)
-            ->get()->getResultArray();
-
-        // --- Empleados por departamento (gráfico donut) ---
+        // ── Gráfico 1: Empleados por departamento (donut) ─────────────────────
         $empPorDepto = $db->table('empleados')
-            ->select('departamento, COUNT(*) as total')
+            ->select('COALESCE(departamento, "Sin asignar") as departamento, COUNT(*) as total')
             ->where('estado', 'Activo')
             ->groupBy('departamento')
+            ->orderBy('total', 'DESC')
             ->get()->getResultArray();
 
         $chartDeptLabels = array_column($empPorDepto, 'departamento');
         $chartDeptData   = array_map('intval', array_column($empPorDepto, 'total'));
 
-        // --- Inasistencias por mes del año actual (gráfico barras) ---
-        $anioActual = date('Y');
+        // ── Gráfico 2: Inasistencias por mes del año actual (barras) ─────────
         $inaPorMes = $db->query("
-            SELECT MONTH(fecha_inasistencia) as mes, COUNT(*) as total
+            SELECT MONTH(fecha_inasistencia) AS mes, COUNT(*) AS total
             FROM inasistencias
             WHERE YEAR(fecha_inasistencia) = ?
             GROUP BY MONTH(fecha_inasistencia)
@@ -101,22 +125,39 @@ class AdminTHController extends Controller
             $chartMeses[(int)$row['mes'] - 1] = (int)$row['total'];
         }
 
+        // ── Gráfico 3: Estado de solicitudes (donut) ─────────────────────────
+        $solPorEstado = $db->table('solicitudes')
+            ->select('estado, COUNT(*) as total')
+            ->where('activo', 1)
+            ->groupBy('estado')
+            ->get()->getResultArray();
+
+        $chartSolLabels = array_column($solPorEstado, 'estado');
+        $chartSolData   = array_map('intval', array_column($solPorEstado, 'total'));
+
         $data = [
-            'titulo' => 'Dashboard Admin Talento Humano',
+            'titulo'  => 'Dashboard Admin Talento Humano',
             'usuario' => [
-                'nombres' => session()->get('nombres'),
+                'nombres'   => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
-                'rol' => session()->get('nombre_rol')
+                'rol'       => session()->get('nombre_rol'),
             ],
-            'totalEmpleados'          => $totalEmpleados,
-            'empleadosActivos'        => $empleadosActivos,
-            'inasistenciasPendientes' => $inasistenciasPendientes,
-            'capacitacionesActivas'   => $capacitacionesActivas,
-            'ultimasInasistencias'    => $ultimasInasistencias,
-            'solicitudesCapacitacion' => $solicitudesCapacitacion,
-            'chartDeptLabels'         => json_encode($chartDeptLabels),
-            'chartDeptData'           => json_encode($chartDeptData),
-            'chartInasistencias'      => json_encode($chartMeses),
+            // Tarjetas
+            'totalEmpleados'         => $totalEmpleados,
+            'empleadosActivos'       => $empleadosActivos,
+            'inasistenciasMesActual' => $inasistenciasMesActual,
+            'solicitudesPendientes'  => $solicitudesPendientes,
+            'puestosAbiertos'        => $puestosAbiertos,
+            'capacitacionesActivas'  => $capacitacionesActivas,
+            // Tablas
+            'ultimasInasistencias'   => $ultimasInasistencias,
+            'ultimasSolicitudes'     => $ultimasSolicitudes,
+            // Gráficos (json_encode aquí para no repetirlo en la vista)
+            'chartDeptLabels'        => json_encode(empty($chartDeptLabels) ? ['Sin datos'] : $chartDeptLabels),
+            'chartDeptData'          => json_encode(empty($chartDeptData)   ? [0]           : $chartDeptData),
+            'chartInasistencias'     => json_encode($chartMeses),
+            'chartSolLabels'         => json_encode(empty($chartSolLabels)  ? ['Sin datos'] : $chartSolLabels),
+            'chartSolData'           => json_encode(empty($chartSolData)    ? [0]           : $chartSolData),
         ];
 
         return view('Roles/AdminTH/dashboard', $data);
@@ -973,8 +1014,6 @@ class AdminTHController extends Controller
                 
             } else {
                 // ES UNA CREACIÓN
-                
-                // Crear puesto
                 $puestoData = [
                     'titulo' => $datos['titulo'],
                     'descripcion' => $datos['descripcion'] ?? '',
@@ -988,7 +1027,7 @@ class AdminTHController extends Controller
                     'responsabilidades' => $datos['responsabilidades'] ?? '',
                     'beneficios' => $datos['beneficios'] ?? '',
                     'estado' => $datos['estado'] ?? 'Abierto',
-                    'activo' => 1,
+                    'activo' => ($datos['estado'] === 'Abierto') ? 1 : 0,
                     'fecha_limite' => $datos['fecha_limite'] ?? date('Y-m-d', strtotime('+30 days')),
                     'vacantes_disponibles' => $datos['vacantes_disponibles'] ?? 1,
                     'nivel_experiencia' => $datos['nivel_experiencia'],
@@ -1617,8 +1656,9 @@ class AdminTHController extends Controller
         $topEmpleados = $db->table('inasistencias i')
             ->select('i.empleado_id, e.nombres, e.apellidos, e.tipo_empleado as tipo, e.departamento, u.email as correo, COUNT(i.id) as total_inasistencias, SUM(i.justificada) as justificadas')
             ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+            ->join('usuarios u', 'u.id_usuario = e.id_usuario', 'left')
             ->like('i.fecha_inasistencia', $mesActual, 'after')
-            ->groupBy('i.empleado_id, e.nombres, e.apellidos, e.tipo_empleado, e.departamento')
+            ->groupBy('i.empleado_id, e.nombres, e.apellidos, e.tipo_empleado, e.departamento, u.email')
             ->orderBy('total_inasistencias', 'DESC')
             ->limit(5)
             ->get()->getResultArray();
@@ -2211,16 +2251,143 @@ class AdminTHController extends Controller
      */
     public function reportes()
     {
+        $db = \Config\Database::connect();
+
+        // Conteos para las tarjetas de resumen rápido
         $data = [
-            'titulo' => 'Reportes',
+            'titulo'  => 'Reportes del Sistema',
             'usuario' => [
-                'nombres' => session()->get('nombres'),
+                'nombres'   => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
-                'rol' => session()->get('nombre_rol')
-            ]
+                'rol'       => session()->get('nombre_rol'),
+            ],
+            'totalEmpleados'    => $db->table('empleados')->where('estado', 'Activo')->countAllResults(),
+            'totalCapacitaciones' => $db->table('capacitaciones')->countAllResults(),
+            'totalInasistencias'  => $db->table('inasistencias')->countAllResults(),
+            'totalEvaluaciones'   => $db->table('evaluaciones')->countAllResults(),
+            'departamentos' => $db->query("SELECT DISTINCT departamento FROM empleados WHERE departamento IS NOT NULL AND departamento != '' ORDER BY departamento")->getResultArray(),
         ];
 
         return view('Roles/AdminTH/reportes', $data);
+    }
+
+    /**
+     * Exportar reporte en CSV con datos reales
+     * URL: admin-th/reportes/exportar/{tipo}/{fechaInicio}/{fechaFin}
+     */
+    public function exportarReporte(string $tipo, string $fechaInicio, string $fechaFin)
+    {
+        $db          = \Config\Database::connect();
+        $fechaInicio = urldecode($fechaInicio);
+        $fechaFin    = urldecode($fechaFin);
+        $filename    = "reporte_{$tipo}_" . date('Ymd_His') . '.csv';
+
+        // Cabeceras HTTP para descarga CSV
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        $out = fopen('php://output', 'w');
+        fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF)); // BOM UTF-8
+
+        switch ($tipo) {
+
+            case 'empleados':
+                fputcsv($out, ['ID', 'Apellidos', 'Nombres', 'Tipo', 'Departamento', 'Email', 'Cédula', 'Fecha Ingreso', 'Estado']);
+                $rows = $db->query("
+                    SELECT e.id_empleado, e.apellidos, e.nombres, e.tipo_empleado,
+                           COALESCE(e.departamento,'Sin asignar') AS departamento,
+                           u.email, u.cedula, e.fecha_ingreso, e.estado
+                    FROM empleados e
+                    LEFT JOIN usuarios u ON u.id_usuario = e.id_usuario
+                    WHERE e.fecha_ingreso BETWEEN ? AND ?
+                    ORDER BY e.apellidos
+                ", [$fechaInicio, $fechaFin])->getResultArray();
+                foreach ($rows as $r) {
+                    fputcsv($out, [$r['id_empleado'], $r['apellidos'], $r['nombres'], $r['tipo_empleado'],
+                        $r['departamento'], $r['email'], $r['cedula'], $r['fecha_ingreso'], $r['estado']]);
+                }
+                break;
+
+            case 'capacitaciones':
+                fputcsv($out, ['ID', 'Nombre', 'Tipo', 'Modalidad', 'Institución', 'Fecha Inicio', 'Fecha Fin', 'Horas', 'Estado']);
+                $rows = $db->query("
+                    SELECT id_capacitacion, nombre, tipo, modalidad, institucion,
+                           fecha_inicio, fecha_fin, duracion_horas, estado
+                    FROM capacitaciones
+                    WHERE fecha_inicio BETWEEN ? AND ?
+                    ORDER BY fecha_inicio DESC
+                ", [$fechaInicio, $fechaFin])->getResultArray();
+                foreach ($rows as $r) {
+                    fputcsv($out, [$r['id_capacitacion'], $r['nombre'], $r['tipo'], $r['modalidad'],
+                        $r['institucion'], $r['fecha_inicio'], $r['fecha_fin'], $r['duracion_horas'], $r['estado']]);
+                }
+                break;
+
+            case 'inasistencias':
+                fputcsv($out, ['ID', 'Empleado', 'Departamento', 'Fecha', 'Tipo', 'Motivo', 'Justificada']);
+                $rows = $db->query("
+                    SELECT i.id, CONCAT(e.apellidos,' ',e.nombres) AS empleado,
+                           COALESCE(e.departamento,'Sin asignar') AS departamento,
+                           i.fecha_inasistencia, i.tipo_inasistencia, i.motivo,
+                           IF(i.justificada=1,'Sí','No') AS justificada
+                    FROM inasistencias i
+                    LEFT JOIN empleados e ON e.id_empleado = i.empleado_id
+                    WHERE i.fecha_inasistencia BETWEEN ? AND ?
+                    ORDER BY i.fecha_inasistencia DESC
+                ", [$fechaInicio, $fechaFin])->getResultArray();
+                foreach ($rows as $r) {
+                    fputcsv($out, [$r['id'], $r['empleado'], $r['departamento'],
+                        $r['fecha_inasistencia'], $r['tipo_inasistencia'], $r['motivo'], $r['justificada']]);
+                }
+                break;
+
+            case 'evaluaciones':
+                fputcsv($out, ['ID', 'Evaluación', 'Tipo', 'Empleado', 'Evaluador', 'Puntaje Total', 'Fecha', 'Estado']);
+                $rows = $db->query("
+                    SELECT ee.id_evaluacion_empleado,
+                           ev.nombre AS evaluacion, ev.tipo_evaluacion,
+                           CONCAT(e.apellidos,' ',e.nombres)  AS empleado,
+                           CONCAT(ev2.apellidos,' ',ev2.nombres) AS evaluador,
+                           ee.puntaje_total, ee.fecha_evaluacion, ev.estado
+                    FROM evaluaciones_empleados ee
+                    LEFT JOIN evaluaciones ev  ON ev.id_evaluacion  = ee.id_evaluacion
+                    LEFT JOIN empleados e      ON e.id_empleado     = ee.id_empleado
+                    LEFT JOIN empleados ev2    ON ev2.id_empleado   = ee.id_evaluador
+                    WHERE ee.fecha_evaluacion BETWEEN ? AND ?
+                    ORDER BY ee.fecha_evaluacion DESC
+                ", [$fechaInicio, $fechaFin])->getResultArray();
+                foreach ($rows as $r) {
+                    fputcsv($out, [$r['id_evaluacion_empleado'], $r['evaluacion'], $r['tipo_evaluacion'],
+                        $r['empleado'], $r['evaluador'], $r['puntaje_total'], $r['fecha_evaluacion'], $r['estado']]);
+                }
+                break;
+
+            case 'solicitudes':
+                fputcsv($out, ['ID', 'Empleado', 'Departamento', 'Tipo', 'Asunto', 'Estado', 'Fecha Solicitud', 'Comentarios']);
+                $rows = $db->query("
+                    SELECT s.id_solicitud, CONCAT(e.apellidos,' ',e.nombres) AS empleado,
+                           COALESCE(e.departamento,'Sin asignar') AS departamento,
+                           s.tipo_solicitud, s.titulo, s.estado,
+                           s.fecha_solicitud, s.comentarios_resolucion
+                    FROM solicitudes s
+                    LEFT JOIN empleados e ON e.id_empleado = s.id_empleado
+                    WHERE DATE(s.fecha_solicitud) BETWEEN ? AND ?
+                      AND s.activo = 1
+                    ORDER BY s.fecha_solicitud DESC
+                ", [$fechaInicio, $fechaFin])->getResultArray();
+                foreach ($rows as $r) {
+                    fputcsv($out, [$r['id_solicitud'], $r['empleado'], $r['departamento'],
+                        $r['tipo_solicitud'], $r['titulo'], $r['estado'],
+                        $r['fecha_solicitud'], $r['comentarios_resolucion']]);
+                }
+                break;
+
+            default:
+                fputcsv($out, ['Error']);
+                fputcsv($out, ['Tipo de reporte no reconocido: ' . $tipo]);
+        }
+
+        fclose($out);
+        exit;
     }
 
     /**
@@ -2228,13 +2395,194 @@ class AdminTHController extends Controller
      */
     public function estadisticas()
     {
+        $db         = \Config\Database::connect();
+        $anioActual = (int) date('Y');
+        $mesActual  = date('Y-m');
+        $hoy        = date('Y-m-d');
+        $inicioTrimestre = date('Y-m-d', strtotime('-3 months'));
+
+        // ── Tarjetas de resumen ───────────────────────────────────────────────
+
+        $totalEmpleados = $db->table('empleados')
+            ->where('estado', 'Activo')
+            ->countAllResults();
+
+        $capActivas = $db->table('capacitaciones')
+            ->where('estado', 'ACTIVA')
+            ->countAllResults();
+
+        $inasistenciasMes = $db->table('inasistencias')
+            ->like('fecha_inasistencia', $mesActual, 'after')
+            ->countAllResults();
+
+        $evaluacionesPendientes = $db->table('evaluaciones')
+            ->whereIn('estado', ['Planificada', 'En curso'])
+            ->countAllResults();
+
+        // ── Gráfico 1: Empleados por departamento ─────────────────────────────
+        $empDepto = $db->table('empleados')
+            ->select('COALESCE(departamento, "Sin asignar") AS depto, COUNT(*) AS total')
+            ->where('estado', 'Activo')
+            ->groupBy('departamento')
+            ->orderBy('total', 'DESC')
+            ->get()->getResultArray();
+
+        $graficoDeptos = [
+            'labels' => array_column($empDepto, 'depto'),
+            'data'   => array_map('intval', array_column($empDepto, 'total')),
+        ];
+
+        // ── Gráfico 2: Capacitaciones por estado ──────────────────────────────
+        $capEstado = $db->table('capacitaciones')
+            ->select('estado, COUNT(*) AS total')
+            ->groupBy('estado')
+            ->get()->getResultArray();
+
+        $graficoCapEstado = [
+            'labels' => array_column($capEstado, 'estado'),
+            'data'   => array_map('intval', array_column($capEstado, 'total')),
+        ];
+
+        // ── Gráfico 3: Inasistencias por mes (últimos 12 meses) ───────────────
+        $inaMeses = $db->query("
+            SELECT MONTH(fecha_inasistencia) AS mes, COUNT(*) AS total
+            FROM inasistencias
+            WHERE YEAR(fecha_inasistencia) = ?
+            GROUP BY MONTH(fecha_inasistencia)
+            ORDER BY mes
+        ", [$anioActual])->getResultArray();
+
+        $mesesData = array_fill(0, 12, 0);
+        foreach ($inaMeses as $row) {
+            $mesesData[(int)$row['mes'] - 1] = (int)$row['total'];
+        }
+        $graficoInasistenciasAnio = $mesesData;
+
+        // ── Gráfico 4: Distribución de calificaciones de evaluaciones ─────────
+        $calificaciones = $db->query("
+            SELECT
+                CASE
+                    WHEN puntaje_total >= 9  THEN 'Excelente (9-10)'
+                    WHEN puntaje_total >= 7  THEN 'Bueno (7-8)'
+                    WHEN puntaje_total >= 5  THEN 'Regular (5-6)'
+                    ELSE                          'Bajo (1-4)'
+                END AS rango,
+                COUNT(*) AS total
+            FROM evaluaciones_empleados
+            WHERE puntaje_total IS NOT NULL
+            GROUP BY rango
+            ORDER BY MIN(puntaje_total) DESC
+        ")->getResultArray();
+
+        // Si la tabla no existe o está vacía, usar fallback vacío
+        $graficoCalificaciones = [
+            'labels' => empty($calificaciones) ? [] : array_column($calificaciones, 'rango'),
+            'data'   => empty($calificaciones) ? [] : array_map('intval', array_column($calificaciones, 'total')),
+        ];
+
+        // ── Top 5 empleados por capacitaciones inscritas ─────────────────────
+        $topEmpleadosCap = $db->query("
+            SELECT
+                e.nombres,
+                e.apellidos,
+                COALESCE(e.departamento, 'Sin asignar') AS departamento,
+                COUNT(ce.id)                             AS total_cap,
+                SUM(ce.estado = 'COMPLETADA')            AS completadas,
+                ROUND(
+                    SUM(ce.estado = 'COMPLETADA') * 100.0
+                    / NULLIF(COUNT(ce.id), 0)
+                , 0)                                     AS porcentaje
+            FROM empleados e
+            INNER JOIN capacitaciones_empleados ce ON ce.empleado_id = e.id_empleado
+            WHERE e.estado = 'Activo'
+            GROUP BY e.id_empleado, e.nombres, e.apellidos, e.departamento
+            ORDER BY total_cap DESC, completadas DESC
+            LIMIT 5
+        ")->getResultArray();
+
+        // ── Top departamentos con mayor inasistencia (mes actual) ─────────────
+        $topDeptosInasistencia = $db->query("
+            SELECT
+                COALESCE(e.departamento, 'Sin asignar')  AS departamento,
+                COUNT(DISTINCT e.id_empleado)             AS total_empleados,
+                COUNT(i.id)                               AS total_inasistencias,
+                ROUND(
+                    COUNT(i.id) * 100.0 /
+                    NULLIF(COUNT(DISTINCT e.id_empleado), 0)
+                , 1)                                      AS porcentaje
+            FROM empleados e
+            LEFT JOIN inasistencias i
+                   ON i.empleado_id = e.id_empleado
+                  AND i.fecha_inasistencia LIKE ?
+            WHERE e.estado = 'Activo'
+            GROUP BY e.departamento
+            HAVING total_inasistencias > 0
+            ORDER BY total_inasistencias DESC
+            LIMIT 5
+        ", [$mesActual . '%'])->getResultArray();
+
+        // ── Métricas de rendimiento ───────────────────────────────────────────
+
+        // Tasa de asistencia: días laborables del mes vs inasistencias
+        $diasLaborables = 22; // estimado estándar
+        $totalPosibles  = max(1, $totalEmpleados * $diasLaborables);
+        $tasaAsistencia = round((1 - ($inasistenciasMes / $totalPosibles)) * 100, 1);
+        $tasaAsistencia = max(0, min(100, $tasaAsistencia));
+
+        // Participación en capacitaciones (último trimestre)
+        $conCap = $db->query("
+            SELECT COUNT(DISTINCT empleado_id) AS total
+            FROM capacitaciones_empleados
+            WHERE created_at >= ?
+        ", [$inicioTrimestre])->getRowArray();
+        $partCapacitaciones = $totalEmpleados > 0
+            ? round(((int)($conCap['total'] ?? 0) / $totalEmpleados) * 100, 1)
+            : 0;
+
+        // Promedio de evaluaciones
+        $avgEval = $db->query("
+            SELECT ROUND(AVG(puntaje_total), 1) AS promedio
+            FROM evaluaciones_empleados
+            WHERE puntaje_total IS NOT NULL
+        ")->getRowArray();
+        $promedioEvaluaciones = $avgEval['promedio'] ?? 'N/A';
+
+        // Tiempo promedio de respuesta de solicitudes (días)
+        $tiempoResp = $db->query("
+            SELECT ROUND(AVG(DATEDIFF(fecha_resolucion, fecha_solicitud)), 1) AS promedio
+            FROM solicitudes
+            WHERE fecha_resolucion IS NOT NULL
+              AND activo = 1
+        ")->getRowArray();
+        $tiempoRespuesta = isset($tiempoResp['promedio']) && $tiempoResp['promedio'] !== null
+            ? $tiempoResp['promedio'] . ' días'
+            : 'N/A';
+
         $data = [
-            'titulo' => 'Estadísticas',
+            'titulo'  => 'Estadísticas del Sistema',
             'usuario' => [
-                'nombres' => session()->get('nombres'),
+                'nombres'   => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
-                'rol' => session()->get('nombre_rol')
-            ]
+                'rol'       => session()->get('nombre_rol'),
+            ],
+            // Tarjetas
+            'totalEmpleados'        => $totalEmpleados,
+            'capActivas'            => $capActivas,
+            'inasistenciasMes'      => $inasistenciasMes,
+            'evaluacionesPendientes' => $evaluacionesPendientes,
+        // Gráficos (json_encode aquí para no repetirlo en la vista)
+            'graficoDeptos'              => json_encode($graficoDeptos),
+            'graficoCapEstado'           => json_encode($graficoCapEstado),
+            'graficoInasistenciasAnio'   => json_encode($graficoInasistenciasAnio),
+            'graficoCalificaciones'      => json_encode($graficoCalificaciones),
+            // Tablas
+            'topEmpleadosCap'        => $topEmpleadosCap,
+            'topDeptosInasistencia'  => $topDeptosInasistencia,
+            // Métricas
+            'tasaAsistencia'         => $tasaAsistencia . '%',
+            'partCapacitaciones'     => $partCapacitaciones . '%',
+            'promedioEvaluaciones'   => $promedioEvaluaciones,
+            'tiempoRespuesta'        => $tiempoRespuesta,
         ];
 
         return view('Roles/AdminTH/estadisticas', $data);
@@ -4508,6 +4856,290 @@ class AdminTHController extends Controller
     /**
      * Endpoint API para gráficos de inasistencias en el dashboard AdminTH
      */
+    /**
+     * Generar reporte de inasistencias con filtros
+     */
+    public function reporteInasistencias()
+    {
+        $db = \Config\Database::connect();
+        
+        // Obtener filtros de la petición
+        $fechaInicio = $this->request->getGet('fecha_inicio');
+        $fechaFin    = $this->request->getGet('fecha_fin');
+        $departamento = $this->request->getGet('departamento');
+        $empleadoId  = $this->request->getGet('empleado_id');
+        
+        // Construir query con filtros
+        $builder = $db->table('inasistencias i')
+            ->select('i.*, e.nombres, e.apellidos, u.cedula, e.departamento, e.tipo_empleado, u.email as correo')
+            ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+            ->join('usuarios u', 'u.id_usuario = e.id_usuario', 'left')
+            ->orderBy('i.fecha_inasistencia', 'DESC');
+        
+        // Aplicar filtros
+        if ($fechaInicio) {
+            $builder->where('i.fecha_inasistencia >=', $fechaInicio);
+        }
+        if ($fechaFin) {
+            $builder->where('i.fecha_inasistencia <=', $fechaFin);
+        }
+        if ($departamento && $departamento !== 'todos') {
+            $builder->where('e.departamento', $departamento);
+        }
+        if ($empleadoId) {
+            $builder->where('i.empleado_id', $empleadoId);
+        }
+        
+        $inasistencias = $builder->get()->getResultArray();
+        
+        // Calcular estadísticas del reporte
+        $totalInasistencias = count($inasistencias);
+        $justificadas = array_filter($inasistencias, fn($i) => $i['justificada'] == 1);
+        $sinJustificar = $totalInasistencias - count($justificadas);
+        
+        $data = [
+            'titulo' => 'Reporte de Inasistencias',
+            'usuario' => [
+                'nombres' => session()->get('nombres'),
+                'apellidos' => session()->get('apellidos'),
+                'rol' => session()->get('nombre_rol')
+            ],
+            'inasistencias' => $inasistencias,
+            'filtros' => [
+                'fecha_inicio' => $fechaInicio,
+                'fecha_fin' => $fechaFin,
+                'departamento' => $departamento,
+                'empleado_id' => $empleadoId
+            ],
+            'estadisticas' => [
+                'total' => $totalInasistencias,
+                'justificadas' => count($justificadas),
+                'sin_justificar' => $sinJustificar,
+                'tasa_justificacion' => $totalInasistencias > 0 ? round((count($justificadas) / $totalInasistencias) * 100, 2) : 0
+            ],
+            'departamentos' => $db->table('empleados')->select('departamento')->distinct()->get()->getResultArray()
+        ];
+        
+        return view('Roles/AdminTH/inasistencias/reporte', $data);
+    }
+    
+    /**
+     * Exportar reporte de inasistencias a Excel/PDF
+     */
+    public function exportarInasistencias()
+    {
+        $db = \Config\Database::connect();
+        
+        // Obtener filtros
+        $fechaInicio = $this->request->getGet('fecha_inicio');
+        $fechaFin    = $this->request->getGet('fecha_fin');
+        $departamento = $this->request->getGet('departamento');
+        $formato     = $this->request->getGet('formato') ?? 'excel';
+        
+        // Construir query
+        $builder = $db->table('inasistencias i')
+            ->select('i.*, e.nombres, e.apellidos, u.cedula, e.departamento, e.tipo_empleado')
+            ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+            ->join('usuarios u', 'u.id_usuario = e.id_usuario', 'left')
+            ->orderBy('i.fecha_inasistencia', 'DESC');
+        
+        if ($fechaInicio) $builder->where('i.fecha_inasistencia >=', $fechaInicio);
+        if ($fechaFin) $builder->where('i.fecha_inasistencia <=', $fechaFin);
+        if ($departamento && $departamento !== 'todos') $builder->where('e.departamento', $departamento);
+        
+        $inasistencias = $builder->get()->getResultArray();
+        
+        if ($formato === 'excel') {
+            // Generar CSV
+            $filename = 'reporte_inasistencias_' . date('Y-m-d_His') . '.csv';
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            
+            $output = fopen('php://output', 'w');
+            fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF)); // UTF-8 BOM
+            
+            // Encabezados
+            fputcsv($output, ['ID', 'Empleado', 'Cédula', 'Departamento', 'Tipo Empleado', 'Fecha', 'Hora', 'Tipo Inasistencia', 'Motivo', 'Justificada']);
+            
+            // Datos
+            foreach ($inasistencias as $i) {
+                fputcsv($output, [
+                    $i['id'],
+                    $i['apellidos'] . ' ' . $i['nombres'],
+                    $i['cedula'],
+                    $i['departamento'],
+                    $i['tipo_empleado'],
+                    $i['fecha_inasistencia'],
+                    $i['hora_inasistencia'] ?? 'N/A',
+                    $i['tipo_inasistencia'],
+                    $i['motivo'],
+                    $i['justificada'] == 1 ? 'Sí' : 'No'
+                ]);
+            }
+            
+            fclose($output);
+            exit;
+        }
+        
+        // Si es PDF, retornar vista para imprimir
+        return view('Roles/AdminTH/inasistencias/reporte_pdf', [
+            'inasistencias' => $inasistencias,
+            'fecha_generacion' => date('d/m/Y H:i:s')
+        ]);
+    }
+    
+    /**
+     * Revisar y aprobar/rechazar justificación
+     */
+    public function revisarJustificacion()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+        
+        $inasistenciaId = $this->request->getPost('inasistencia_id');
+        $accion = $this->request->getPost('accion'); // 'aprobar' o 'rechazar'
+        $observaciones = $this->request->getPost('observaciones') ?? '';
+        
+        if (!$inasistenciaId || !$accion) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Datos incompletos'
+            ]);
+        }
+        
+        $db = \Config\Database::connect();
+        
+        // Verificar que la inasistencia existe
+        $inasistencia = $db->table('inasistencias')
+            ->where('id', $inasistenciaId)
+            ->get()
+            ->getRowArray();
+        
+        if (!$inasistencia) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Inasistencia no encontrada'
+            ]);
+        }
+        
+        // Actualizar estado según la acción
+        $updateData = [
+            'fecha_revision' => date('Y-m-d H:i:s'),
+            'revisado_por' => session()->get('id_usuario')
+        ];
+        
+        if ($accion === 'aprobar') {
+            $updateData['justificada'] = 1;
+            $updateData['tipo_inasistencia'] = 'Justificada';
+            $updateData['observaciones_revision'] = $observaciones;
+        } else {
+            $updateData['justificada'] = 0;
+            $updateData['tipo_inasistencia'] = 'Injustificada';
+            $updateData['observaciones_revision'] = $observaciones;
+        }
+        
+        $resultado = $db->table('inasistencias')
+            ->where('id', $inasistenciaId)
+            ->update($updateData);
+        
+        if ($resultado) {
+            // Registrar en log
+            $db->table('logs_sistema')->insert([
+                'usuario_id' => session()->get('id_usuario'),
+                'accion' => 'REVISION_JUSTIFICACION',
+                'descripcion' => "Justificación {$accion}da para inasistencia ID: {$inasistenciaId}",
+                'fecha' => date('Y-m-d H:i:s')
+            ]);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $accion === 'aprobar' ? 'Justificación aprobada exitosamente' : 'Justificación rechazada'
+            ]);
+        }
+        
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'Error al actualizar el registro'
+        ]);
+    }
+    
+    /**
+     * Obtener datos de justificación para modal
+     */
+    public function obtenerJustificacion()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+        
+        $inasistenciaId = $this->request->getGet('id');
+        
+        if (!$inasistenciaId) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID no proporcionado'
+            ]);
+        }
+        
+        $db = \Config\Database::connect();
+        
+        $inasistencia = $db->table('inasistencias i')
+            ->select('i.*, e.nombres, e.apellidos, u.cedula, e.departamento, e.tipo_empleado')
+            ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
+            ->join('usuarios u', 'u.id_usuario = e.id_usuario', 'left')
+            ->where('i.id', $inasistenciaId)
+            ->get()
+            ->getRowArray();
+        
+        if (!$inasistencia) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Inasistencia no encontrada'
+            ]);
+        }
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => $inasistencia
+        ]);
+    }
+
+    /**
+     * Retorna las inasistencias del mes actual de un empleado (AJAX)
+     */
+    public function getDetallesInasistenciasEmpleadoMes(int $idEmpleado)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $db         = \Config\Database::connect();
+            $inicioMes  = date('Y-m-01');
+            $finMes     = date('Y-m-t');
+
+            $inasistencias = $db->table('inasistencias')
+                ->select('id, fecha_inasistencia, tipo_inasistencia, motivo, justificada')
+                ->where('empleado_id', $idEmpleado)
+                ->where('fecha_inasistencia >=', $inicioMes)
+                ->where('fecha_inasistencia <=', $finMes)
+                ->orderBy('fecha_inasistencia', 'ASC')
+                ->get()
+                ->getResultArray();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data'    => $inasistencias
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al obtener los datos: ' . $e->getMessage()
+            ]);
+        }
+    }
+
     public function getEstadisticasGlobalesInasistencias()
     {
         try {
@@ -4515,36 +5147,46 @@ class AdminTHController extends Controller
             
             // Inasistencias por Departamento
             $deptos = $db->table('inasistencias i')
-                ->select('e.departamento, COUNT(i.id) as cantidad')
+                ->select('COALESCE(e.departamento, "Sin asignar") as departamento, COUNT(i.id) as cantidad')
                 ->join('empleados e', 'e.id_empleado = i.empleado_id', 'left')
                 ->groupBy('e.departamento')
                 ->orderBy('cantidad', 'DESC')
                 ->get()->getResultArray();
                 
-            $labelsDeptos = []; $valoresDeptos = [];
+            $labelsDeptos  = [];
+            $valoresDeptos = [];
             foreach ($deptos as $d) {
-                $labelsDeptos[] = $d['departamento'] ?? 'N/A';
-                $valoresDeptos[] = (int)$d['cantidad'];
+                $labelsDeptos[]  = $d['departamento'];
+                $valoresDeptos[] = (int) $d['cantidad'];
             }
 
-            // Tendencia diaria
-            $tendencia = $db->table('inasistencias')
-                ->select('fecha_inasistencia, COUNT(id) as cantidad')
-                ->groupBy('fecha_inasistencia')
-                ->orderBy('fecha_inasistencia', 'ASC')
-                ->limit(10)
+            // Tendencia últimos 7 días (rellena ceros para días sin registros)
+            $fechaHace7Dias = date('Y-m-d', strtotime('-6 days'));
+            $rows = $db->table('inasistencias')
+                ->select('DATE(fecha_inasistencia) as dia, COUNT(id) as cantidad')
+                ->where('fecha_inasistencia >=', $fechaHace7Dias)
+                ->groupBy('dia')
+                ->orderBy('dia', 'ASC')
                 ->get()->getResultArray();
-                
-            $labelsTendencia = []; $valoresTendencia = [];
-            foreach ($tendencia as $t) {
-                $labelsTendencia[] = date('d/m', strtotime($t['fecha_inasistencia']));
-                $valoresTendencia[] = (int)$t['cantidad'];
+
+            // Indexar por fecha para búsqueda rápida
+            $porFecha = [];
+            foreach ($rows as $r) {
+                $porFecha[$r['dia']] = (int) $r['cantidad'];
+            }
+
+            $labelsTendencia  = [];
+            $valoresTendencia = [];
+            for ($i = 6; $i >= 0; $i--) {
+                $diaStr            = date('Y-m-d', strtotime("-{$i} days"));
+                $labelsTendencia[] = date('d/m', strtotime("-{$i} days"));
+                $valoresTendencia[] = $porFecha[$diaStr] ?? 0;
             }
 
             return $this->response->setJSON([
-                'success' => true,
-                'departamentos' => ['labels' => $labelsDeptos, 'valores' => $valoresDeptos],
-                'tendencia' => ['labels' => $labelsTendencia, 'valores' => $valoresTendencia]
+                'success'      => true,
+                'departamentos' => ['labels' => $labelsDeptos,  'valores' => $valoresDeptos],
+                'tendencia'     => ['labels' => $labelsTendencia, 'valores' => $valoresTendencia]
             ]);
         } catch (\Exception $e) {
             return $this->response->setJSON(['success' => false, 'message' => $e->getMessage()]);

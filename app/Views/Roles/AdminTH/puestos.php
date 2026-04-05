@@ -246,11 +246,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="activo" class="form-label">Activo *</label>
-                                <select class="form-select" id="activo" name="activo" required>
-                                    <option value="1">Sí</option>
-                                    <option value="0">No</option>
-                                </select>
+                                <!-- campo activo eliminado: se deriva del estado automáticamente -->
                             </div>
                         </div>
                     </div>
@@ -608,8 +604,8 @@ function editarPuesto(idPuesto) {
     document.getElementById('responsabilidades').value = puesto.responsabilidades;
     document.getElementById('beneficios').value = puesto.beneficios;
     document.getElementById('estado').value = puesto.estado;
-    document.getElementById('activo').value = puesto.activo;
 
+    const modal = new bootstrap.Modal(document.getElementById('modalPuesto'));
     modal.show();
 }
 

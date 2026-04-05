@@ -134,7 +134,7 @@
                                 </a>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <a href="<?= base_url('admin-th/inasistencias/revisar-justificaciones') ?>" 
+                                <a href="<?= base_url('admin-th/inasistencias/listar') ?>" 
                                    class="btn btn-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center">
                                     <i class="bi bi-clipboard-check fs-1 mb-2"></i>
                                     <span>Revisar Justificaciones</span>
@@ -146,7 +146,7 @@
                                 </a>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <a href="<?= base_url('admin-th/inasistencias/reportes') ?>" 
+                                <a href="<?= base_url('admin-th/inasistencias/reporte') ?>" 
                                    class="btn btn-info w-100 h-100 d-flex flex-column align-items-center justify-content-center">
                                     <i class="bi bi-bar-chart fs-1 mb-2"></i>
                                     <span>Generar Reportes</span>
@@ -340,7 +340,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <canvas id="graficoDepartamentos" width="400" height="200"></canvas>
+                        <div id="graficoDepartamentos" style="min-height:280px;"></div>
                     </div>
                 </div>
             </div>
@@ -353,7 +353,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <canvas id="graficoTendencia" width="400" height="200"></canvas>
+                        <div id="graficoTendencia" style="min-height:280px;"></div>
                     </div>
                 </div>
             </div>
@@ -449,6 +449,11 @@
                                                                 data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Perfil">
                                                             <i class="bi bi-eye"></i>
                                                         </button>
+                                                        <button type="button" class="btn btn-sm btn-outline-success"
+                                                                onclick="verDetallesEmpleadoMes(<?= (int)($empleado['empleado_id'] ?? 0) ?>, '<?= esc($empleado['nombre'] ?? 'Empleado') ?>')"
+                                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Inasistencias del Mes">
+                                                            <i class="bi bi-calendar2-x"></i>
+                                                        </button>
                                                         <a href="mailto:<?= $empleado['correo'] ?? '' ?>?subject=Sobre tu inasistencia" 
                                                                 class="btn btn-sm btn-outline-warning" 
                                                                 data-bs-toggle="tooltip" data-bs-placement="top" title="Contactar">
@@ -524,73 +529,123 @@
 
 <!-- SweetAlert2 Plugin -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- ApexCharts -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.0/dist/apexcharts.min.js"></script>
 <script>
+// ── Datos inyectados desde PHP ────────────────────────────────────────────────
+const graficosData = {
+    departamentos: {
+        labels:  <?= json_encode(
+            empty($graficos['departamentos']['labels'])
+                ? ['Sin datos']
+                : $graficos['departamentos']['labels']
+        ) ?>,
+        valores: <?= json_encode(
+            empty($graficos['departamentos']['valores'])
+                ? [0]
+                : $graficos['departamentos']['valores']
+        ) ?>
+    },
+    tendencia: {
+        labels:  <?= json_encode($graficos['tendencia']['labels']) ?>,
+        valores: <?= json_encode($graficos['tendencia']['valores']) ?>
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
-    const botonesVerPerfil = document.querySelectorAll('.btn-ver-perfil');
 
-    // Fetch Estadísticas Dinámicamente para Charts
-    fetch('<?= site_url("admin-th/inasistencias/estadisticas-globales") ?>')
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                renderCharts(data.departamentos, data.tendencia);
-            }
-        })
-        .catch(err => console.error("Error loading charts:", err));
-
-    function renderCharts(deptosData, tendenciaData) {
-        // Gráfico por departamentos
-        const canvasDeptos = document.getElementById('graficoDepartamentos');
-        if (canvasDeptos) {
-            new Chart(canvasDeptos.getContext('2d'), {
-                type: 'doughnut',
-                data: {
-                    labels: deptosData.labels,
-                    datasets: [{
-                        data: deptosData.valores,
-                        backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d', '#17a2b8', '#e83e8c', '#6f42c1'],
-                        borderWidth: 2, borderColor: '#fff'
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-            });
-        }
-
-        // Gráfico de tendencia
-        const canvasTendencia = document.getElementById('graficoTendencia');
-        if (canvasTendencia) {
-            new Chart(canvasTendencia.getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels: tendenciaData.labels,
-                    datasets: [{
-                        label: 'Inasistencias por Día',
-                        data: tendenciaData.valores,
-                        borderColor: '#007bff',
-                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                        tension: 0.4, fill: true
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-            });
-        }
+    // ── Gráfico de Dona: Inasistencias por Departamento ───────────────────────
+    const elDonut = document.getElementById('graficoDepartamentos');
+    if (elDonut) {
+        new ApexCharts(elDonut, {
+            series: graficosData.departamentos.valores,
+            labels: graficosData.departamentos.labels,
+            chart: {
+                type: 'donut',
+                height: 280,
+                toolbar: { show: false },
+                animations: { enabled: true, speed: 600 }
+            },
+            colors: ['#4361ee','#3bc9db','#f72585','#4cc9f0','#7209b7','#f3722c','#43aa8b','#90be6d'],
+            dataLabels: {
+                enabled: true,
+                formatter: (val) => val.toFixed(1) + '%'
+            },
+            legend: { position: 'bottom', fontSize: '13px' },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '60%',
+                        labels: {
+                            show: true,
+                            total: {
+                                show: true,
+                                label: 'Total',
+                                fontSize: '14px',
+                                fontWeight: 600,
+                                formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b, 0)
+                            }
+                        }
+                    }
+                }
+            },
+            tooltip: { y: { formatter: (val) => val + ' inasistencia(s)' } },
+            noData: { text: 'Sin datos disponibles' }
+        }).render();
     }
 
-    // Inicializar Tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-      return new bootstrap.Tooltip(tooltipTriggerEl);
+    // ── Gráfico de Área: Tendencia Semanal ────────────────────────────────────
+    const elArea = document.getElementById('graficoTendencia');
+    if (elArea) {
+        new ApexCharts(elArea, {
+            series: [{ name: 'Inasistencias', data: graficosData.tendencia.valores }],
+            chart: {
+                type: 'area',
+                height: 280,
+                toolbar: { show: false },
+                zoom: { enabled: false },
+                animations: { enabled: true, speed: 600 }
+            },
+            colors: ['#4361ee'],
+            fill: {
+                type: 'gradient',
+                gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [0, 100] }
+            },
+            stroke: { curve: 'smooth', width: 2 },
+            markers: { size: 5, hover: { size: 7 } },
+            xaxis: {
+                categories: graficosData.tendencia.labels,
+                labels: { style: { fontSize: '12px' } }
+            },
+            yaxis: {
+                min: 0,
+                tickAmount: 4,
+                labels: { formatter: (val) => Math.floor(val) }
+            },
+            dataLabels: { enabled: false },
+            grid: { borderColor: '#f1f1f1' },
+            tooltip: {
+                x: { show: true },
+                y: { formatter: (val) => val + ' inasistencia(s)' }
+            },
+            noData: { text: 'Sin datos disponibles' }
+        }).render();
+    }
+
+    // ── Tooltips Bootstrap ────────────────────────────────────────────────────
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el);
     });
+
+    // ── Perfil de Empleado (modal) ────────────────────────────────────────────
+    const botonesVerPerfil = document.querySelectorAll('.btn-ver-perfil');
 
     botonesVerPerfil.forEach(btn => {
         btn.addEventListener('click', function() {
             const empleadoId = this.getAttribute('data-id');
-            const modalElement = document.getElementById('modalPerfilEmpleado');
-            const modal = new bootstrap.Modal(modalElement);
-            const contenido = document.getElementById('contenidoPerfil');
-            
-            // Mostrar modal y spinner
+            const modal      = new bootstrap.Modal(document.getElementById('modalPerfilEmpleado'));
+            const contenido  = document.getElementById('contenidoPerfil');
+
             contenido.innerHTML = `
                 <div class="text-center py-4 text-primary">
                     <div class="spinner-border" role="status"></div>
@@ -645,6 +700,97 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+function verDetallesEmpleadoMes(idEmpleado, nombreEmpleado) {
+    Swal.fire({
+        title: `<i class="bi bi-calendar2-x me-2"></i>Inasistencias del Mes`,
+        html: `<p class="text-muted mb-3">Cargando registros de <strong>${nombreEmpleado}</strong>...</p>
+               <div class="d-flex justify-content-center">
+                   <div class="spinner-border text-primary" role="status"></div>
+               </div>`,
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        width: '700px',
+        didOpen: () => {
+            fetch(`<?= site_url('admin-th/inasistencias/detalles-mes/') ?>${idEmpleado}`)
+                .then(res => res.json())
+                .then(response => {
+                    if (!response.success) {
+                        Swal.update({
+                            html: `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${response.message || 'Error al cargar los datos.'}</div>`,
+                            showConfirmButton: true,
+                            confirmButtonText: 'Cerrar'
+                        });
+                        return;
+                    }
+
+                    const registros = response.data;
+
+                    if (registros.length === 0) {
+                        Swal.update({
+                            html: `<div class="text-center py-3">
+                                       <i class="bi bi-check-circle text-success" style="font-size:3rem;"></i>
+                                       <p class="mt-3 text-muted">
+                                           <strong>${nombreEmpleado}</strong> no tiene inasistencias registradas este mes.
+                                       </p>
+                                   </div>`,
+                            showConfirmButton: true,
+                            confirmButtonText: 'Cerrar',
+                            confirmButtonColor: '#6c757d'
+                        });
+                        return;
+                    }
+
+                    const filas = registros.map(r => {
+                        const estadoBadge = r.justificada == 1
+                            ? `<span class="badge bg-success">Justificada</span>`
+                            : `<span class="badge bg-warning text-dark">Sin Justificar</span>`;
+                        const tipoBadge = `<span class="badge bg-info">${r.tipo_inasistencia ?? 'N/A'}</span>`;
+                        const fecha = r.fecha_inasistencia
+                            ? new Date(r.fecha_inasistencia + 'T00:00:00').toLocaleDateString('es-EC', { day:'2-digit', month:'short', year:'numeric' })
+                            : 'N/A';
+                        const motivo = r.motivo ? r.motivo.substring(0, 60) + (r.motivo.length > 60 ? '…' : '') : '<em class="text-muted">Sin motivo</em>';
+
+                        return `<tr>
+                                    <td>${fecha}</td>
+                                    <td>${tipoBadge}</td>
+                                    <td style="max-width:220px;">${motivo}</td>
+                                    <td>${estadoBadge}</td>
+                                </tr>`;
+                    }).join('');
+
+                    Swal.update({
+                        title: `<i class="bi bi-calendar2-x me-2"></i>Inasistencias del Mes`,
+                        html: `<p class="text-muted mb-3">Registros de <strong>${nombreEmpleado}</strong> — 
+                               <span class="badge bg-primary">${registros.length} inasistencia(s)</span></p>
+                               <div class="table-responsive">
+                                   <table class="table table-sm table-hover table-bordered align-middle mb-0">
+                                       <thead class="table-dark">
+                                           <tr>
+                                               <th>Fecha</th>
+                                               <th>Tipo</th>
+                                               <th>Motivo</th>
+                                               <th>Estado</th>
+                                           </tr>
+                                       </thead>
+                                       <tbody>${filas}</tbody>
+                                   </table>
+                               </div>`,
+                        showConfirmButton: true,
+                        confirmButtonText: 'Cerrar',
+                        confirmButtonColor: '#4361ee'
+                    });
+                })
+                .catch(() => {
+                    Swal.update({
+                        html: `<div class="alert alert-danger"><i class="bi bi-wifi-off me-2"></i>Error de conexión con el servidor.</div>`,
+                        showConfirmButton: true,
+                        confirmButtonText: 'Cerrar'
+                    });
+                });
+        }
+    });
+}
 
 function verDetalle(id) {
     const modal = new bootstrap.Modal(document.getElementById('modalVerDetalle'));
@@ -704,6 +850,113 @@ function eliminarInasistencia(id) {
                 Swal.fire('Error', 'Problema de conexión con el servidor.', 'error');
             });
         }
+    });
+}
+
+function revisarJustificacion(id) {
+    // Obtener datos de la justificación
+    fetch(`<?= site_url('admin-th/inasistencias/obtener-justificacion') ?>?id=${id}`)
+        .then(res => res.json())
+        .then(response => {
+            if (!response.success) {
+                Swal.fire('Error', response.message || 'No se pudo cargar la justificación', 'error');
+                return;
+            }
+            
+            const data = response.data;
+            const archivoLink = data.archivo_justificacion ? 
+                `<p class="mb-3"><strong>Documento adjunto:</strong><br>
+                 <a href="${data.archivo_justificacion}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>Ver documento en Google Drive
+                 </a></p>` : 
+                '<p class="text-muted">Sin documento adjunto</p>';
+            
+            Swal.fire({
+                title: 'Revisar Justificación',
+                html: `
+                    <div class="text-start">
+                        <p class="mb-2"><strong>Empleado:</strong> ${data.apellidos} ${data.nombres}</p>
+                        <p class="mb-2"><strong>Fecha:</strong> ${data.fecha_inasistencia}</p>
+                        <p class="mb-2"><strong>Tipo:</strong> <span class="badge bg-info">${data.tipo_inasistencia}</span></p>
+                        <hr>
+                        <p class="mb-2"><strong>Motivo:</strong></p>
+                        <div class="alert alert-light">${data.motivo || 'Sin motivo especificado'}</div>
+                        ${archivoLink}
+                        <hr>
+                        <label for="observaciones" class="form-label"><strong>Observaciones (opcional):</strong></label>
+                        <textarea id="observaciones" class="form-control" rows="3" placeholder="Agregar comentarios sobre la revisión..."></textarea>
+                    </div>
+                `,
+                width: '600px',
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonText: '<i class="bi bi-check-circle me-1"></i>Aprobar',
+                denyButtonText: '<i class="bi bi-x-circle me-1"></i>Rechazar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#28a745',
+                denyButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                preConfirm: () => {
+                    return document.getElementById('observaciones').value;
+                },
+                preDeny: () => {
+                    return document.getElementById('observaciones').value;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    procesarRevision(id, 'aprobar', result.value);
+                } else if (result.isDenied) {
+                    procesarRevision(id, 'rechazar', result.value);
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('Error', 'Error de conexión al cargar la justificación', 'error');
+        });
+}
+
+function procesarRevision(inasistenciaId, accion, observaciones) {
+    Swal.fire({
+        title: 'Procesando...',
+        text: 'Guardando revisión',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    const formData = new FormData();
+    formData.append('inasistencia_id', inasistenciaId);
+    formData.append('accion', accion);
+    formData.append('observaciones', observaciones);
+    
+    fetch('<?= site_url('admin-th/inasistencias/revisar-justificacion') ?>', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: '¡Éxito!',
+                text: data.message,
+                timer: 2000,
+                showConfirmButton: false
+            }).then(() => {
+                window.location.reload();
+            });
+        } else {
+            Swal.fire('Error', data.message || 'No se pudo procesar la revisión', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error', 'Error de conexión al procesar la revisión', 'error');
     });
 }
 

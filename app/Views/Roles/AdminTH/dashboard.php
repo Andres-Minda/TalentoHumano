@@ -3,6 +3,7 @@
 <?= $this->section('content') ?>
 <div class="page-wrapper">
     <div class="page-content">
+
         <!-- Breadcrumb -->
         <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
             <div class="breadcrumb-title pe-3">Dashboard</div>
@@ -16,18 +17,16 @@
             </div>
         </div>
 
-        <!-- Welcome Section -->
-        <div class="row">
+        <!-- Welcome -->
+        <div class="row mb-3">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-body">
+                    <div class="card-body py-3">
                         <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <i class="ti ti-user-circle fs-1 text-primary"></i>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h4 class="mb-1">Bienvenido, <?= $usuario['nombres'] ?> <?= $usuario['apellidos'] ?></h4>
-                                <p class="mb-0 text-muted">Panel de Administración de Talento Humano</p>
+                            <i class="ti ti-user-circle fs-1 text-primary me-3"></i>
+                            <div>
+                                <h5 class="mb-0">Bienvenido, <?= esc($usuario['nombres']) ?> <?= esc($usuario['apellidos']) ?></h5>
+                                <small class="text-muted">Panel de Administración de Talento Humano — <?= date('d/m/Y') ?></small>
                             </div>
                         </div>
                     </div>
@@ -35,163 +34,150 @@
             </div>
         </div>
 
-        <!-- Statistics Cards -->
+        <!-- Tarjetas de resumen -->
         <div class="row">
-            <div class="col-xl-3 col-md-6">
-                <div class="card radius-10 bg-primary">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <i class="ti ti-users fs-1 text-white"></i>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h4 class="mb-0 text-white"><?= $totalEmpleados ?></h4>
-                                <p class="mb-0 text-white-50">Total Empleados</p>
-                            </div>
-                        </div>
+            <div class="col-xl-2 col-md-4 col-6">
+                <div class="card radius-10 bg-primary text-white">
+                    <div class="card-body text-center py-3">
+                        <i class="ti ti-users fs-2"></i>
+                        <h3 class="mb-0 mt-1"><?= $totalEmpleados ?></h3>
+                        <small class="text-white-50">Total Empleados</small>
                     </div>
                 </div>
             </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card radius-10 bg-success">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <i class="ti ti-calendar-check fs-1 text-white"></i>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h4 class="mb-0 text-white"><?= $empleadosActivos ?></h4>
-                                <p class="mb-0 text-white-50">Empleados Activos</p>
-                            </div>
-                        </div>
+            <div class="col-xl-2 col-md-4 col-6">
+                <div class="card radius-10 bg-success text-white">
+                    <div class="card-body text-center py-3">
+                        <i class="ti ti-user-check fs-2"></i>
+                        <h3 class="mb-0 mt-1"><?= $empleadosActivos ?></h3>
+                        <small class="text-white-50">Activos</small>
                     </div>
                 </div>
             </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card radius-10 bg-warning">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <i class="ti ti-calendar-off fs-1 text-white"></i>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h4 class="mb-0 text-white"><?= $inasistenciasPendientes ?></h4>
-                                <p class="mb-0 text-white-50">Inasistencias Pendientes</p>
-                            </div>
-                        </div>
+            <div class="col-xl-2 col-md-4 col-6">
+                <div class="card radius-10 bg-warning text-white">
+                    <div class="card-body text-center py-3">
+                        <i class="ti ti-calendar-off fs-2"></i>
+                        <h3 class="mb-0 mt-1"><?= $inasistenciasMesActual ?></h3>
+                        <small class="text-white-50">Inasistencias (mes)</small>
                     </div>
                 </div>
             </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card radius-10 bg-info">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <i class="ti ti-graduation-cap fs-1 text-white"></i>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h4 class="mb-0 text-white"><?= $capacitacionesActivas ?></h4>
-                                <p class="mb-0 text-white-50">Capacitaciones Activas</p>
-                            </div>
-                        </div>
+            <div class="col-xl-2 col-md-4 col-6">
+                <div class="card radius-10 bg-danger text-white">
+                    <div class="card-body text-center py-3">
+                        <i class="ti ti-clipboard-list fs-2"></i>
+                        <h3 class="mb-0 mt-1"><?= $solicitudesPendientes ?></h3>
+                        <small class="text-white-50">Solicitudes Pendientes</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-md-4 col-6">
+                <div class="card radius-10 bg-info text-white">
+                    <div class="card-body text-center py-3">
+                        <i class="ti ti-briefcase fs-2"></i>
+                        <h3 class="mb-0 mt-1"><?= $puestosAbiertos ?></h3>
+                        <small class="text-white-50">Puestos Abiertos</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-md-4 col-6">
+                <div class="card radius-10 bg-secondary text-white">
+                    <div class="card-body text-center py-3">
+                        <i class="ti ti-graduation-cap fs-2"></i>
+                        <h3 class="mb-0 mt-1"><?= $capacitacionesActivas ?></h3>
+                        <small class="text-white-50">Capacitaciones</small>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Quick Actions -->
+        <!-- Gráficos -->
         <div class="row">
-            <div class="col-12">
+            <div class="col-md-4">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">Acciones Rápidas</h5>
+                        <h6 class="card-title mb-0">Empleados por Departamento</h6>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3 mb-3">
-                                <a href="<?= site_url('admin-th/empleados') ?>" class="btn btn-outline-primary w-100">
-                                    <i class="ti ti-users me-2"></i>
-                                    Gestionar Empleados
-                                </a>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <a href="<?= site_url('admin-th/inasistencias') ?>" class="btn btn-outline-warning w-100">
-                                    <i class="ti ti-calendar-off me-2"></i>
-                                    Gestionar Inasistencias
-                                </a>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <a href="<?= site_url('admin-th/capacitaciones') ?>" class="btn btn-outline-info w-100">
-                                    <i class="ti ti-graduation-cap me-2"></i>
-                                    Gestionar Capacitaciones
-                                </a>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <a href="<?= site_url('admin-th/reportes') ?>" class="btn btn-outline-success w-100">
-                                    <i class="ti ti-chart-bar me-2"></i>
-                                    Ver Reportes
-                                </a>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <a href="<?= site_url('admin-th/postulantes') ?>" class="btn btn-outline-secondary w-100">
-                                    <i class="ti ti-person-lines-fill me-2"></i>
-                                    Gestionar Postulantes
-                                </a>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <a href="<?= site_url('admin-th/departamentos') ?>" class="btn btn-outline-dark w-100">
-                                    <i class="ti ti-building me-2"></i>
-                                    Departamentos
-                                </a>
-                            </div>
-                        </div>
+                        <div id="chartDepartamentos" style="min-height:280px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">Estado de Solicitudes</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="chartSolicitudes" style="min-height:280px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">Inasistencias <?= date('Y') ?></h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="chartInasistencias" style="min-height:280px;"></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Recent Activities -->
+        <!-- Tablas recientes -->
         <div class="row">
-            <div class="col-md-6">
+            <!-- Últimas inasistencias -->
+            <div class="col-md-7">
                 <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Últimas Inasistencias</h5>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">Últimas Inasistencias</h6>
+                        <a href="<?= site_url('admin-th/inasistencias') ?>" class="btn btn-sm btn-outline-warning">Ver todas</a>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-borderless">
-                                <thead>
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-dark">
                                     <tr>
                                         <th>Empleado</th>
                                         <th>Fecha</th>
+                                        <th>Tipo</th>
                                         <th>Estado</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php if (!empty($ultimasInasistencias)): ?>
                                         <?php foreach ($ultimasInasistencias as $ina): ?>
+                                            <?php
+                                                $tipo  = $ina['tipo_inasistencia'] ?? ($ina['justificada'] ? 'Justificada' : 'Injustificada');
+                                                $color = match($tipo) {
+                                                    'Justificada'    => 'success',
+                                                    'Injustificada'  => 'danger',
+                                                    'Permiso'        => 'info',
+                                                    'Vacaciones'     => 'primary',
+                                                    'Licencia Médica' => 'warning',
+                                                    default          => 'secondary'
+                                                };
+                                            ?>
                                             <tr>
-                                                <td><?= esc($ina['nombres']) ?> <?= esc($ina['apellidos']) ?></td>
+                                                <td><?= esc($ina['apellidos'] . ' ' . $ina['nombres']) ?></td>
                                                 <td><?= date('d/m/Y', strtotime($ina['fecha_inasistencia'])) ?></td>
+                                                <td><span class="badge bg-<?= $color ?>"><?= esc($tipo) ?></span></td>
                                                 <td>
-                                                    <?php
-                                                        $tipo = $ina['tipo_inasistencia'] ?? ($ina['justificada'] ? 'Justificada' : 'Injustificada');
-                                                        $color = match($tipo) {
-                                                            'Justificada' => 'success',
-                                                            'Injustificada' => 'danger',
-                                                            'Permiso' => 'info',
-                                                            'Vacaciones' => 'primary',
-                                                            'Licencia Médica' => 'warning',
-                                                            default => 'secondary'
-                                                        };
-                                                    ?>
-                                                    <span class="badge bg-<?= $color ?>"><?= esc($tipo) ?></span>
+                                                    <?php if ($ina['justificada']): ?>
+                                                        <span class="badge bg-success">Justificada</span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-warning text-dark">Sin justificar</span>
+                                                    <?php endif; ?>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="3" class="text-center text-muted">No hay inasistencias registradas</td>
+                                            <td colspan="4" class="text-center text-muted py-3">
+                                                <i class="bi bi-check-circle text-success me-1"></i>Sin inasistencias recientes
+                                            </td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
@@ -200,45 +186,52 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
+
+            <!-- Últimas solicitudes -->
+            <div class="col-md-5">
                 <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Solicitudes de Capacitación</h5>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">Solicitudes Recientes</h6>
+                        <a href="<?= site_url('admin-th/solicitudes/vacaciones') ?>" class="btn btn-sm btn-outline-primary">Ver todas</a>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-borderless">
-                                <thead>
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-dark">
                                     <tr>
                                         <th>Empleado</th>
-                                        <th>Capacitación</th>
+                                        <th>Tipo</th>
                                         <th>Estado</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if (!empty($solicitudesCapacitacion)): ?>
-                                        <?php foreach ($solicitudesCapacitacion as $sol): ?>
+                                    <?php if (!empty($ultimasSolicitudes)): ?>
+                                        <?php foreach ($ultimasSolicitudes as $sol): ?>
+                                            <?php
+                                                $badgeMap = [
+                                                    'Pendiente'   => 'warning text-dark',
+                                                    'Aprobada'    => 'success',
+                                                    'Rechazada'   => 'danger',
+                                                    'En revisión' => 'info',
+                                                    'Cancelada'   => 'secondary',
+                                                ];
+                                                $badge = $badgeMap[$sol['estado']] ?? 'secondary';
+                                            ?>
                                             <tr>
-                                                <td><?= esc($sol['nombres']) ?> <?= esc($sol['apellidos']) ?></td>
-                                                <td><?= esc($sol['capacitacion']) ?></td>
                                                 <td>
-                                                    <?php
-                                                        $estado = $sol['estado'] ?? 'Pendiente';
-                                                        $color = match($estado) {
-                                                            'Aprobada', 'Completada' => 'success',
-                                                            'Rechazada' => 'danger',
-                                                            'Pendiente' => 'warning',
-                                                            'En curso' => 'info',
-                                                            default => 'secondary'
-                                                        };
-                                                    ?>
-                                                    <span class="badge bg-<?= $color ?>"><?= esc($estado) ?></span>
+                                                    <small><?= esc($sol['apellidos'] . ' ' . $sol['nombres']) ?></small>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted"><?= esc($sol['tipo_solicitud']) ?></small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-<?= $badge ?>"><?= $sol['estado'] ?></span>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="3" class="text-center text-muted">No hay solicitudes de capacitación</td>
+                                            <td colspan="3" class="text-center text-muted py-3">Sin solicitudes recientes</td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
@@ -249,69 +242,135 @@
             </div>
         </div>
 
-        <!-- Charts Section -->
+        <!-- Acciones rápidas -->
         <div class="row">
-            <div class="col-md-6">
+            <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">Empleados por Departamento</h5>
+                        <h6 class="card-title mb-0">Acciones Rápidas</h6>
                     </div>
                     <div class="card-body">
-                        <div id="chartEmpleadosDepartamento" style="height: 300px;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Inasistencias por Mes (<?= date('Y') ?>)</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="chartInasistenciasMensuales" style="height: 300px;"></div>
+                        <div class="row g-2">
+                            <div class="col-md-2 col-4">
+                                <a href="<?= site_url('admin-th/empleados') ?>" class="btn btn-outline-primary w-100 btn-sm">
+                                    <i class="ti ti-users d-block fs-4 mb-1"></i>Empleados
+                                </a>
+                            </div>
+                            <div class="col-md-2 col-4">
+                                <a href="<?= site_url('admin-th/inasistencias') ?>" class="btn btn-outline-warning w-100 btn-sm">
+                                    <i class="ti ti-calendar-off d-block fs-4 mb-1"></i>Inasistencias
+                                </a>
+                            </div>
+                            <div class="col-md-2 col-4">
+                                <a href="<?= site_url('admin-th/solicitudes/vacaciones') ?>" class="btn btn-outline-danger w-100 btn-sm">
+                                    <i class="ti ti-clipboard-list d-block fs-4 mb-1"></i>Solicitudes
+                                </a>
+                            </div>
+                            <div class="col-md-2 col-4">
+                                <a href="<?= site_url('admin-th/capacitaciones') ?>" class="btn btn-outline-info w-100 btn-sm">
+                                    <i class="ti ti-graduation-cap d-block fs-4 mb-1"></i>Capacitaciones
+                                </a>
+                            </div>
+                            <div class="col-md-2 col-4">
+                                <a href="<?= site_url('admin-th/puestos') ?>" class="btn btn-outline-secondary w-100 btn-sm">
+                                    <i class="ti ti-briefcase d-block fs-4 mb-1"></i>Puestos
+                                </a>
+                            </div>
+                            <div class="col-md-2 col-4">
+                                <a href="<?= site_url('admin-th/reportes') ?>" class="btn btn-outline-success w-100 btn-sm">
+                                    <i class="ti ti-chart-bar d-block fs-4 mb-1"></i>Reportes
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // --- Gráfico Empleados por Departamento ---
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ── Datos inyectados desde PHP ────────────────────────────────────────────
     const deptLabels = <?= $chartDeptLabels ?>;
     const deptData   = <?= $chartDeptData ?>;
+    const solLabels  = <?= $chartSolLabels ?>;
+    const solData    = <?= $chartSolData ?>;
+    const inaData    = <?= $chartInasistencias ?>;
 
-    if (deptLabels.length > 0) {
-        new ApexCharts(document.querySelector("#chartEmpleadosDepartamento"), {
-            series: deptData,
-            chart: { type: 'donut', height: 300 },
-            labels: deptLabels,
-            colors: ['#007bff','#28a745','#ffc107','#dc3545','#6c757d','#17a2b8','#6610f2','#e83e8c'],
-            responsive: [{
-                breakpoint: 480,
-                options: { chart: { width: 200 }, legend: { position: 'bottom' } }
-            }]
-        }).render();
-    } else {
-        document.querySelector("#chartEmpleadosDepartamento").innerHTML =
-            '<div class="d-flex align-items-center justify-content-center h-100 text-muted">No hay datos de departamentos</div>';
-    }
+    const COLORES = ['#4361ee','#3bc9db','#f72585','#4cc9f0','#7209b7','#f3722c','#43aa8b','#90be6d'];
 
-    // --- Gráfico Inasistencias por Mes ---
-    const inasistenciasMes = <?= $chartInasistencias ?>;
-
-    new ApexCharts(document.querySelector("#chartInasistenciasMensuales"), {
-        series: [{ name: 'Inasistencias', data: inasistenciasMes }],
-        chart: { type: 'bar', height: 300, toolbar: { show: false } },
-        plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 4 } },
+    // ── Gráfico 1: Empleados por Departamento (donut) ─────────────────────────
+    new ApexCharts(document.getElementById('chartDepartamentos'), {
+        series: deptData,
+        labels: deptLabels,
+        chart: { type: 'donut', height: 280, toolbar: { show: false } },
+        colors: COLORES,
+        legend: { position: 'bottom', fontSize: '12px' },
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '60%',
+                    labels: {
+                        show: true,
+                        total: {
+                            show: true,
+                            label: 'Total',
+                            formatter: w => w.globals.seriesTotals.reduce((a, b) => a + b, 0)
+                        }
+                    }
+                }
+            }
+        },
         dataLabels: { enabled: false },
-        stroke: { show: true, width: 2, colors: ['transparent'] },
-        xaxis: { categories: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'] },
-        yaxis: { title: { text: 'Cantidad' } },
-        fill: { opacity: 1 },
-        colors: ['#ffc107'],
-        tooltip: { y: { formatter: val => val + " inasistencia(s)" } }
+        tooltip: { y: { formatter: val => val + ' empleado(s)' } },
+        noData: { text: 'Sin datos' }
+    }).render();
+
+    // ── Gráfico 2: Estado de Solicitudes (donut) ──────────────────────────────
+    new ApexCharts(document.getElementById('chartSolicitudes'), {
+        series: solData,
+        labels: solLabels,
+        chart: { type: 'donut', height: 280, toolbar: { show: false } },
+        colors: ['#ffc107','#28a745','#dc3545','#17a2b8','#6c757d'],
+        legend: { position: 'bottom', fontSize: '12px' },
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '60%',
+                    labels: {
+                        show: true,
+                        total: {
+                            show: true,
+                            label: 'Total',
+                            formatter: w => w.globals.seriesTotals.reduce((a, b) => a + b, 0)
+                        }
+                    }
+                }
+            }
+        },
+        dataLabels: { enabled: false },
+        tooltip: { y: { formatter: val => val + ' solicitud(es)' } },
+        noData: { text: 'Sin datos' }
+    }).render();
+
+    // ── Gráfico 3: Inasistencias por Mes (barras) ─────────────────────────────
+    new ApexCharts(document.getElementById('chartInasistencias'), {
+        series: [{ name: 'Inasistencias', data: inaData }],
+        chart: { type: 'bar', height: 280, toolbar: { show: false } },
+        colors: ['#f72585'],
+        plotOptions: { bar: { columnWidth: '55%', borderRadius: 4 } },
+        dataLabels: { enabled: false },
+        xaxis: {
+            categories: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+            labels: { style: { fontSize: '11px' } }
+        },
+        yaxis: { min: 0, tickAmount: 4, labels: { formatter: val => Math.floor(val) } },
+        tooltip: { y: { formatter: val => val + ' inasistencia(s)' } },
+        noData: { text: 'Sin datos' }
     }).render();
 });
 </script>

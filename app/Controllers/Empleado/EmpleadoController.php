@@ -35,69 +35,105 @@ class EmpleadoController extends Controller
      */
     public function dashboard()
     {
-        // Obtener datos del empleado desde la sesión
-        $userId = session()->get('id_usuario');
-        
-        // Cargar modelo de empleado
+        $userId        = session()->get('id_usuario');
         $empleadoModel = new \App\Models\EmpleadoModel();
-        $empleado = $empleadoModel->getEmpleadoParaDashboard($userId);
-        
-        // Datos del usuario para la vista
-        $user = [
-            'nombres' => session()->get('nombres'),
-            'apellidos' => session()->get('apellidos'),
-            'rol' => session()->get('nombre_rol'),
-            'email' => session()->get('email'),
-            'cedula' => session()->get('cedula')
-        ];
-        
-        // Descripción del dashboard según el tipo de empleado
-        $descripcionDashboard = $this->getDescripcionDashboard(session()->get('tipo_empleado'));
-        
-        $idEmpleado = session()->get('id_empleado');
-        
-        $todasCapacitaciones = [];
-        $todasSolicitudes = [];
-        $total_documentos = 0;
-        $total_certificados = 0;
-        
-        if ($idEmpleado) {
-            if (class_exists('\App\Models\CapacitacionModel')) {
-                $capModel = new \App\Models\CapacitacionModel();
-                $todasCapacitaciones = $capModel->getCapacitacionesPorEmpleado($idEmpleado);
-            }
-            if (class_exists('\App\Models\SolicitudModel')) {
-                $solModel = new \App\Models\SolicitudModel();
-                $todasSolicitudes = $solModel->getSolicitudesPorEmpleado($idEmpleado);
-            }
-            if (class_exists('\App\Models\DocumentoModel')) {
-                $docModel = new \App\Models\DocumentoModel();
-                try { $total_documentos = $docModel->where('id_empleado', $idEmpleado)->countAllResults(); } catch (\Exception $e) {}
-            }
-            if (class_exists('\App\Models\CertificadoModel')) {
-                $certModel = new \App\Models\CertificadoModel();
-                try { $total_certificados = $certModel->where('id_empleado', $idEmpleado)->countAllResults(); } catch (\Exception $e) {}
-            }
+        $empleado      = $empleadoModel->getEmpleadoParaDashboard($userId);
+
+        // Si no hay empleado vinculado redirigir
+        if (!$empleado) {
+            return redirect()->to(base_url('login'));
         }
-        
-        $estadisticas = [
-            'total_capacitaciones' => count($todasCapacitaciones),
-            'total_documentos' => $total_documentos,
-            'total_certificados' => $total_certificados,
-            'total_solicitudes' => count($todasSolicitudes)
-        ];
-        
-        $capacitaciones_recientes = array_slice($todasCapacitaciones, 0, 5);
-        $solicitudes_recientes = array_slice($todasSolicitudes, 0, 5);
+
+        $idEmpleado = (int) $empleado['id_empleado'];
+        $db         = \Config\Database::connect();
+
+        // ── Estadísticas reales ───────────────────────────────────────────────
+
+        // Capacitaciones propias del empleado (tabla de historial personal)
+        $totalCap = $db->table('capacitaciones_empleados')
+            ->where('empleado_id', $idEmpleado)
+            ->countAllResults();
+
+        // Documentos subidos
+        $totalDocs = $db->table('documentos')
+            ->where('id_empleado', $idEmpleado)
+            ->countAllResults();
+
+        // Certificados (solicitudes de tipo Certificados)
+        $totalCert = $db->table('solicitudes')
+            ->where('id_empleado', $idEmpleado)
+            ->where('tipo_solicitud', 'Certificados')
+            ->where('activo', 1)
+            ->countAllResults();
+
+        // Total solicitudes activas
+        $totalSol = $db->table('solicitudes')
+            ->where('id_empleado', $idEmpleado)
+            ->where('activo', 1)
+            ->countAllResults();
+
+        // Días de vacaciones disponibles
+        $diasVac = (int) ($empleado['dias_vacaciones_disponibles'] ?? 15);
+
+        // ── Capacitaciones disponibles (excluye las ya inscritas) ─────────────
+        // IDs de capacitaciones del sistema en las que ya está inscrito
+        $yaInscritos = $db->table('capacitaciones_empleados')
+            ->select('nombre_capacitacion')
+            ->where('empleado_id', $idEmpleado)
+            ->get()->getResultArray();
+        $nombresInscritos = array_column($yaInscritos, 'nombre_capacitacion');
+
+        $queryDisp = $db->table('capacitaciones')
+            ->select('id_capacitacion, nombre, tipo, modalidad, fecha_inicio, fecha_fin, duracion_horas, cupo_maximo')
+            ->where('estado', 'ACTIVA')
+            ->where('fecha_inicio >=', date('Y-m-d'))
+            ->orderBy('fecha_inicio', 'ASC')
+            ->limit(6);
+
+        // Excluir por nombre si hay inscritas (no hay FK directa entre tablas)
+        if (!empty($nombresInscritos)) {
+            $queryDisp->whereNotIn('nombre', $nombresInscritos);
+        }
+
+        $capacitacionesDisponibles = $queryDisp->get()->getResultArray();
+
+        // ── Solicitudes recientes (últimas 5) ─────────────────────────────────
+        $solicitudes_recientes = $db->table('solicitudes')
+            ->select('tipo_solicitud, titulo, estado, fecha_solicitud')
+            ->where('id_empleado', $idEmpleado)
+            ->where('activo', 1)
+            ->orderBy('fecha_solicitud', 'DESC')
+            ->limit(5)
+            ->get()->getResultArray();
+
+        // ── Inasistencias del mes actual ──────────────────────────────────────
+        $inasistenciasMes = $db->table('inasistencias')
+            ->where('empleado_id', $idEmpleado)
+            ->where('fecha_inasistencia >=', date('Y-m-01'))
+            ->where('fecha_inasistencia <=', date('Y-m-t'))
+            ->countAllResults();
 
         $data = [
-            'titulo' => 'Dashboard Empleado',
-            'user' => $user,
-            'empleado' => $empleado,
-            'descripcionDashboard' => $descripcionDashboard,
-            'estadisticas' => $estadisticas,
-            'capacitaciones_recientes' => $capacitaciones_recientes,
-            'solicitudes_recientes' => $solicitudes_recientes
+            'titulo'                   => 'Dashboard',
+            'user'                     => [
+                'nombres'   => session()->get('nombres'),
+                'apellidos' => session()->get('apellidos'),
+                'rol'       => session()->get('nombre_rol'),
+                'email'     => session()->get('email'),
+                'cedula'    => session()->get('cedula'),
+            ],
+            'empleado'                 => $empleado,
+            'descripcionDashboard'     => $this->getDescripcionDashboard($empleado['tipo_empleado'] ?? ''),
+            'estadisticas'             => [
+                'total_capacitaciones' => $totalCap,
+                'total_documentos'     => $totalDocs,
+                'total_certificados'   => $totalCert,
+                'total_solicitudes'    => $totalSol,
+                'dias_vacaciones'      => $diasVac,
+                'inasistencias_mes'    => $inasistenciasMes,
+            ],
+            'capacitacionesDisponibles' => $capacitacionesDisponibles,
+            'solicitudes_recientes'     => $solicitudes_recientes,
         ];
 
         return view('Roles/Empleado/dashboard', $data);
@@ -552,16 +588,104 @@ class EmpleadoController extends Controller
      */
     public function documentos()
     {
+        $idUsuario = session()->get('id_usuario');
+        $empleadoModel = new \App\Models\EmpleadoModel();
+        $empleado = $empleadoModel->getEmpleadoByUsuarioId($idUsuario);
+
+        if (!$empleado) {
+            return redirect()->to(base_url('empleado/dashboard'));
+        }
+
+        $docModel   = new \App\Models\DocumentoModel();
+        $documentos = $docModel->getDocumentosEmpleado((int) $empleado['id_empleado']);
+        $stats      = $docModel->getEstadisticasEmpleado((int) $empleado['id_empleado']);
+
         $data = [
-            'titulo' => 'Mis Documentos',
-            'usuario' => [
-                'nombres' => session()->get('nombres'),
+            'titulo'      => 'Mis Documentos',
+            'usuario'     => [
+                'nombres'   => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
-                'rol' => session()->get('nombre_rol')
-            ]
+                'rol'       => session()->get('nombre_rol')
+            ],
+            'empleado_id' => $empleado['id_empleado'],
+            'documentos'  => $documentos,
+            'stats'       => $stats,
         ];
 
         return view('Roles/Empleado/documentos', $data);
+    }
+
+    /**
+     * Descarga un documento verificando que pertenezca al empleado en sesión
+     */
+    public function descargarDocumento(int $id)
+    {
+        $idUsuario     = session()->get('id_usuario');
+        $empleadoModel = new \App\Models\EmpleadoModel();
+        $empleado      = $empleadoModel->getEmpleadoByUsuarioId($idUsuario);
+
+        if (!$empleado) {
+            return redirect()->to(base_url('empleado/documentos'));
+        }
+
+        $docModel  = new \App\Models\DocumentoModel();
+        $documento = $docModel->getDocumentoSeguro($id, (int) $empleado['id_empleado']);
+
+        if (!$documento) {
+            return redirect()->to(base_url('empleado/documentos'))
+                             ->with('error', 'Documento no encontrado o no tienes permiso.');
+        }
+
+        // archivo_url puede ser ruta relativa o URL externa (Google Drive, etc.)
+        $rutaFisica = WRITEPATH . 'uploads/documentos/' . basename($documento['archivo_url']);
+
+        if (file_exists($rutaFisica)) {
+            return $this->response->download($rutaFisica, null)
+                                  ->setFileName(basename($documento['archivo_url']));
+        }
+
+        // Si es URL externa, redirigir directamente
+        if (filter_var($documento['archivo_url'], FILTER_VALIDATE_URL)) {
+            return redirect()->to($documento['archivo_url']);
+        }
+
+        return redirect()->to(base_url('empleado/documentos'))
+                         ->with('error', 'El archivo no está disponible en el servidor.');
+    }
+
+    /**
+     * Elimina un documento (AJAX) verificando propiedad
+     */
+    public function eliminarDocumento(int $id)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $idUsuario     = session()->get('id_usuario');
+        $empleadoModel = new \App\Models\EmpleadoModel();
+        $empleado      = $empleadoModel->getEmpleadoByUsuarioId($idUsuario);
+
+        if (!$empleado) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Sesión inválida.']);
+        }
+
+        $docModel  = new \App\Models\DocumentoModel();
+        $documento = $docModel->getDocumentoSeguro($id, (int) $empleado['id_empleado']);
+
+        if (!$documento) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Documento no encontrado.']);
+        }
+
+        // Eliminar archivo físico si existe en el servidor
+        $rutaFisica = WRITEPATH . 'uploads/documentos/' . basename($documento['archivo_url']);
+        if (file_exists($rutaFisica)) {
+            unlink($rutaFisica);
+        }
+
+        $docModel->delete($id);
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Documento eliminado correctamente.']);
     }
 
     /**
@@ -569,16 +693,136 @@ class EmpleadoController extends Controller
      */
     public function solicitudesGenerales()
     {
+        $idUsuario     = session()->get('id_usuario');
+        $empleadoModel = new \App\Models\EmpleadoModel();
+        $empleado      = $empleadoModel->getEmpleadoByUsuarioId($idUsuario);
+
+        if (!$empleado) {
+            return redirect()->to(base_url('empleado/dashboard'));
+        }
+
+        $solicitudModel = new \App\Models\SolicitudModel();
+        $solicitudes    = $solicitudModel
+            ->where('id_empleado', $empleado['id_empleado'])
+            ->where('tipo_solicitud !=', 'Vacaciones')
+            ->where('tipo_solicitud !=', 'Permisos')
+            ->where('tipo_solicitud !=', 'Certificados')
+            ->where('activo', 1)
+            ->orderBy('fecha_solicitud', 'DESC')
+            ->findAll();
+
+        // Stats en tiempo real
+        $total     = count($solicitudes);
+        $pendientes = count(array_filter($solicitudes, fn($s) => $s['estado'] === 'Pendiente'));
+        $aprobadas  = count(array_filter($solicitudes, fn($s) => $s['estado'] === 'Aprobada'));
+        $rechazadas = count(array_filter($solicitudes, fn($s) => $s['estado'] === 'Rechazada'));
+
         $data = [
-            'titulo' => 'Mis Solicitudes Generales',
-            'usuario' => [
-                'nombres' => session()->get('nombres'),
+            'titulo'      => 'Mis Solicitudes Generales',
+            'usuario'     => [
+                'nombres'   => session()->get('nombres'),
                 'apellidos' => session()->get('apellidos'),
-                'rol' => session()->get('nombre_rol')
-            ]
+                'rol'       => session()->get('nombre_rol')
+            ],
+            'empleado_id' => $empleado['id_empleado'],
+            'solicitudes' => $solicitudes,
+            'stats'       => compact('total', 'pendientes', 'aprobadas', 'rechazadas'),
         ];
 
         return view('Roles/Empleado/solicitudes_generales', $data);
+    }
+
+    /**
+     * Guardar solicitud general (POST)
+     */
+    public function guardarSolicitudGeneral()
+    {
+        $idUsuario     = session()->get('id_usuario');
+        $empleadoModel = new \App\Models\EmpleadoModel();
+        $empleado      = $empleadoModel->getEmpleadoByUsuarioId($idUsuario);
+
+        if (!$empleado) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Sesión inválida.']);
+        }
+
+        $tipo        = $this->request->getPost('tipo_solicitud');
+        $asunto      = trim($this->request->getPost('asunto') ?? '');
+        $descripcion = trim($this->request->getPost('descripcion') ?? '');
+
+        if (!$tipo || !$asunto || !$descripcion) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Todos los campos son obligatorios.']);
+        }
+
+        $solicitudModel = new \App\Models\SolicitudModel();
+        $solicitudModel->insert([
+            'id_empleado'        => $empleado['id_empleado'],
+            'tipo_solicitud'     => $tipo,
+            'titulo'             => $asunto,
+            'motivo_descripcion' => $descripcion,
+            'estado'             => 'Pendiente',
+            'activo'             => 1,
+        ]);
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Solicitud enviada correctamente.']);
+    }
+
+    /**
+     * Obtener detalle de una solicitud general (AJAX)
+     */
+    public function detalleSolicitudGeneral(int $id)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $idUsuario     = session()->get('id_usuario');
+        $empleadoModel = new \App\Models\EmpleadoModel();
+        $empleado      = $empleadoModel->getEmpleadoByUsuarioId($idUsuario);
+
+        $solicitudModel = new \App\Models\SolicitudModel();
+        $solicitud      = $solicitudModel
+            ->where('id_solicitud', $id)
+            ->where('id_empleado', $empleado['id_empleado'] ?? 0)
+            ->first();
+
+        if (!$solicitud) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Solicitud no encontrada.']);
+        }
+
+        return $this->response->setJSON(['success' => true, 'data' => $solicitud]);
+    }
+
+    /**
+     * Eliminar solicitud general (AJAX DELETE)
+     */
+    public function eliminarSolicitudGeneral(int $id)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $idUsuario     = session()->get('id_usuario');
+        $empleadoModel = new \App\Models\EmpleadoModel();
+        $empleado      = $empleadoModel->getEmpleadoByUsuarioId($idUsuario);
+
+        $solicitudModel = new \App\Models\SolicitudModel();
+        $solicitud      = $solicitudModel
+            ->where('id_solicitud', $id)
+            ->where('id_empleado', $empleado['id_empleado'] ?? 0)
+            ->first();
+
+        if (!$solicitud) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Solicitud no encontrada.']);
+        }
+
+        if (!in_array($solicitud['estado'], ['Pendiente', 'Cancelada'])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Solo puedes eliminar solicitudes en estado Pendiente.']);
+        }
+
+        // Soft delete
+        $solicitudModel->update($id, ['activo' => 0]);
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Solicitud eliminada correctamente.']);
     }
 
     /**

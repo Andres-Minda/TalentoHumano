@@ -23,12 +23,6 @@
                     </a>
                 </li>
                 <li class="sidebar-item">
-                    <a class="sidebar-link" href="<?= base_url('index.php/empleado/acceso-rapido') ?>" aria-expanded="false">
-                        <span><i class="bi bi-lightning"></i></span>
-                        <span class="hide-menu">Acceso Rápido</span>
-                    </a>
-                </li>
-                <li class="sidebar-item">
                     <a class="sidebar-link" href="<?= base_url('index.php/empleado/mi-perfil') ?>" aria-expanded="false">
                         <span><i class="bi bi-person-circle"></i></span>
                         <span class="hide-menu">Mi Perfil</span>
@@ -90,22 +84,6 @@
                     <a class="sidebar-link" href="<?= base_url('index.php/empleado/mis-solicitudes/certificados') ?>" aria-expanded="false">
                         <span><i class="bi bi-file-earmark-check"></i></span>
                         <span class="hide-menu">Certificados / Docs</span>
-                    </a>
-                </li>
-                <li class="nav-small-cap">
-                    <i class="ti ti-dots nav-small-cap-icon fs-6"></i>
-                    <span class="hide-menu">FUNCIONALIDADES DOCENTE</span>
-                </li>
-                <li class="sidebar-item">
-                    <a class="sidebar-link" href="<?= base_url('index.php/empleado/competencias') ?>" aria-expanded="false">
-                        <span><i class="bi bi-star"></i></span>
-                        <span class="hide-menu">Mis Competencias</span>
-                    </a>
-                </li>
-                <li class="sidebar-item">
-                    <a class="sidebar-link" href="<?= base_url('index.php/empleado/asistencias') ?>" aria-expanded="false">
-                        <span><i class="bi bi-calendar-check"></i></span>
-                        <span class="hide-menu">Control de Asistencias</span>
                     </a>
                 </li>
                 <li class="nav-small-cap">

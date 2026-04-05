@@ -27,7 +27,8 @@ class EmpleadoModel extends Model
         'direccion',
         'telefono',
         'activo',
-        'dias_vacaciones_disponibles'
+        'dias_vacaciones_disponibles',
+        'fecha_ultimo_reseteo'
     ];
 
     protected $useTimestamps = true;
@@ -351,4 +352,43 @@ class EmpleadoModel extends Model
         return $builder->get()->getResultArray();
     }
 
-} 
+    /**
+     * Verifica si corresponde resetear el saldo de vacaciones del empleado.
+     * Regla: 15 días por año, se resetea al cumplir 12 meses desde el último
+     * reseteo (o desde fecha_ingreso si nunca se ha reseteado).
+     *
+     * @param  int $idEmpleado
+     * @return array ['reseteado' => bool, 'dias_disponibles' => int]
+     */
+    public function verificarYActualizarSaldoVacaciones(int $idEmpleado): array
+    {
+        $empleado = $this->find($idEmpleado);
+
+        if (!$empleado) {
+            return ['reseteado' => false, 'dias_disponibles' => 0];
+        }
+
+        // Fecha de referencia: último reseteo o, si nunca hubo, la fecha de ingreso
+        $fechaReferencia = $empleado['fecha_ultimo_reseteo'] ?? $empleado['fecha_ingreso'] ?? null;
+
+        if (!$fechaReferencia) {
+            return ['reseteado' => false, 'dias_disponibles' => (int) $empleado['dias_vacaciones_disponibles']];
+        }
+
+        $hoy        = new \DateTime(date('Y-m-d'));
+        $referencia = new \DateTime($fechaReferencia);
+        $diff       = $referencia->diff($hoy);
+        $mesesTranscurridos = ($diff->y * 12) + $diff->m;
+
+        if ($mesesTranscurridos >= 12) {
+            $this->update($idEmpleado, [
+                'dias_vacaciones_disponibles' => 15,
+                'fecha_ultimo_reseteo'        => date('Y-m-d'),
+            ]);
+            return ['reseteado' => true, 'dias_disponibles' => 15];
+        }
+
+        return ['reseteado' => false, 'dias_disponibles' => (int) $empleado['dias_vacaciones_disponibles']];
+    }
+
+}

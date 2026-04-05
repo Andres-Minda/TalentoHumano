@@ -104,7 +104,7 @@ if (!isset($titulo)) {
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <h4 class="mb-0"><?= $estadisticas['total_capacitaciones'] ?? 0 ?></h4>
+                                <h4 class="mb-0"><?= $estadisticas['total_capacitaciones'] ?></h4>
                                 <p class="text-muted mb-0">Mis Capacitaciones</p>
                             </div>
                             <div class="text-primary">
@@ -119,7 +119,7 @@ if (!isset($titulo)) {
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <h4 class="mb-0"><?= $estadisticas['total_documentos'] ?? 0 ?></h4>
+                                <h4 class="mb-0"><?= $estadisticas['total_documentos'] ?></h4>
                                 <p class="text-muted mb-0">Documentos</p>
                             </div>
                             <div class="text-success">
@@ -134,11 +134,11 @@ if (!isset($titulo)) {
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <h4 class="mb-0"><?= $estadisticas['total_certificados'] ?? 0 ?></h4>
-                                <p class="text-muted mb-0">Certificados</p>
+                                <h4 class="mb-0"><?= $estadisticas['dias_vacaciones'] ?> <small class="fs-6 text-muted">/ 15</small></h4>
+                                <p class="text-muted mb-0">Días Vacaciones</p>
                             </div>
                             <div class="text-warning">
-                                <i class="bi bi-award fs-1"></i>
+                                <i class="bi bi-airplane fs-1"></i>
                             </div>
                         </div>
                     </div>
@@ -149,7 +149,7 @@ if (!isset($titulo)) {
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <h4 class="mb-0"><?= $estadisticas['total_solicitudes'] ?? 0 ?></h4>
+                                <h4 class="mb-0"><?= $estadisticas['total_solicitudes'] ?></h4>
                                 <p class="text-muted mb-0">Solicitudes</p>
                             </div>
                             <div class="text-info">
@@ -172,24 +172,19 @@ if (!isset($titulo)) {
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="col-md-4 col-sm-6 mb-3">
                                 <a href="<?= base_url('empleado/capacitaciones') ?>" class="btn btn-primary w-100">
                                     <i class="bi bi-mortarboard me-2"></i>Mis Capacitaciones
                                 </a>
                             </div>
-                            <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="col-md-4 col-sm-6 mb-3">
                                 <a href="<?= base_url('empleado/documentos') ?>" class="btn btn-success w-100">
                                     <i class="bi bi-file-earmark-text me-2"></i>Documentos
                                 </a>
                             </div>
-                            <div class="col-md-3 col-sm-6 mb-3">
-                                <a href="<?= base_url('empleado/certificados') ?>" class="btn btn-warning w-100">
+                            <div class="col-md-4 col-sm-6 mb-3">
+                                <a href="<?= base_url('empleado/mis-solicitudes/certificados') ?>" class="btn btn-warning w-100">
                                     <i class="bi bi-award me-2"></i>Certificados
-                                </a>
-                            </div>
-                            <div class="col-md-3 col-sm-6 mb-3">
-                                <a href="<?= base_url('empleado/nueva-solicitud') ?>" class="btn btn-info w-100">
-                                    <i class="bi bi-plus-circle me-2"></i>Nueva Solicitud
                                 </a>
                             </div>
                         </div>
@@ -200,51 +195,67 @@ if (!isset($titulo)) {
 
         <!-- Content Row -->
         <div class="row">
-            <!-- Latest Trainings -->
+            <!-- Capacitaciones Disponibles -->
             <div class="col-lg-8">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">
-                            <i class="bi bi-mortarboard text-primary"></i> Últimas Capacitaciones
+                            <i class="bi bi-mortarboard text-primary me-1"></i> Capacitaciones Disponibles
                         </h5>
+                        <a href="<?= base_url('empleado/capacitaciones') ?>" class="btn btn-sm btn-outline-primary">
+                            Ver todas
+                        </a>
                     </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Capacitación</th>
-                                        <th>Tipo</th>
-                                        <th>Estado</th>
-                                        <th>Fecha</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if(empty($capacitaciones_recientes)): ?>
+                    <div class="card-body p-0">
+                        <?php if (empty($capacitacionesDisponibles)): ?>
+                            <div class="text-center text-muted py-4">
+                                <i class="bi bi-check-circle fs-1 d-block mb-2 text-success"></i>
+                                Ya estás inscrito en todas las capacitaciones activas.
+                            </div>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
                                         <tr>
-                                            <td colspan="4" class="text-center text-muted">
-                                                No hay capacitaciones recientes
-                                            </td>
+                                            <th>Capacitación</th>
+                                            <th>Tipo</th>
+                                            <th>Modalidad</th>
+                                            <th>Inicio</th>
+                                            <th class="text-center">Acción</th>
                                         </tr>
-                                    <?php else: ?>
-                                        <?php foreach($capacitaciones_recientes as $cap): ?>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($capacitacionesDisponibles as $cap): ?>
                                             <tr>
                                                 <td>
-                                                    <strong><?= esc($cap['tema_capacitacion'] ?? $cap['tipo_capacitacion'] ?? 'N/A') ?></strong>
+                                                    <span class="fw-semibold"><?= esc($cap['nombre']) ?></span>
+                                                    <?php if ($cap['duracion_horas']): ?>
+                                                        <br><small class="text-muted"><?= $cap['duracion_horas'] ?> horas</small>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-info fw-normal"><?= esc($cap['modalidad'] ?? 'General') ?></span>
+                                                    <span class="badge bg-light text-dark border">
+                                                        <?= esc($cap['tipo'] ?? 'General') ?>
+                                                    </span>
                                                 </td>
                                                 <td>
-                                                    <span class="badge <?= ($cap['estado'] === 'ACTIVA') ? 'bg-success' : 'bg-secondary' ?> fw-normal"><?= esc($cap['estado'] ?? 'N/A') ?></span>
+                                                    <small><?= esc($cap['modalidad'] ?? '—') ?></small>
                                                 </td>
-                                                <td><?= isset($cap['fecha_inicio']) ? date('d/m/Y', strtotime($cap['fecha_inicio'])) : 'N/A' ?></td>
+                                                <td>
+                                                    <?= $cap['fecha_inicio'] ? date('d/m/Y', strtotime($cap['fecha_inicio'])) : '—' ?>
+                                                </td>
+                                                <td class="text-center">
+                                                    <a href="<?= base_url('empleado/capacitaciones') ?>"
+                                                       class="btn btn-sm btn-primary">
+                                                        <i class="bi bi-plus-circle me-1"></i>Inscribirme
+                                                    </a>
+                                                </td>
                                             </tr>
                                         <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

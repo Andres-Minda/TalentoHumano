@@ -111,6 +111,7 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->post('inasistencias/actualizar/(:num)', 'AdminTH\AdminTHController::actualizarInasistencia/$1');
     $routes->get('inasistencias/listar-json', 'AdminTH\AdminTHController::listarInasistenciasJSON');
     $routes->get('inasistencias/estadisticas-globales', 'AdminTH\AdminTHController::getEstadisticasGlobalesInasistencias');
+    $routes->get('inasistencias/detalles-mes/(:num)', 'AdminTH\AdminTHController::getDetallesInasistenciasEmpleadoMes/$1');
     $routes->post('inasistencias/actualizar', 'AdminTH\AdminTHController::actualizarInasistencia');
     $routes->post('inasistencias/cambiar-estado', 'AdminTH\AdminTHController::cambiarEstadoInasistencia');
     $routes->get('inasistencias/justificar/(:num)', 'AdminTH\AdminTHController::justificarInasistencia/$1');
@@ -119,6 +120,8 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->get('inasistencias/perfil-empleado/(:num)', 'AdminTH\AdminTHController::obtenerPerfilEmpleado/$1');
     $routes->get('inasistencias/reporte', 'AdminTH\AdminTHController::reporteInasistencias');
     $routes->get('inasistencias/exportar', 'AdminTH\AdminTHController::exportarInasistencias');
+    $routes->post('inasistencias/revisar-justificacion', 'AdminTH\AdminTHController::revisarJustificacion');
+    $routes->get('inasistencias/obtener-justificacion', 'AdminTH\AdminTHController::obtenerJustificacion');
     
     // Políticas de inasistencia
     $routes->get('politicas-inasistencia', 'AdminTH\AdminTHController::politicasInasistencia');
@@ -128,7 +131,11 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->get('solicitudes/vacaciones', 'SolicitudController::adminVacaciones');
     $routes->get('solicitudes/permisos', 'SolicitudController::adminPermisos');
     $routes->get('solicitudes/certificados', 'SolicitudController::adminCertificados');
+    $routes->get('solicitudes/generales', 'SolicitudController::adminSolicitudesGenerales');
+    $routes->get('solicitudes/generales/detalle/(:num)', 'SolicitudController::detalleSolicitudGeneralAdmin/$1');
     $routes->post('solicitudes/cambiar-estado/(:num)', 'SolicitudController::cambiarEstado/$1');
+    $routes->post('solicitudes/cancelar-vacaciones/(:num)', 'SolicitudController::cancelarVacaciones/$1');
+    $routes->post('solicitudes/resolver-general/(:num)', 'SolicitudController::resolverSolicitudGeneral/$1');
     // $routes->get('solicitudes-capacitacion', 'AdminTH\AdminTHController::solicitudesCapacitacion');
     // Evaluaciones entre Pares
     $routes->get('evaluaciones-pares', 'AdminTH\AdminTHController::evaluacionesPares');
@@ -151,6 +158,7 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     
     // Reportes y estadísticas
     $routes->get('reportes', 'AdminTH\AdminTHController::reportes');
+    $routes->get('reportes/exportar/(:segment)/(:segment)/(:segment)', 'AdminTH\AdminTHController::exportarReporte/$1/$2/$3');
     $routes->get('estadisticas', 'AdminTH\AdminTHController::estadisticas');
     
     // Acceso rápido
@@ -224,9 +232,14 @@ $routes->group('empleado', ['filter' => 'auth'], function($routes) {
     
     // Documentos
     $routes->get('documentos', 'Empleado\EmpleadoController::documentos');
+    $routes->get('documentos/descargar/(:num)', 'Empleado\EmpleadoController::descargarDocumento/$1');
+    $routes->delete('documentos/eliminar/(:num)', 'Empleado\EmpleadoController::eliminarDocumento/$1');
     
     // Solicitudes generales
     $routes->get('solicitudes-generales', 'Empleado\EmpleadoController::solicitudesGenerales');
+    $routes->post('solicitudes-generales/guardar', 'Empleado\EmpleadoController::guardarSolicitudGeneral');
+    $routes->get('solicitudes-generales/detalle/(:num)', 'Empleado\EmpleadoController::detalleSolicitudGeneral/$1');
+    $routes->delete('solicitudes-generales/eliminar/(:num)', 'Empleado\EmpleadoController::eliminarSolicitudGeneral/$1');
     
     // Acceso rápido
     $routes->get('acceso-rapido', 'Empleado\EmpleadoController::accesoRapido');

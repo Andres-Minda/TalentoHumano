@@ -46,6 +46,7 @@ Mis Permisos
                         <th width="30%">Detalle / Motivo</th>
                         <th width="20%">Periodo Seleccionado</th>
                         <th width="15%">Estado</th>
+                        <th width="15%" class="text-center">Resolución</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -72,6 +73,21 @@ Mis Permisos
                                         $clase = $badges[$sol['estado']] ?? 'bg-secondary';
                                     ?>
                                     <span class="badge <?= $clase ?> fs-6"><?= $sol['estado'] ?></span>
+                                </td>
+                                <td class="text-center">
+                                    <?php if ($sol['estado'] === 'Rechazada'): ?>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                onclick="verMotivoRechazo('<?= esc($sol['comentarios_resolucion'] ?? '', 'js') ?>')"
+                                                data-bs-toggle="tooltip"
+                                                title="Ver motivo de rechazo">
+                                            <i class="bi bi-info-circle me-1"></i>Ver Motivo
+                                        </button>
+                                    <?php elseif ($sol['estado'] === 'Aprobada'): ?>
+                                        <span class="text-success"><i class="bi bi-check-circle me-1"></i>Aprobado</span>
+                                    <?php else: ?>
+                                        <span class="text-muted">—</span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -126,22 +142,41 @@ Mis Permisos
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     $(document).ready(function() {
         $('#tablaPermisos').DataTable({
             language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
-            order: [[1, 'desc']], 
-            emptyTable: "No tienes solicitudes de permisos registradas."
+            order: [[1, 'desc']],
+            columnDefs: [{ orderable: false, targets: -1 }]
+        });
+
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+            new bootstrap.Tooltip(el);
         });
 
         $('#fecha_fin').on('change', function() {
             var start = $('#fecha_inicio').val();
-            if(start && $(this).val() < start) {
-                alert('La fecha de fin no puede ser anterior a la fecha de inicio.');
+            if (start && $(this).val() < start) {
+                Swal.fire('Fechas inválidas', 'La fecha de fin no puede ser anterior a la de inicio.', 'warning');
                 $(this).val('');
             }
         });
     });
+
+    function verMotivoRechazo(motivo) {
+        Swal.fire({
+            icon: 'info',
+            title: '<span class="text-danger"><i class="bi bi-x-circle me-2"></i>Motivo de Rechazo</span>',
+            html: motivo
+                ? `<p class="text-start mb-0">${motivo}</p>`
+                : `<p class="text-muted fst-italic mb-0">El administrador no proporcionó un motivo específico.</p>`,
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#6c757d',
+            customClass: { htmlContainer: 'text-start' }
+        });
+    }
 </script>
     </div>
 </div>

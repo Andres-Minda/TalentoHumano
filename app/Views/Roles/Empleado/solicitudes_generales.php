@@ -4,662 +4,325 @@
 
 <div class="page-wrapper">
     <div class="page-content">
+
         <!-- Header -->
-        <div class="row">
-            <div class="col-12">
-                <div class="page-title-box d-flex align-items-center justify-content-between">
-                    <h4 class="mb-0"><i class="bi bi-file-earmark-text"></i> Mis Solicitudes Generales</h4>
-                    <div class="page-title-right">
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevaSolicitudGeneralModal">
-                            <i class="bi bi-plus-circle me-1"></i>Nueva Solicitud
-                        </button>
-                    </div>
-                </div>
+        <div class="row mb-3">
+            <div class="col-8">
+                <h4 class="mb-0"><i class="bi bi-file-earmark-text text-primary me-2"></i>Mis Solicitudes Generales</h4>
+                <p class="text-muted mb-0">Gestiona tus solicitudes administrativas.</p>
             </div>
-        </div>
-
-        <!-- Summary Cards -->
-        <div class="row">
-            <div class="col-xl-3 col-lg-6 col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <h4 class="mb-0">8</h4>
-                                <p class="text-muted mb-0">Total Solicitudes</p>
-                            </div>
-                            <div class="text-primary">
-                                <i class="bi bi-file-earmark-text fs-1"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-lg-6 col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <h4 class="mb-0">3</h4>
-                                <p class="text-muted mb-0">Pendientes</p>
-                            </div>
-                            <div class="text-warning">
-                                <i class="bi bi-clock fs-1"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-lg-6 col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <h4 class="mb-0">4</h4>
-                                <p class="text-muted mb-0">Aprobadas</p>
-                            </div>
-                            <div class="text-success">
-                                <i class="bi bi-check-circle fs-1"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-lg-6 col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <h4 class="mb-0">1</h4>
-                                <p class="text-muted mb-0">Rechazadas</p>
-                            </div>
-                            <div class="text-danger">
-                                <i class="bi bi-x-circle fs-1"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filtros -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Filtros de Búsqueda</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="mb-3">
-                                    <label class="form-label">Tipo de Solicitud</label>
-                                    <select class="form-select" id="filtroTipo">
-                                        <option value="">Todos los tipos</option>
-                                        <option value="CERTIFICACION_LABORAL">Certificación Laboral</option>
-                                        <option value="CONSTANCIA_TRABAJO">Constancia de Trabajo</option>
-                                        <option value="CARTA_RECOMENDACION">Carta de Recomendación</option>
-                                        <option value="CAMBIO_HORARIO">Cambio de Horario</option>
-                                        <option value="CAMBIO_SEDE">Cambio de Sede</option>
-                                        <option value="REVISION_SALARIAL">Revisión Salarial</option>
-                                        <option value="RECONOCIMIENTO">Reconocimiento</option>
-                                        <option value="OTROS">Otros</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="mb-3">
-                                    <label class="form-label">Estado</label>
-                                    <select class="form-select" id="filtroEstado">
-                                        <option value="">Todos los estados</option>
-                                        <option value="PENDIENTE">Pendiente</option>
-                                        <option value="EN_REVISION">En Revisión</option>
-                                        <option value="APROBADA">Aprobada</option>
-                                        <option value="RECHAZADA">Rechazada</option>
-                                        <option value="COMPLETADA">Completada</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Buscar</label>
-                                    <input type="text" class="form-control" id="buscarSolicitud" placeholder="Buscar por asunto, descripción...">
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="mb-3">
-                                    <label class="form-label">&nbsp;</label>
-                                    <button class="btn btn-outline-primary w-100" onclick="filtrarSolicitudes()">
-                                        <i class="bi bi-search me-1"></i>Filtrar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Lista de Solicitudes Generales -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Historial de Solicitudes</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="solicitudesGeneralesTable">
-                                <thead>
-                                    <tr>
-                                        <th>Tipo de Solicitud</th>
-                                        <th>Asunto</th>
-                                        <th>Fecha Solicitud</th>
-                                        <th>Estado</th>
-                                        <th>Prioridad</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Solicitud 1 -->
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <i class="bi bi-file-earmark-check text-success me-2"></i>
-                                                <div>
-                                                    <h6 class="mb-0">Certificación Laboral</h6>
-                                                    <small class="text-muted">Documento oficial</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>Certificación laboral para trámite bancario</td>
-                                        <td>18/08/2025</td>
-                                        <td><span class="badge bg-warning">PENDIENTE</span></td>
-                                        <td><span class="badge bg-danger">ALTA</span></td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <button class="btn btn-sm btn-outline-primary" onclick="verSolicitudGeneral(1)" title="Ver detalles">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-warning" onclick="editarSolicitudGeneral(1)" title="Editar">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-danger" onclick="cancelarSolicitudGeneral(1)" title="Cancelar">
-                                                    <i class="bi bi-x-circle"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <!-- Solicitud 2 -->
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <i class="bi bi-file-earmark-text text-info me-2"></i>
-                                                <div>
-                                                    <h6 class="mb-0">Constancia de Trabajo</h6>
-                                                    <small class="text-muted">Documento laboral</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>Constancia de trabajo para visa de viaje</td>
-                                        <td>15/08/2025</td>
-                                        <td><span class="badge bg-success">APROBADA</span></td>
-                                        <td><span class="badge bg-warning">MEDIA</span></td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <button class="btn btn-sm btn-outline-primary" onclick="verSolicitudGeneral(2)" title="Ver detalles">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-info" onclick="descargarDocumento(2)" title="Descargar">
-                                                    <i class="bi bi-download"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <!-- Solicitud 3 -->
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <i class="bi bi-envelope-heart text-primary me-2"></i>
-                                                <div>
-                                                    <h6 class="mb-0">Carta de Recomendación</h6>
-                                                    <small class="text-muted">Referencias</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>Carta de recomendación para estudios de postgrado</td>
-                                        <td>12/08/2025</td>
-                                        <td><span class="badge bg-success">APROBADA</span></td>
-                                        <td><span class="badge bg-info">BAJA</span></td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <button class="btn btn-sm btn-outline-primary" onclick="verSolicitudGeneral(3)" title="Ver detalles">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-info" onclick="descargarDocumento(3)" title="Descargar">
-                                                    <i class="bi bi-download"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <!-- Solicitud 4 -->
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <i class="bi bi-clock-history text-warning me-2"></i>
-                                                <div>
-                                                    <h6 class="mb-0">Cambio de Horario</h6>
-                                                    <small class="text-muted">Modificación laboral</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>Solicitud de cambio de horario por estudios</td>
-                                        <td>10/08/2025</td>
-                                        <td><span class="badge bg-info">EN_REVISION</span></td>
-                                        <td><span class="badge bg-danger">ALTA</span></td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <button class="btn btn-sm btn-outline-primary" onclick="verSolicitudGeneral(4)" title="Ver detalles">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-warning" onclick="editarSolicitudGeneral(4)" title="Editar">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <!-- Solicitud 5 -->
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <i class="bi bi-currency-dollar text-success me-2"></i>
-                                                <div>
-                                                    <h6 class="mb-0">Revisión Salarial</h6>
-                                                    <small class="text-muted">Solicitud económica</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>Solicitud de revisión salarial anual</td>
-                                        <td>08/08/2025</td>
-                                        <td><span class="badge bg-warning">PENDIENTE</span></td>
-                                        <td><span class="badge bg-danger">ALTA</span></td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <button class="btn btn-sm btn-outline-primary" onclick="verSolicitudGeneral(5)" title="Ver detalles">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-warning" onclick="editarSolicitudGeneral(5)" title="Editar">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-danger" onclick="cancelarSolicitudGeneral(5)" title="Cancelar">
-                                                    <i class="bi bi-x-circle"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <!-- Solicitud 6 -->
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <i class="bi bi-geo-alt text-danger me-2"></i>
-                                                <div>
-                                                    <h6 class="mb-0">Cambio de Sede</h6>
-                                                    <small class="text-muted">Traslado laboral</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>Solicitud de traslado a sede Quito</td>
-                                        <td>05/08/2025</td>
-                                        <td><span class="badge bg-danger">RECHAZADA</span></td>
-                                        <td><span class="badge bg-warning">MEDIA</span></td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <button class="btn btn-sm btn-outline-primary" onclick="verSolicitudGeneral(6)" title="Ver detalles">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-warning" onclick="apelarSolicitud(6)" title="Apelar decisión">
-                                                    <i class="bi bi-arrow-repeat"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <!-- Solicitud 7 -->
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <i class="bi bi-award text-warning me-2"></i>
-                                                <div>
-                                                    <h6 class="mb-0">Reconocimiento</h6>
-                                                    <small class="text-muted">Solicitud especial</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>Solicitud de reconocimiento por proyecto exitoso</td>
-                                        <td>02/08/2025</td>
-                                        <td><span class="badge bg-success">APROBADA</span></td>
-                                        <td><span class="badge bg-info">BAJA</span></td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <button class="btn btn-sm btn-outline-primary" onclick="verSolicitudGeneral(7)" title="Ver detalles">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-info" onclick="descargarDocumento(7)" title="Descargar">
-                                                    <i class="bi bi-download"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <!-- Solicitud 8 -->
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <i class="bi bi-question-circle text-secondary me-2"></i>
-                                                <div>
-                                                    <h6 class="mb-0">Otros</h6>
-                                                    <small class="text-muted">Solicitud general</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>Consulta sobre beneficios adicionales</td>
-                                        <td>30/07/2025</td>
-                                        <td><span class="badge bg-success">COMPLETADA</span></td>
-                                        <td><span class="badge bg-info">BAJA</span></td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <button class="btn btn-sm btn-outline-primary" onclick="verSolicitudGeneral(8)" title="Ver detalles">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Paginación -->
-                        <div class="d-flex justify-content-between align-items-center mt-3">
-                            <div>
-                                <small class="text-muted">Mostrando 1-8 de 8 solicitudes</small>
-                            </div>
-                            <nav>
-                                <ul class="pagination pagination-sm mb-0">
-                                    <li class="page-item disabled">
-                                        <span class="page-link">Anterior</span>
-                                    </li>
-                                    <li class="page-item active">
-                                        <span class="page-link">1</span>
-                                    </li>
-                                    <li class="page-item disabled">
-                                        <span class="page-link">Siguiente</span>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Nueva Solicitud General -->
-<div class="modal fade" id="nuevaSolicitudGeneralModal" tabindex="-1" aria-labelledby="nuevaSolicitudGeneralModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="nuevaSolicitudGeneralModalLabel">Nueva Solicitud General</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="<?= base_url('empleado/guardar-solicitud-general') ?>" method="POST" enctype="multipart/form-data">
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Tipo de Solicitud <span class="text-danger">*</span></label>
-                            <select class="form-select" name="tipo_solicitud" required>
-                                <option value="">Seleccionar tipo</option>
-                                <option value="CERTIFICACION_LABORAL">Certificación Laboral</option>
-                                <option value="CONSTANCIA_TRABAJO">Constancia de Trabajo</option>
-                                <option value="CARTA_RECOMENDACION">Carta de Recomendación</option>
-                                <option value="CAMBIO_HORARIO">Cambio de Horario</option>
-                                <option value="CAMBIO_SEDE">Cambio de Sede</option>
-                                <option value="REVISION_SALARIAL">Revisión Salarial</option>
-                                <option value="RECONOCIMIENTO">Reconocimiento</option>
-                                <option value="OTROS">Otros</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Prioridad <span class="text-danger">*</span></label>
-                            <select class="form-select" name="prioridad" required>
-                                <option value="">Seleccionar prioridad</option>
-                                <option value="BAJA">Baja</option>
-                                <option value="MEDIA">Media</option>
-                                <option value="ALTA">Alta</option>
-                                <option value="URGENTE">Urgente</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Asunto <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="asunto" required placeholder="Ej: Certificación laboral para trámite bancario">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Descripción Detallada <span class="text-danger">*</span></label>
-                            <textarea class="form-control" name="descripcion" rows="4" required placeholder="Describe detalladamente tu solicitud, incluye motivos, fechas específicas y cualquier información relevante..."></textarea>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Fecha Deseada de Respuesta</label>
-                            <input type="date" class="form-control" name="fecha_respuesta_deseada">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Dirigido a</label>
-                            <select class="form-select" name="dirigido_a">
-                                <option value="">Automático (según tipo)</option>
-                                <option value="RECURSOS_HUMANOS">Recursos Humanos</option>
-                                <option value="DIRECCION_GENERAL">Dirección General</option>
-                                <option value="JEFE_DEPARTAMENTO">Jefe de Departamento</option>
-                                <option value="COORDINACION_ACADEMICA">Coordinación Académica</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Justificación</label>
-                            <textarea class="form-control" name="justificacion" rows="3" placeholder="Explica por qué es necesaria esta solicitud y cómo beneficiará tu trabajo o situación laboral..."></textarea>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Documentos de Soporte</label>
-                            <input type="file" class="form-control" name="documentos_soporte" multiple accept=".pdf,.doc,.docx,.jpg,.png">
-                            <small class="text-muted">Adjunta cualquier documento que respalde tu solicitud (opcional)</small>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Observaciones Adicionales</label>
-                            <textarea class="form-control" name="observaciones" rows="2" placeholder="Cualquier información adicional que consideres relevante..."></textarea>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-send me-1"></i>Enviar Solicitud
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Ver Detalles -->
-<div class="modal fade" id="verSolicitudGeneralModal" tabindex="-1" aria-labelledby="verSolicitudGeneralModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="verSolicitudGeneralModalLabel">Detalles de la Solicitud</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div id="detallesSolicitudGeneral">
-                    <!-- Los detalles se cargarán aquí dinámicamente -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                <button type="button" class="btn btn-info" onclick="descargarDocumento()">
-                    <i class="bi bi-download me-1"></i>Descargar Documento
+            <div class="col-4 text-end">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaSolicitud">
+                    <i class="bi bi-plus-circle me-1"></i>Nueva Solicitud
                 </button>
             </div>
         </div>
+
+        <!-- Stats reales -->
+        <div class="row mb-4">
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center py-3">
+                    <h2 class="mb-0 fw-bold"><?= $stats['total'] ?></h2>
+                    <small class="text-muted">Total</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center py-3">
+                    <h2 class="mb-0 fw-bold text-warning"><?= $stats['pendientes'] ?></h2>
+                    <small class="text-muted">Pendientes</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center py-3">
+                    <h2 class="mb-0 fw-bold text-success"><?= $stats['aprobadas'] ?></h2>
+                    <small class="text-muted">Aprobadas</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center py-3">
+                    <h2 class="mb-0 fw-bold text-danger"><?= $stats['rechazadas'] ?></h2>
+                    <small class="text-muted">Rechazadas</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-semibold">Historial de Solicitudes</h6>
+                <input type="text" id="buscador" class="form-control form-control-sm w-auto"
+                       placeholder="🔍 Buscar..." style="min-width:200px;">
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Asunto</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodySolicitudes">
+                            <?php if (!empty($solicitudes)): ?>
+                                <?php foreach ($solicitudes as $sol): ?>
+                                    <?php
+                                        $badgeEstado = [
+                                            'Pendiente'   => 'bg-warning text-dark',
+                                            'En revisión' => 'bg-info',
+                                            'Aprobada'    => 'bg-success',
+                                            'Rechazada'   => 'bg-danger',
+                                            'Cancelada'   => 'bg-secondary',
+                                        ][$sol['estado']] ?? 'bg-secondary';
+                                        $esPendiente = $sol['estado'] === 'Pendiente';
+                                    ?>
+                                    <tr id="fila-sol-<?= $sol['id_solicitud'] ?>">
+                                        <td>
+                                            <span class="badge bg-light text-dark border">
+                                                <?= esc($sol['tipo_solicitud']) ?>
+                                            </span>
+                                        </td>
+                                        <td><?= esc($sol['titulo']) ?></td>
+                                        <td><?= date('d/m/Y', strtotime($sol['fecha_solicitud'])) ?></td>
+                                        <td>
+                                            <span class="badge <?= $badgeEstado ?>">
+                                                <?= $sol['estado'] ?>
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group" role="group">
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-primary"
+                                                        onclick="verDetalle(<?= $sol['id_solicitud'] ?>)"
+                                                        title="Ver detalles">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <?php if ($esPendiente): ?>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        onclick="eliminarSolicitud(<?= $sol['id_solicitud'] ?>, '<?= esc($sol['titulo'], 'js') ?>')"
+                                                        title="Eliminar">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        No tienes solicitudes registradas aún.
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal Nueva Solicitud -->
+<div class="modal fade" id="modalNuevaSolicitud" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="formNuevaSolicitud" class="modal-content border-0 shadow">
+            <?= csrf_field() ?>
+            <input type="hidden" name="empleado_id" value="<?= esc($empleado_id) ?>">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-file-earmark-plus me-2"></i>Nueva Solicitud General</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tipo de Solicitud <span class="text-danger">*</span></label>
+                    <select class="form-select" name="tipo_solicitud" required>
+                        <option value="">Seleccionar tipo...</option>
+                        <option value="Certificación Laboral">Certificación Laboral</option>
+                        <option value="Constancia de Trabajo">Constancia de Trabajo</option>
+                        <option value="Carta de Recomendación">Carta de Recomendación</option>
+                        <option value="Cambio de Horario">Cambio de Horario</option>
+                        <option value="Cambio de Sede">Cambio de Sede</option>
+                        <option value="Revisión Salarial">Revisión Salarial</option>
+                        <option value="Reconocimiento">Reconocimiento</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Asunto <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="asunto" required
+                           placeholder="Ej: Certificación laboral para trámite bancario">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Descripción <span class="text-danger">*</span></label>
+                    <textarea class="form-control" name="descripcion" rows="4" required
+                              placeholder="Describe detalladamente tu solicitud..."></textarea>
+                </div>
+                <div class="alert alert-info py-2 mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Tu solicitud será revisada por el departamento de Talento Humano.
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary" id="btnEnviar">
+                    <i class="bi bi-send me-1"></i>Enviar Solicitud
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    function filtrarSolicitudes() {
-        const tipo = document.getElementById('filtroTipo').value;
-        const estado = document.getElementById('filtroEstado').value;
-        const busqueda = document.getElementById('buscarSolicitud').value;
-        
-        // Aquí iría la lógica de filtrado
-        console.log('Filtros aplicados:', { tipo, estado, busqueda });
-        
-        // Mostrar mensaje temporal
-        alert('Filtros aplicados. Funcionalidad de filtrado en desarrollo.');
-    }
-    
-    function verSolicitudGeneral(id) {
-        // Simulación de datos de la solicitud
-        const solicitudes = {
-            1: {
-                tipo: 'CERTIFICACION_LABORAL',
-                asunto: 'Certificación laboral para trámite bancario',
-                fechaSolicitud: '18/08/2025',
-                estado: 'PENDIENTE',
-                prioridad: 'ALTA',
-                descripcion: 'Necesito una certificación laboral oficial para presentar en el banco como parte del proceso de solicitud de crédito hipotecario. El documento debe incluir mis datos personales, cargo actual, salario, y tiempo de servicio en la institución.',
-                justificacion: 'El banco requiere este documento como parte de los requisitos obligatorios para el otorgamiento del crédito hipotecario que necesito para la compra de vivienda.',
-                dirigidoA: 'RECURSOS_HUMANOS',
-                fechaRespuestaDeseada: '25/08/2025',
-                documentos: ['solicitud_credito.pdf', 'cotizacion_vivienda.pdf'],
-                observaciones: 'Es urgente ya que el banco tiene un plazo límite para la entrega de documentos.'
-            },
-            2: {
-                tipo: 'CONSTANCIA_TRABAJO',
-                asunto: 'Constancia de trabajo para visa de viaje',
-                fechaSolicitud: '15/08/2025',
-                estado: 'APROBADA',
-                prioridad: 'MEDIA',
-                descripcion: 'Solicito una constancia de trabajo para presentar en el consulado como parte del proceso de solicitud de visa de turismo. El viaje está programado para octubre 2025.',
-                justificacion: 'El consulado requiere documentación que demuestre estabilidad laboral y vínculos con el país de origen.',
-                dirigidoA: 'RECURSOS_HUMANOS',
-                fechaRespuestaDeseada: '22/08/2025',
-                documentos: ['itinerario_viaje.pdf', 'reserva_hotel.pdf'],
-                observaciones: 'El documento fue aprobado y estará listo para retiro el 20/08/2025.'
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ── Buscador nativo ───────────────────────────────────────────────────────
+    document.getElementById('buscador').addEventListener('keyup', function () {
+        const t = this.value.toLowerCase();
+        document.querySelectorAll('#tbodySolicitudes tr').forEach(function (fila) {
+            fila.style.display = fila.textContent.toLowerCase().includes(t) ? '' : 'none';
+        });
+    });
+
+    // ── Envío del formulario vía AJAX ─────────────────────────────────────────
+    document.getElementById('formNuevaSolicitud').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const btn  = document.getElementById('btnEnviar');
+        const html = btn.innerHTML;
+        btn.disabled  = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...';
+
+        fetch('<?= site_url('empleado/solicitudes-generales/guardar') ?>', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(this)
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled  = false;
+            btn.innerHTML = html;
+
+            if (data.success) {
+                bootstrap.Modal.getInstance(
+                    document.getElementById('modalNuevaSolicitud')
+                ).hide();
+                this.reset();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Solicitud enviada!',
+                    text: data.message,
+                    timer: 2500,
+                    showConfirmButton: false
+                }).then(() => window.location.reload());
+            } else {
+                Swal.fire('Error', data.message, 'error');
             }
+        })
+        .catch(() => {
+            btn.disabled  = false;
+            btn.innerHTML = html;
+            Swal.fire('Error', 'Problema de conexión con el servidor.', 'error');
+        });
+    });
+});
+
+// ── Ver detalle ───────────────────────────────────────────────────────────────
+function verDetalle(id) {
+    Swal.fire({
+        title: 'Cargando...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    fetch(`<?= site_url('empleado/solicitudes-generales/detalle/') ?>${id}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (!res.success) { Swal.fire('Error', res.message, 'error'); return; }
+
+        const s = res.data;
+        const badgeMap = {
+            'Pendiente':   'warning',
+            'En revisión': 'info',
+            'Aprobada':    'success',
+            'Rechazada':   'danger',
+            'Cancelada':   'secondary'
         };
-        
-        const solicitud = solicitudes[id];
-        if (solicitud) {
-            document.getElementById('detallesSolicitudGeneral').innerHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6><i class="bi bi-tag text-info me-2"></i>Tipo de Solicitud</h6>
-                        <span class="badge bg-info">${solicitud.tipo}</span>
-                    </div>
-                    <div class="col-md-6">
-                        <h6><i class="bi bi-exclamation-triangle text-danger me-2"></i>Prioridad</h6>
-                        <span class="badge bg-danger">${solicitud.prioridad}</span>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6><i class="bi bi-calendar text-warning me-2"></i>Fecha de Solicitud</h6>
-                        <p>${solicitud.fechaSolicitud}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6><i class="bi bi-check-circle text-success me-2"></i>Estado</h6>
-                        <span class="badge bg-success">${solicitud.estado}</span>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <h6><i class="bi bi-chat-text text-primary me-2"></i>Asunto</h6>
-                        <p>${solicitud.asunto}</p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <h6><i class="bi bi-file-text text-primary me-2"></i>Descripción</h6>
-                        <p>${solicitud.descripcion}</p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <h6><i class="bi bi-info-circle text-warning me-2"></i>Justificación</h6>
-                        <p>${solicitud.justificacion}</p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6><i class="bi bi-person text-info me-2"></i>Dirigido a</h6>
-                        <p>${solicitud.dirigidoA}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6><i class="bi bi-calendar-check text-primary me-2"></i>Fecha Respuesta Deseada</h6>
-                        <p>${solicitud.fechaRespuestaDeseada}</p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <h6><i class="bi bi-paperclip text-secondary me-2"></i>Documentos Adjuntos</h6>
-                        <ul class="list-unstyled">
-                            ${solicitud.documentos.map(doc => `<li><i class="bi bi-file-earmark-text me-2"></i>${doc}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <h6><i class="bi bi-chat-dots text-warning me-2"></i>Observaciones</h6>
-                        <p>${solicitud.observaciones}</p>
-                    </div>
-                </div>
-            `;
-            
-            $('#verSolicitudGeneralModal').modal('show');
-        }
-    }
-    
-    function editarSolicitudGeneral(id) {
-        // Aquí iría la lógica para editar la solicitud
-        alert(`Editar solicitud general ID: ${id}. Funcionalidad en desarrollo.`);
-    }
-    
-    function cancelarSolicitudGeneral(id) {
-        if (confirm('¿Estás seguro de que deseas cancelar esta solicitud?')) {
-            // Aquí iría la lógica para cancelar la solicitud
-            alert(`Solicitud general ID: ${id} cancelada. Funcionalidad en desarrollo.`);
-        }
-    }
-    
-    function apelarSolicitud(id) {
-        if (confirm('¿Deseas apelar la decisión de esta solicitud?')) {
-            // Aquí iría la lógica para apelar la decisión
-            alert(`Apelación de solicitud ID: ${id} enviada. Funcionalidad en desarrollo.`);
-        }
-    }
-    
-    function descargarDocumento(id) {
-        // Aquí iría la lógica para descargar el documento
-        alert(`Descargando documento de solicitud ID: ${id}. Funcionalidad en desarrollo.`);
-    }
+        const color = badgeMap[s.estado] ?? 'secondary';
+
+        Swal.fire({
+            title: `<i class="bi bi-file-earmark-text me-2"></i>${s.titulo}`,
+            html: `
+                <div class="text-start">
+                    <p class="mb-2"><strong>Tipo:</strong>
+                        <span class="badge bg-light text-dark border ms-1">${s.tipo_solicitud}</span>
+                    </p>
+                    <p class="mb-2"><strong>Estado:</strong>
+                        <span class="badge bg-${color} ms-1">${s.estado}</span>
+                    </p>
+                    <p class="mb-2"><strong>Fecha:</strong>
+                        ${new Date(s.fecha_solicitud).toLocaleDateString('es-EC')}
+                    </p>
+                    <hr>
+                    <p class="mb-1"><strong>Descripción:</strong></p>
+                    <div class="alert alert-light py-2">${s.motivo_descripcion ?? '—'}</div>
+                    ${s.comentarios_resolucion
+                        ? `<p class="mb-1"><strong>Respuesta de TH:</strong></p>
+                           <div class="alert alert-info py-2">${s.comentarios_resolucion}</div>`
+                        : ''}
+                </div>`,
+            width: '550px',
+            confirmButtonText: 'Cerrar',
+            confirmButtonColor: '#6c757d'
+        });
+    })
+    .catch(() => Swal.fire('Error', 'Problema de conexión.', 'error'));
+}
+
+// ── Eliminar ──────────────────────────────────────────────────────────────────
+function eliminarSolicitud(id, asunto) {
+    Swal.fire({
+        title: '¿Eliminar solicitud?',
+        html: `Se eliminará: <strong>${asunto}</strong>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="bi bi-trash me-1"></i>Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then(result => {
+        if (!result.isConfirmed) return;
+
+        Swal.fire({ title: 'Eliminando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        fetch(`<?= site_url('empleado/solicitudes-generales/eliminar/') ?>${id}`, {
+            method: 'DELETE',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const fila = document.getElementById(`fila-sol-${id}`);
+                if (fila) fila.remove();
+                Swal.fire({ icon: 'success', title: '¡Eliminada!', text: data.message, timer: 2000, showConfirmButton: false });
+            } else {
+                Swal.fire('Error', data.message, 'error');
+            }
+        })
+        .catch(() => Swal.fire('Error', 'Problema de conexión.', 'error'));
+    });
+}
 </script>
 <?= $this->endSection() ?>

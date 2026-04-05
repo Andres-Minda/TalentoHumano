@@ -24,18 +24,35 @@ Mis Vacaciones
     <!-- Tarjeta de Saldo de Vacaciones -->
     <div class="row mb-4">
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-primary text-white h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="me-3">
-                        <i class="bi bi-calendar-check display-4"></i>
+            <?php
+                $diasDisp  = (int) ($empleado['dias_vacaciones_disponibles'] ?? 0);
+                $cardColor = $diasDisp >= 10 ? 'bg-success' : ($diasDisp >= 5 ? 'bg-warning' : 'bg-danger');
+                $pct       = round(($diasDisp / 15) * 100);
+            ?>
+            <div class="card border-0 shadow-sm <?= $cardColor ?> text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-calendar-check display-5 me-3"></i>
+                        <div>
+                            <h6 class="mb-0 fw-normal opacity-75">Días de Vacaciones Disponibles</h6>
+                            <h2 class="mb-0 fw-bold"><?= $diasDisp ?> <small class="fs-5 fw-normal">de 15</small></h2>
+                        </div>
                     </div>
-                    <div>
-                        <h6 class="mb-0 fw-normal">Días Disponibles</h6>
-                        <h2 class="mb-0 fw-bold"><?= esc($empleado['dias_vacaciones_disponibles'] ?? 0) ?> días</h2>
+                    <div class="progress bg-white bg-opacity-25" style="height:6px;">
+                        <div class="progress-bar bg-white" style="width:<?= $pct ?>%;"></div>
                     </div>
+                    <small class="opacity-75 mt-1 d-block"><?= 15 - $diasDisp ?> día(s) ya utilizados este período</small>
                 </div>
             </div>
         </div>
+        <?php if (!empty($saldo_reseteado)): ?>
+        <div class="col-md-8 d-flex align-items-center">
+            <div class="alert alert-success border-0 shadow-sm w-100 mb-0">
+                <i class="bi bi-arrow-clockwise me-2 fs-5"></i>
+                <strong>¡Saldo renovado!</strong> Tu período vacacional se ha reiniciado. Tienes <strong>15 días</strong> disponibles.
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Mensajes de sesión -->
@@ -155,64 +172,74 @@ Mis Vacaciones
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     $(document).ready(function() {
-        const saldoDisponible = <?= $empleado['dias_vacaciones_disponibles'] ?? 0 ?>;
-        
+        const TOTAL_DIAS    = 15;
+        const saldoDisponible = <?= (int) ($empleado['dias_vacaciones_disponibles'] ?? 0) ?>;
+        const btnGuardar    = $('button[type="submit"]');
+        const $alerta       = $('<div class="alert mt-2 mb-0 py-2 px-3 d-none" id="alertaDias"></div>');
+        $('#dias_solicitados').closest('.col-md-4').append($alerta);
+
         $('#tablaVacaciones').DataTable({
-            language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
-            order: [[1, 'desc']], // Ordenar por fecha_ingreso (índice 1) descendente
-            emptyTable: "No tienes solicitudes de vacaciones previas registradas."
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json' },
+            order: [[1, 'desc']],
+            columnDefs: [{ orderable: false, targets: -1 }]
         });
 
-        // Activar fecha de fin solo si hay fecha de inicio
-        $('#fecha_inicio').change(function() {
-            var inicio = $(this).val();
+        // Habilitar fecha_fin solo cuando hay fecha_inicio
+        $('#fecha_inicio').on('change', function() {
+            const inicio = $(this).val();
             if (inicio) {
-                $('#fecha_fin').prop('disabled', false);
-                $('#fecha_fin').attr('min', inicio); // Setear mínimo
-                calcularDias();
+                $('#fecha_fin').prop('disabled', false).attr('min', inicio);
+                if ($('#fecha_fin').val() && $('#fecha_fin').val() < inicio) {
+                    $('#fecha_fin').val('');
+                }
             } else {
-                $('#fecha_fin').prop('disabled', true);
-                $('#dias_solicitados').val(0);
+                $('#fecha_fin').prop('disabled', true).val('');
             }
+            calcularDias();
         });
 
-        $('#fecha_fin').change(calcularDias);
+        $('#fecha_fin').on('change', calcularDias);
 
         function calcularDias() {
-            var inicioVal = $('#fecha_inicio').val();
-            var finVal = $('#fecha_fin').val();
-            var btnGuardar = $('button[type="submit"]');
+            const inicioVal = $('#fecha_inicio').val();
+            const finVal    = $('#fecha_fin').val();
 
             if (!inicioVal || !finVal) {
                 $('#dias_solicitados').val(0);
+                $alerta.addClass('d-none');
+                btnGuardar.prop('disabled', false);
                 return;
             }
 
-            var start = new Date(inicioVal);
-            var end = new Date(finVal);
-            
+            const start    = new Date(inicioVal + 'T00:00:00');
+            const end      = new Date(finVal    + 'T00:00:00');
+
             if (end < start) {
-                Swal.fire('Error de fechas', 'La fecha de fin no puede ser menor a la de inicio', 'error');
+                Swal.fire('Fechas inválidas', 'La fecha de fin no puede ser anterior a la de inicio.', 'error');
                 $('#fecha_fin').val('');
                 $('#dias_solicitados').val(0);
                 return;
             }
 
-            // Calcular diferencia en días (aproximación básica incl. fines de semana)
-            const diffTime = Math.abs(end - start);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 para incluir el día actual
-            
+            // Convención: del 04/04 al 11/04 = 7 días (sin +1, igual que PHP diff->days)
+            const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
             $('#dias_solicitados').val(diffDays);
 
-            // Validación contra el saldo
+            // Feedback visual inmediato
+            $alerta.removeClass('d-none alert-success alert-warning alert-danger');
+
             if (diffDays > saldoDisponible) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Saldo Insuficiente',
-                    text: `Estás solicitando ${diffDays} días, pero solo tienes ${saldoDisponible} días disponibles.`
-                });
+                $alerta.addClass('alert-danger')
+                       .html(`<i class="bi bi-x-circle me-1"></i><strong>Saldo insuficiente.</strong> Solicitas <strong>${diffDays}</strong> días pero solo tienes <strong>${saldoDisponible}</strong> disponibles.`);
                 btnGuardar.prop('disabled', true);
+            } else if (diffDays === saldoDisponible) {
+                $alerta.addClass('alert-warning')
+                       .html(`<i class="bi bi-exclamation-triangle me-1"></i>Usarás <strong>todos</strong> tus días disponibles (${diffDays} de ${TOTAL_DIAS}).`);
+                btnGuardar.prop('disabled', false);
             } else {
+                const restante = saldoDisponible - diffDays;
+                $alerta.addClass('alert-success')
+                       .html(`<i class="bi bi-check-circle me-1"></i>Solicitarás <strong>${diffDays}</strong> día(s). Te quedarán <strong>${restante}</strong> día(s) disponibles.`);
                 btnGuardar.prop('disabled', false);
             }
         }
