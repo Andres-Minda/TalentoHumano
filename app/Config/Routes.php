@@ -168,6 +168,18 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->get('mi-perfil', 'AdminTH\AdminTHController::miPerfil');
     $routes->post('actualizar-perfil', 'AdminTH\AdminTHController::actualizarPerfil');
     $routes->post('cambiar-contrasena', 'AdminTH\AdminTHController::cambiarPassword');
+
+    // ── Herramientas Administrativas (exclusivas del rol AdminTH) ────────────
+    // Doble proteccion: filtro 'auth' del grupo padre + 'role' en el sub-grupo.
+    // Un Empleado autenticado que intente acceder recibira un 403 del RoleFilter.
+    $routes->group('herramientas', ['filter' => 'role:AdministradorTalentoHumano'], function ($routes) {
+        // Ver credenciales de todos los usuarios del sistema (reemplaza credenciales_finales.php)
+        $routes->get('credenciales', 'AdminTH\HerramientasController::credenciales');
+        // Exportar esquema BD como .txt al vuelo (reemplaza export_schema.php)
+        $routes->get('exportar-schema', 'AdminTH\HerramientasController::exportarSchema');
+        // Flujo OAuth2 Google Drive (reemplaza obtener_token.php)
+        $routes->get('google-token', 'AdminTH\HerramientasController::googleToken');
+    });
 });
 
 // Rutas para Empleados (incluye todos los tipos: Docente, Administrativo, Directivo, Auxiliar)
