@@ -1,68 +1,84 @@
-# CodeIgniter 4 Application Starter
+Markdown
+# 🏢 Sistema de Gestión de Talento Humano (SGD-TH)
 
-## What is CodeIgniter?
+Un sistema integral de planificación de recursos humanos y gestión académica desarrollado bajo el patrón MVC estricto. Diseñado específicamente para administrar el ciclo de vida del personal administrativo y docente, evaluaciones de desempeño, capacitaciones y control de asistencia.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+![PHP](https://img.shields.io/badge/PHP-8.1+-777BB4?style=for-the-badge&logo=php&logoColor=white)
+![CodeIgniter](https://img.shields.io/badge/CodeIgniter-4.x-EF4223?style=for-the-badge&logo=codeigniter&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-00000F?style=for-the-badge&logo=mysql&logoColor=white)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-5-563D7C?style=for-the-badge&logo=bootstrap&logoColor=white)
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+## 🚀 Características Principales
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+El sistema está dividido por perfiles de usuario estrictos (Administrador de Talento Humano, Docentes, Empleados), garantizando la seguridad y privacidad de la información:
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+* **👥 Gestión de Personal y Roles:** Administración completa de perfiles, contratos, puestos y asignación de departamentos.
+* **📅 Control de Asistencias:** Registro de incidencias, faltas, y módulo de subida de justificaciones (certificados médicos/personales) con flujo de aprobación.
+* **📊 Evaluaciones 360°:** Soporte para evaluaciones de pares, autoevaluaciones y evaluaciones estudiantiles con integración de rúbricas.
+* **🎓 Capacitaciones:** Gestión de necesidades de formación, solicitudes de cursos, y seguimiento de certificados obtenidos.
+* **💰 Nómina:** Módulo de cálculo y estructuración de nómina.
+* **☁️ Integración Cloud:** Exportación de reportes y documentos respaldados a través de la API de Google Drive (OAuth2).
+* **🔒 Seguridad Robusta:** Protección CSRF, enrutamiento estricto por filtros de roles y sanitización de datos contra XSS/SQL Injection.
 
-## Installation & updates
+## 🛠️ Stack Tecnológico
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+* **Backend:** PHP 8.1+, Framework CodeIgniter 4.
+* **Frontend:** HTML5, CSS3, maquetación responsive con Bootstrap 5 y Tabler Icons.
+* **Base de Datos:** MySQL / MariaDB (Query Builder & ORM nativo de CI4).
+* **Integraciones:** Google API Client.
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+## ⚙️ Requisitos del Servidor
 
-## Setup
+* PHP >= 8.1
+* Extensiones PHP habilitadas: `intl`, `mbstring`, `json`, `mysqlnd`, `libcurl`.
+* Servidor Web (Apache/Nginx) apuntando obligatoriamente al directorio `/public`.
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+## 📦 Instalación y Configuración
 
-## Important Change with index.php
+1. **Clonar el repositorio:**
+   ```bash
+   git clone [https://github.com/Andres-Minda/TalentoHumano.git](https://github.com/Andres-Minda/TalentoHumano.git)
+   cd TalentoHumano
+Instalar dependencias:
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+Bash
+composer install
+Configurar entorno:
+Duplica el archivo env nativo y renómbralo a .env. Ajusta las siguientes variables:
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+Fragmento de código
+CI_ENVIRONMENT = development # Cambiar a 'production' en despliegue
+app.baseURL = 'http://localhost/TalentoHumano/public/'
 
-**Please** read the user guide for a better explanation of how CI4 works!
+database.default.hostname = 127.0.0.1
+database.default.database = nombre_de_tu_bd
+database.default.username = root
+database.default.password = 
+database.default.DBDriver = MySQLi
+Migraciones y Datos Base:
+Para inicializar la base de datos con la estructura y los usuarios semilla, puedes utilizar los comandos nativos del sistema:
 
-## Repository Management
+Bash
+php spark migrate
+php spark usuarios:crear-seed
+💻 Comandos CLI Personalizados (Spark)
+El sistema cuenta con herramientas de mantenimiento ejecutables desde la terminal para garantizar la integridad de la base de datos sin exponer endpoints web:
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+php spark db:diagnosticar - Diagnóstico completo de las 43 tablas de la base de datos y mapeo de usuarios.
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+php spark usuarios:crear-seed - Genera usuarios de prueba (AdminTH, Docentes, etc.) haciendo upsert.
 
-## Server Requirements
+php spark db:limpiar-datos - Herramienta destructiva (con doble confirmación) para limpiar datos de prueba conservando el core.
 
-PHP version 8.1 or higher is required, with the following extensions installed:
+php spark usuarios:reset-passwords - Reseteo interactivo de credenciales por consola.
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+🛡️ Estructura y Seguridad
+public/: Único directorio expuesto al navegador web. El acceso a la raíz del proyecto está bloqueado.
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - If you are still using PHP 7.4 or 8.0, you should upgrade immediately.
-> - The end of life date for PHP 8.1 will be December 31, 2025.
+app/Commands/: Contiene la lógica de mantenimiento CLI.
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+app/Filters/: Contiene AuthFilter y RoleFilter, garantizando que ninguna ruta quede expuesta a usuarios no autenticados o sin los privilegios de su rol.
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+writable/: Almacenamiento seguro fuera de la red pública para logs, exportaciones de base de datos y caché.
+
+Desarrollado para la gestión institucional del Instituto Superior Tecnológico Ibarra (ITSI).
