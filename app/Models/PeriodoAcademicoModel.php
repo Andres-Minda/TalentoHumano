@@ -74,6 +74,14 @@ class PeriodoAcademicoModel extends Model
     }
 
     /**
+     * Obtiene el período académico actual (vigente)
+     */
+    public function getPeriodoActual()
+    {
+        return $this->getPeriodoActivo();
+    }
+
+    /**
      * Obtiene períodos disponibles (activos y planificados/inactivos)
      */
     public function getPeriodosDisponibles()

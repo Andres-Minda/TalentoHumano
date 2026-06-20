@@ -76,8 +76,8 @@ class Filters extends BaseFilters
             // 'honeypot',
             // 'csrf',
             // 'invalidchars',
-            'periodContext',
-            'readOnly',
+            'periodContext' => ['except' => ['/', 'login', 'auth/*']],
+            'readOnly'      => ['except' => ['/', 'login', 'auth/*']],
         ],
         'after' => [
             // 'honeypot',

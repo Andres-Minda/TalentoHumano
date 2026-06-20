@@ -12,7 +12,9 @@
             <ul class="navbar-nav flex-row ms-auto align-items-center justify-content-end">
                 
                 <?php
-                // Obtener periodos disponibles para el dropdown
+                // Cargar helper para el contexto global de periodos
+                helper('periodo');
+                
                 $db_periodos = \Config\Database::connect();
                 $listaPeriodos = $db_periodos->table('periodos_academicos')
                                              ->orderBy('fecha_inicio', 'DESC')
@@ -20,13 +22,13 @@
                                              ->get()
                                              ->getResultArray();
                                              
-                $idPeriodoActual = session('id_periodo');
-                $isReadOnly = session('periodo_readonly') === true;
+                $idPeriodoActual = get_periodo_contexto();
+                $isReadOnly = is_periodo_historico();
                 ?>
 
                 <!-- Selector de Periodo Académico -->
                 <li class="nav-item dropdown d-none d-md-flex me-3">
-                    <a href="#" class="nav-link px-0 d-flex text-white" data-bs-toggle="dropdown" tabindex="-1" aria-label="Seleccionar periodo">
+                    <a href="#" class="nav-link px-0 d-flex align-items-center text-white" data-bs-toggle="dropdown" tabindex="-1" aria-label="Seleccionar periodo">
                         <!-- Ícono SVG nativo de Tabler: calendar-event -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-event me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -37,6 +39,11 @@
                             <path d="M8 15h2v2h-2z"></path>
                         </svg>
                         <span>Periodo: <?= esc(session('periodo_nombre') ?? 'Seleccionar') ?></span>
+                        <?php if ($isReadOnly): ?>
+                            <span class="badge bg-warning text-dark ms-2 fw-bold" style="font-size: 0.75rem;">
+                                <i class="ti ti-eye me-1"></i>SOLO LECTURA
+                            </span>
+                        <?php endif; ?>
                     </a>
                     
                     <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow shadow-sm">
@@ -45,15 +52,15 @@
                             <span class="dropdown-item text-muted">No hay periodos configurados</span>
                         <?php else: ?>
                             <?php foreach($listaPeriodos as $p): ?>
-                                <a class="dropdown-item <?= ($idPeriodoActual == $p['id_periodo']) ? 'active fw-bold' : '' ?>" href="<?= base_url('index.php/periodo/switch/' . $p['id_periodo']) ?>">
-                                    <?= esc($p['nombre']) ?>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between <?= ($idPeriodoActual == $p['id_periodo']) ? 'active fw-bold' : '' ?>" href="<?= base_url('index.php/contexto/cambiar-periodo/' . $p['id_periodo']) ?>">
+                                    <span><?= esc($p['nombre']) ?></span>
                                     
                                     <?php if($p['estado'] === 'Activo'): ?>
-                                        <span class="badge bg-success text-white ms-auto">ACTUAL</span>
+                                        <span class="badge bg-success text-white ms-2">ACTUAL</span>
                                     <?php elseif($p['estado'] === 'Cerrado'): ?>
-                                        <span class="badge bg-danger text-white ms-auto">CERRADO</span>
+                                        <span class="badge bg-danger text-white ms-2">CERRADO</span>
                                     <?php else: ?>
-                                        <span class="badge bg-warning text-dark ms-auto">PRÓXIMO</span>
+                                        <span class="badge bg-warning text-dark ms-2">PRÓXIMO</span>
                                     <?php endif; ?>
                                 </a>
                             <?php endforeach; ?>

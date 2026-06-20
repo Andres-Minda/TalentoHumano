@@ -13,8 +13,9 @@ $routes->post('auth/attemptLogin', 'AuthController::attemptLogin');
 $routes->get('auth/logout', 'AuthController::logout');
 $routes->post('auth/cerrar-todas-sesiones', 'AuthController::cerrarTodasLasSesiones');
 
-
-
+// Rutas de cambio de contexto de periodo académico
+$routes->get('contexto/cambiar-periodo/(:num)', 'PeriodoController::cambiarPeriodo/$1', ['filter' => 'auth']);
+$routes->get('periodo/switch/(:num)', 'PeriodoController::switchPeriod/$1', ['filter' => 'auth']);
 
 // Rutas para Admin Talento Humano
 $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
