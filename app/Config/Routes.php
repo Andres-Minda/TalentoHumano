@@ -195,6 +195,7 @@ $routes->group('empleado', ['filter' => 'auth'], function($routes) {
     $routes->get('capacitaciones/obtener', 'Empleado\EmpleadoController::obtenerCapacitacionesEmpleado');
     $routes->get('capacitaciones/disponibles', 'Empleado\EmpleadoController::obtenerCapacitacionesDisponibles');
     $routes->post('capacitaciones/inscribir', 'Empleado\EmpleadoController::inscribirCapacitacion');
+    $routes->get('capacitaciones/desuscribir/(:num)', 'Empleado\EmpleadoController::desuscribirCapacitacion/$1');
     
     // Títulos académicos
     $routes->get('titulos-academicos', 'Empleado\EmpleadoController::titulosAcademicos');

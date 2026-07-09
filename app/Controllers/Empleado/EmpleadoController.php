@@ -422,6 +422,65 @@ class EmpleadoController extends Controller
     }
 
     /**
+     * Desuscribir (anular inscripción) del empleado en una capacitación.
+     * Ruta: GET empleado/capacitaciones/desuscribir/(:num)
+     *
+     * Elimina el registro de la tabla `empleados_capacitaciones` que vincula
+     * al empleado autenticado con la capacitación indicada, verificando
+     * propiedad para evitar que un empleado elimine inscripciones ajenas.
+     */
+    public function desuscribirCapacitacion(int $idCapacitacion)
+    {
+        try {
+            // Resolver id_empleado desde la BD usando id_usuario de sesión
+            $idUsuario = session()->get('id_usuario');
+            if (!$idUsuario) {
+                return redirect()->to(base_url('login'))
+                                 ->with('error', 'Sesión no válida. Por favor, inicie sesión nuevamente.');
+            }
+
+            $db = \Config\Database::connect();
+            $empleado = $db->table('empleados')
+                           ->where('id_usuario', $idUsuario)
+                           ->get()
+                           ->getRowArray();
+
+            if (!$empleado) {
+                return redirect()->back()
+                                 ->with('error', 'No se encontró el registro de empleado asociado a su cuenta.');
+            }
+
+            $idEmpleado = $empleado['id_empleado'];
+
+            // Verificar que la inscripción exista y pertenezca al empleado
+            $inscripcion = $db->table('empleados_capacitaciones')
+                              ->where('id_capacitacion', $idCapacitacion)
+                              ->where('id_empleado', $idEmpleado)
+                              ->get()
+                              ->getRowArray();
+
+            if (!$inscripcion) {
+                return redirect()->back()
+                                 ->with('error', 'No se encontró tu inscripción en esta capacitación.');
+            }
+
+            // Eliminar la inscripción
+            $db->table('empleados_capacitaciones')
+               ->where('id_capacitacion', $idCapacitacion)
+               ->where('id_empleado', $idEmpleado)
+               ->delete();
+
+            return redirect()->back()
+                             ->with('success', 'Inscripción anulada correctamente.');
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error al desuscribir de capacitación: ' . $e->getMessage());
+            return redirect()->back()
+                             ->with('error', 'Ocurrió un error al anular la inscripción.');
+        }
+    }
+
+    /**
      * Títulos académicos del empleado
      */
     public function titulosAcademicos()

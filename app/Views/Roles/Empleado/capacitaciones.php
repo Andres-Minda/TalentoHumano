@@ -242,9 +242,8 @@ function mostrarCapacitaciones(capacitaciones) {
                         <i class="ti ti-eye"></i>
                     </button>
                     <a href="<?= site_url('empleado/capacitaciones/desuscribir/') ?>${c.id_capacitacion}"
-                       class="btn btn-sm btn-outline-danger"
-                       title="Desuscribirse"
-                       onclick="return confirm('¿Estás seguro de que deseas anular tu inscripción en esta capacitación?');">
+                       class="btn btn-sm btn-outline-danger btn-desuscribir"
+                       title="Desuscribirse">
                         <i class="ti ti-trash"></i>
                     </a>
                 </div>
@@ -477,5 +476,28 @@ function obtenerBadgeEstado(estado) {
     };
     return `<span class="badge ${badges[estado] || 'bg-secondary'}">${estado}</span>`;
 }
+
+// SweetAlert2 – Confirmación para desuscribirse
+document.getElementById('tbodyCapacitaciones').addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-desuscribir');
+    if (!btn) return;
+
+    e.preventDefault();
+    const url = btn.getAttribute('href');
+
+    Swal.fire({
+        icon: 'warning',
+        title: '¿Estás seguro?',
+        text: 'Se anulará tu inscripción a esta capacitación.',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, desuscribirme',
+        confirmButtonColor: '#d33',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = url;
+        }
+    });
+});
 </script>
 <?= $this->endSection() ?>
