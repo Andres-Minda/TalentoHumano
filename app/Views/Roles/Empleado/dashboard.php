@@ -173,17 +173,17 @@ if (!isset($titulo)) {
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-4 col-sm-6 mb-3">
-                                <a href="<?= base_url('empleado/capacitaciones') ?>" class="btn btn-primary w-100">
+                                <a href="<?= site_url('empleado/capacitaciones') ?>" class="btn btn-primary w-100">
                                     <i class="bi bi-mortarboard me-2"></i>Mis Capacitaciones
                                 </a>
                             </div>
                             <div class="col-md-4 col-sm-6 mb-3">
-                                <a href="<?= base_url('empleado/documentos') ?>" class="btn btn-success w-100">
+                                <a href="<?= site_url('empleado/documentos') ?>" class="btn btn-success w-100">
                                     <i class="bi bi-file-earmark-text me-2"></i>Documentos
                                 </a>
                             </div>
                             <div class="col-md-4 col-sm-6 mb-3">
-                                <a href="<?= base_url('empleado/mis-solicitudes/certificados') ?>" class="btn btn-warning w-100">
+                                <a href="<?= site_url('empleado/mis-solicitudes/certificados') ?>" class="btn btn-warning w-100">
                                     <i class="bi bi-award me-2"></i>Certificados
                                 </a>
                             </div>
@@ -202,7 +202,7 @@ if (!isset($titulo)) {
                         <h5 class="card-title mb-0">
                             <i class="bi bi-mortarboard text-primary me-1"></i> Capacitaciones Disponibles
                         </h5>
-                        <a href="<?= base_url('empleado/capacitaciones') ?>" class="btn btn-sm btn-outline-primary">
+                        <a href="<?= site_url('empleado/capacitaciones') ?>" class="btn btn-sm btn-outline-primary">
                             Ver todas
                         </a>
                     </div>
@@ -245,7 +245,7 @@ if (!isset($titulo)) {
                                                     <?= $cap['fecha_inicio'] ? date('d/m/Y', strtotime($cap['fecha_inicio'])) : '—' ?>
                                                 </td>
                                                 <td class="text-center">
-                                                    <a href="<?= base_url('empleado/capacitaciones') ?>"
+                                                    <a href="<?= site_url('empleado/capacitaciones') ?>"
                                                        class="btn btn-sm btn-primary">
                                                         <i class="bi bi-plus-circle me-1"></i>Inscribirme
                                                     </a>

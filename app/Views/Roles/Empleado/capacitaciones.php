@@ -237,9 +237,17 @@ function mostrarCapacitaciones(capacitaciones) {
             <td>${obtenerBadgeEstado(c.estado)}</td>
             <td>${c.duracion_horas || '-'} hrs</td>
             <td>
-                <button type="button" class="btn btn-sm btn-outline-primary" onclick="verDetalleCapacitacion(${c.id_capacitacion})">
-                    <i class="ti ti-eye"></i>
-                </button>
+                <div class="d-flex gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="verDetalleCapacitacion(${c.id_capacitacion})" title="Ver detalles">
+                        <i class="ti ti-eye"></i>
+                    </button>
+                    <a href="<?= site_url('empleado/capacitaciones/desuscribir/') ?>${c.id_capacitacion}"
+                       class="btn btn-sm btn-outline-danger"
+                       title="Desuscribirse"
+                       onclick="return confirm('¿Estás seguro de que deseas anular tu inscripción en esta capacitación?');">
+                        <i class="ti ti-trash"></i>
+                    </a>
+                </div>
             </td>
         `;
         tbody.appendChild(row);
