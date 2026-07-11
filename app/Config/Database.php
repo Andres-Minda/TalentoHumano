@@ -26,10 +26,10 @@ class Database extends Config
      */
     public array $default = [
         'DSN'      => '',
-        'hostname' => 'localhost',
-        'username' => 'root',
-        'password' => '',
-        'database' => 'talent_human_db',
+        'hostname' => 'sql306.infinityfree.com',
+        'username' => 'if0_42225412',
+        'password' => 'H53ZMIUeK9',
+        'database' => 'if0_42225412_talent_human_db',
         'DBDriver' => 'MySQLi',
         'DBPrefix' => '',
         'pConnect' => false,

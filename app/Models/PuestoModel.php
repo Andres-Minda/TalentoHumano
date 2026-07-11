@@ -200,8 +200,8 @@ class PuestoModel extends Model
         $db = \Config\Database::connect();
         return $db->table('puestos p')
                   ->select('p.*, d.nombre as nombre_departamento')
-                  ->join('departamentos d', 'd.id_departamento = p.id_departamento')
-                  ->orderBy('p.created_at', 'DESC')
+                  ->join('departamentos d', 'd.id_departamento = p.id_departamento', 'left')
+                  ->orderBy('p.id_puesto', 'DESC')
                   ->get()
                   ->getResultArray();
     }

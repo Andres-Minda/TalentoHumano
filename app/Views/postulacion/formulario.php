@@ -155,7 +155,7 @@
         </div>
         
         <!-- Formulario de Postulación -->
-        <form id="formPostulacion" action="<?= base_url('postulacion/procesar') ?>" method="POST" enctype="multipart/form-data">
+        <form id="formPostulacion" action="<?= site_url('postulacion/procesar') ?>" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="url_postulacion" value="<?= $url_postulacion ?>">
             
             <!-- Información Personal -->
@@ -166,18 +166,18 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="nombres" class="form-label">Nombres *</label>
-                            <input type="text" class="form-control" id="nombres" name="nombres" required>
+                            <input type="text" class="form-control" id="nombres" name="nombres" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="apellidos" class="form-label">Apellidos *</label>
-                            <input type="text" class="form-control" id="apellidos" name="apellidos" required>
+                            <input type="text" class="form-control" id="apellidos" name="apellidos" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')" required>
                         </div>
                     </div>
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="cedula" class="form-label">Cédula de Identidad *</label>
-                            <input type="text" class="form-control" id="cedula" name="cedula" maxlength="10" required>
+                            <input type="text" class="form-control" id="cedula" name="cedula" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="email" class="form-label">Correo Electrónico *</label>
@@ -188,7 +188,7 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="telefono" class="form-label">Teléfono *</label>
-                            <input type="tel" class="form-control" id="telefono" name="telefono" required>
+                            <input type="tel" class="form-control" id="telefono" name="telefono" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento *</label>
@@ -478,7 +478,7 @@
                     const formData = new FormData(form);
                     formData.set('id_puesto', '<?= $puesto['id_puesto'] ?? '' ?>');
                     
-                    const response = await fetch('<?= base_url('postulacion/procesar') ?>', {
+                    const response = await fetch('<?= site_url('postulacion/procesar') ?>', {
                         method: 'POST',
                         body: formData
                     });

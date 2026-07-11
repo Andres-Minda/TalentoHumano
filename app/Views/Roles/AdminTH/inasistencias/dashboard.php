@@ -10,7 +10,7 @@
                     <h4 class="page-title mb-0">Gestión de Inasistencias</h4>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="<?= base_url('admin-th/dashboard') ?>">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/dashboard') ?>">Dashboard</a></li>
                             <li class="breadcrumb-item active">Inasistencias</li>
                         </ol>
                     </div>
@@ -127,14 +127,14 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <a href="<?= base_url('admin-th/inasistencias/registrar') ?>" 
+                                <a href="<?= site_url('admin-th/inasistencias/registrar') ?>" 
                                    class="btn btn-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center">
                                     <i class="bi bi-plus-circle fs-1 mb-2"></i>
                                     <span>Registrar Nueva Inasistencia</span>
                                 </a>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <a href="<?= base_url('admin-th/inasistencias/listar') ?>" 
+                                <a href="<?= site_url('admin-th/inasistencias/listar') ?>" 
                                    class="btn btn-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center">
                                     <i class="bi bi-clipboard-check fs-1 mb-2"></i>
                                     <span>Revisar Justificaciones</span>
@@ -146,7 +146,7 @@
                                 </a>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <a href="<?= base_url('admin-th/inasistencias/reporte') ?>" 
+                                <a href="<?= site_url('admin-th/inasistencias/reporte') ?>" 
                                    class="btn btn-info w-100 h-100 d-flex flex-column align-items-center justify-content-center">
                                     <i class="bi bi-bar-chart fs-1 mb-2"></i>
                                     <span>Generar Reportes</span>
@@ -201,9 +201,6 @@
                             Inasistencias Recientes
                         </h5>
                         <div class="d-flex align-items-center">
-                            <button type="button" class="btn btn-danger btn-sm me-2 d-none" id="btnEliminarSeleccion" onclick="eliminarSeleccionados()">
-                                <i class="ti ti-trash"></i> Eliminar ( <span id="contadorSeleccion">0</span> )
-                            </button>
                             <a href="<?= site_url('admin-th/inasistencias/listar') ?>" class="btn btn-outline-primary btn-sm">
                                 Ver Todas
                             </a>
@@ -214,10 +211,6 @@
                             <table class="table table-centered table-nowrap mb-0">
                                 <thead>
                                     <tr>
-                                        <!-- Estándar Modular: Checkbox Maestro -->
-                                        <th style="width:40px;">
-                                            <input type="checkbox" class="form-check-input" id="checkAll" onchange="toggleAll(this)">
-                                        </th>
                                         <th>Empleado</th>
                                         <th>Fecha</th>
                                         <th>Tipo</th>
@@ -230,9 +223,6 @@
                                     <?php if (isset($inasistencias_recientes) && !empty($inasistencias_recientes)): ?>
                                         <?php foreach ($inasistencias_recientes as $inasistencia): ?>
                                             <tr>
-                                                <td>
-                                                    <input type="checkbox" class="form-check-input chk-item" value="<?= $inasistencia['id'] ?>" onchange="actualizarBotonEliminar()">
-                                                </td>
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <div class="avatar-sm rounded-circle bg-light text-dark d-flex align-items-center justify-content-center me-2">
@@ -287,16 +277,11 @@
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <button type="button" class="btn btn-sm btn-outline-info" 
-                                                                onclick="verDetalle(<?= $inasistencia['id'] ?>)"
-                                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
-                                                            <i class="bi bi-eye"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-sm btn-outline-warning" 
-                                                                onclick="editarInasistencia(<?= $inasistencia['id'] ?>)"
-                                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
+                                                        <a href="<?= site_url('admin-th/inasistencias/editar/' . $inasistencia['id']) ?>" 
+                                                           class="btn btn-sm btn-outline-warning" 
+                                                           data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                                             <i class="bi bi-pencil"></i>
-                                                        </button>
+                                                        </a>
                                                         <?php if ($inasistencia['estado'] === 'PENDIENTE'): ?>
                                                             <button type="button" class="btn btn-sm btn-outline-success" 
                                                                     onclick="revisarJustificacion(<?= $inasistencia['id'] ?>)"
@@ -304,11 +289,6 @@
                                                                 <i class="bi bi-check-circle"></i>
                                                             </button>
                                                         <?php endif; ?>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                                onclick="eliminarInasistencia(<?= $inasistencia['id'] ?>)"
-                                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -340,7 +320,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div id="graficoDepartamentos" style="min-height:280px;"></div>
+                        <canvas id="chartDepartamentos" height="250"></canvas>
                     </div>
                 </div>
             </div>
@@ -353,7 +333,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div id="graficoTendencia" style="min-height:280px;"></div>
+                        <canvas id="chartTendencias" height="250"></canvas>
                     </div>
                 </div>
             </div>
@@ -444,21 +424,6 @@
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <button type="button" class="btn btn-sm btn-outline-info btn-ver-perfil" 
-                                                                data-id="<?= $empleado['empleado_id'] ?? 0 ?>"
-                                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Perfil">
-                                                            <i class="bi bi-eye"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-sm btn-outline-success"
-                                                                onclick="verDetallesEmpleadoMes(<?= (int)($empleado['empleado_id'] ?? 0) ?>, '<?= esc($empleado['nombre'] ?? 'Empleado') ?>')"
-                                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Inasistencias del Mes">
-                                                            <i class="bi bi-calendar2-x"></i>
-                                                        </button>
-                                                        <a href="mailto:<?= $empleado['correo'] ?? '' ?>?subject=Sobre tu inasistencia" 
-                                                                class="btn btn-sm btn-outline-warning" 
-                                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Contactar">
-                                                            <i class="bi bi-chat"></i>
-                                                        </a>
                                                         <a href="<?= site_url('admin-th/inasistencias/reporte-empleado/' . ($empleado['empleado_id'] ?? 0)) ?>" 
                                                            target="_blank"
                                                            class="btn btn-sm btn-outline-danger" 
@@ -528,9 +493,113 @@
 </div>
 
 <!-- SweetAlert2 Plugin -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11">
+// ============================================
+// CARGA AJAX DE GRÁFICOS (CHART.JS)
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Si Chart.js no está definido globalmente, tratar de cargarlo. Asumiremos que el layout lo incluye, 
+    // pero configuramos los llamados seguros.
+    fetch('<?= site_url('admin-th/inasistencias/obtener_graficos') ?>')
+        .then(res => res.json())
+        .then(data => {
+            if (data.departamentos) {
+                const ctxDep = document.getElementById('chartDepartamentos').getContext('2d');
+                new Chart(ctxDep, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.departamentos.labels,
+                        datasets: [{
+                            data: data.departamentos.valores,
+                            backgroundColor: ['#4361ee', '#3bc9db', '#f72585', '#4cc9f0', '#7209b7', '#f3722c', '#43aa8b', '#90be6d'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            if (data.tendencias) {
+                const ctxTen = document.getElementById('chartTendencias').getContext('2d');
+                new Chart(ctxTen, {
+                    type: 'line',
+                    data: {
+                        labels: data.tendencias.labels,
+                        datasets: [{
+                            label: 'Inasistencias',
+                            data: data.tendencias.valores,
+                            borderColor: '#4361ee',
+                            backgroundColor: 'rgba(67, 97, 238, 0.2)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error cargando gráficos:', error));
+});
+</script>
 <!-- ApexCharts -->
-<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.0/dist/apexcharts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.0/dist/apexcharts.min.js">
+// ============================================
+// CARGA AJAX DE GRÁFICOS (CHART.JS)
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Si Chart.js no está definido globalmente, tratar de cargarlo. Asumiremos que el layout lo incluye, 
+    // pero configuramos los llamados seguros.
+    fetch('<?= site_url('admin-th/inasistencias/obtener_graficos') ?>')
+        .then(res => res.json())
+        .then(data => {
+            if (data.departamentos) {
+                const ctxDep = document.getElementById('chartDepartamentos').getContext('2d');
+                new Chart(ctxDep, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.departamentos.labels,
+                        datasets: [{
+                            data: data.departamentos.valores,
+                            backgroundColor: ['#4361ee', '#3bc9db', '#f72585', '#4cc9f0', '#7209b7', '#f3722c', '#43aa8b', '#90be6d'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            if (data.tendencias) {
+                const ctxTen = document.getElementById('chartTendencias').getContext('2d');
+                new Chart(ctxTen, {
+                    type: 'line',
+                    data: {
+                        labels: data.tendencias.labels,
+                        datasets: [{
+                            label: 'Inasistencias',
+                            data: data.tendencias.valores,
+                            borderColor: '#4361ee',
+                            backgroundColor: 'rgba(67, 97, 238, 0.2)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error cargando gráficos:', error));
+});
+</script>
 <script>
 // ── Datos inyectados desde PHP ────────────────────────────────────────────────
 const graficosData = {
@@ -960,15 +1029,6 @@ function procesarRevision(inasistenciaId, accion, observaciones) {
     });
 }
 
-
-    Swal.fire({
-        title: 'En desarrollo',
-        text: 'Esta funcionalidad estará disponible próximamente.',
-        icon: 'info',
-        confirmButtonColor: '#007bff'
-    });
-}
-
 // ==================== [ESTANDARIZACIÓN] LÓGICA DE BORRADO MASIVO ====================
 function toggleAll(master) {
     const checkboxes = document.querySelectorAll('.chk-item');
@@ -1057,6 +1117,58 @@ function procesarEliminacionAjaxMasiva(ids) {
     });
 }
 // ==================== FIN [ESTANDARIZACIÓN] ====================
+
+// ============================================
+// CARGA AJAX DE GRÁFICOS (CHART.JS)
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Si Chart.js no está definido globalmente, tratar de cargarlo. Asumiremos que el layout lo incluye, 
+    // pero configuramos los llamados seguros.
+    fetch('<?= site_url('admin-th/inasistencias/obtener_graficos') ?>')
+        .then(res => res.json())
+        .then(data => {
+            if (data.departamentos) {
+                const ctxDep = document.getElementById('chartDepartamentos').getContext('2d');
+                new Chart(ctxDep, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.departamentos.labels,
+                        datasets: [{
+                            data: data.departamentos.valores,
+                            backgroundColor: ['#4361ee', '#3bc9db', '#f72585', '#4cc9f0', '#7209b7', '#f3722c', '#43aa8b', '#90be6d'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            if (data.tendencias) {
+                const ctxTen = document.getElementById('chartTendencias').getContext('2d');
+                new Chart(ctxTen, {
+                    type: 'line',
+                    data: {
+                        labels: data.tendencias.labels,
+                        datasets: [{
+                            label: 'Inasistencias',
+                            data: data.tendencias.valores,
+                            borderColor: '#4361ee',
+                            backgroundColor: 'rgba(67, 97, 238, 0.2)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error cargando gráficos:', error));
+});
 </script>
 
 <style>

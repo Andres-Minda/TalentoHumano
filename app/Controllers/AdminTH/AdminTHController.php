@@ -607,6 +607,56 @@ class AdminTHController extends Controller
     }
 
     /**
+     * Resetear contraseña de un empleado a su número de cédula
+     */
+    public function resetPassword($id)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $db = \Config\Database::connect();
+
+            // Obtener empleado con su usuario vinculado
+            $resultado = $db->table('empleados e')
+                ->select('e.id_empleado, e.nombres, e.apellidos, e.id_usuario, u.cedula')
+                ->join('usuarios u', 'u.id_usuario = e.id_usuario')
+                ->where('e.id_empleado', $id)
+                ->get()
+                ->getRowArray();
+
+            if (!$resultado) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Empleado no encontrado o sin usuario vinculado.'
+                ]);
+            }
+
+            // Hashear la cédula como nueva contraseña
+            $nuevaPasswordHash = password_hash($resultado['cedula'], PASSWORD_DEFAULT);
+
+            // Actualizar contraseña y marcar como no cambiada
+            $db->table('usuarios')->where('id_usuario', $resultado['id_usuario'])->update([
+                'password_hash'    => $nuevaPasswordHash,
+                'password_changed' => 0,
+            ]);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Contraseña de ' . $resultado['nombres'] . ' ' . $resultado['apellidos'] . ' reseteada exitosamente al número de cédula.'
+            ]);
+
+        } catch (\Throwable $e) {
+            log_message('error', 'Error al resetear contraseña: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al resetear la contraseña: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Gestión de departamentos
      */
     public function departamentos()
@@ -923,9 +973,9 @@ class AdminTHController extends Controller
                 'success' => true,
                 'data' => $puestos
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             log_message('error', 'Error al obtener puestos: ' . $e->getMessage());
-            return $this->response->setJSON([
+            return $this->response->setStatusCode(500)->setJSON([
                 'success' => false,
                 'message' => 'Error al obtener puestos: ' . $e->getMessage()
             ]);
@@ -5190,6 +5240,121 @@ class AdminTHController extends Controller
             ]);
         } catch (\Exception $e) {
             return $this->response->setJSON(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    // ============================================
+    // DATOS DE GRÁFICOS (AJAX)
+    // ============================================
+    public function datosGraficos()
+    {
+        ob_start();
+        $inasistenciaModel = new \App\Models\InasistenciaModel();
+        
+        $departamentosData = $inasistenciaModel->obtenerInasistenciasPorDepartamento();
+        $tendenciaData = $inasistenciaModel->obtenerTendenciaSemanal();
+        
+        $labelsDept = array_column($departamentosData, 'departamento');
+        $valoresDept = array_column($departamentosData, 'total');
+        
+        $labelsTendencia = array_column($tendenciaData, 'fecha');
+        // Asegurar formato de fechas
+        $labelsTendencia = array_map(function($d) {
+            return date('d/m M', strtotime($d));
+        }, $labelsTendencia);
+        $valoresTendencia = array_column($tendenciaData, 'total');
+
+        $response = [
+            'success' => true,
+            'departamentos' => [
+                'labels' => empty($labelsDept) ? ['Sin datos'] : $labelsDept,
+                'valores' => empty($valoresDept) ? [0] : array_map('intval', $valoresDept)
+            ],
+            'tendencia' => [
+                'labels' => empty($labelsTendencia) ? [date('d/m M')] : $labelsTendencia,
+                'valores' => empty($valoresTendencia) ? [0] : array_map('intval', $valoresTendencia)
+            ]
+        ];
+        
+        ob_clean();
+        return $this->response->setJSON($response);
+    }
+
+    // ============================================
+    // REPORTE TOP INASISTENCIAS
+    // ============================================
+    public function generarReporteTop()
+    {
+        return redirect()->back()->with('info', 'La generación de este reporte estará disponible pronto.');
+    }
+
+    // ============================================
+    // API GRÁFICOS CHART.JS
+    // ============================================
+    public function obtener_graficos()
+    {
+        if (ob_get_level() > 0) {
+            ob_clean();
+        }
+        
+        try {
+            $db = \Config\Database::connect();
+            
+            // Departamentos
+            $builderDep = $db->table('empleados');
+            $builderDep->select('departamento, COUNT(inasistencias.id) as total');
+            $builderDep->join('inasistencias', 'inasistencias.empleado_id = empleados.id_empleado', 'left');
+            $builderDep->groupBy('departamento');
+            $resultadosDep = $builderDep->get()->getResultArray();
+            
+            $labelsDep = [];
+            $valoresDep = [];
+            foreach ($resultadosDep as $row) {
+                if ($row['total'] > 0) {
+                    $labelsDep[] = $row['departamento'] ? $row['departamento'] : 'Sin Asignar';
+                    $valoresDep[] = (int)$row['total'];
+                }
+            }
+            
+            if (empty($labelsDep)) {
+                $labelsDep = ['Sin Registros'];
+                $valoresDep = [0];
+            }
+    
+            // Tendencias últimos 7 días
+            $builderTen = $db->table('inasistencias');
+            $builderTen->select('fecha_inasistencia, COUNT(id) as total');
+            $builderTen->where('fecha_inasistencia >=', date('Y-m-d', strtotime('-7 days')));
+            $builderTen->groupBy('fecha_inasistencia');
+            $builderTen->orderBy('fecha_inasistencia', 'ASC');
+            $resultadosTen = $builderTen->get()->getResultArray();
+            
+            $labelsTen = [];
+            $valoresTen = [];
+            foreach ($resultadosTen as $row) {
+                $labelsTen[] = date('d/m M', strtotime($row['fecha_inasistencia']));
+                $valoresTen[] = (int)$row['total'];
+            }
+            
+            if (empty($labelsTen)) {
+                $labelsTen = [date('d/m M')];
+                $valoresTen = [0];
+            }
+    
+            $response = [
+                'departamentos' => [
+                    'labels' => $labelsDep,
+                    'valores' => $valoresDep
+                ],
+                'tendencias' => [
+                    'labels' => $labelsTen,
+                    'valores' => $valoresTen
+                ]
+            ];
+            
+            return $this->response->setJSON($response);
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['error' => $e->getMessage()]);
         }
     }
 }

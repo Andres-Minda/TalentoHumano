@@ -165,19 +165,21 @@ class SolicitudController extends BaseController
             $msg = 'Solicitud enviada correctamente. Será revisada por Talento Humano.';
             if ($esAjax) return $this->response->setJSON(['success' => true, 'message' => $msg]);
             session()->setFlashdata('success', $msg);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            log_message('error', 'Error al guardar solicitud: ' . $e->getMessage());
             $msg = 'Error al enviar la solicitud: ' . $e->getMessage();
             if ($esAjax) return $this->response->setJSON(['success' => false, 'message' => $msg]);
             session()->setFlashdata('error', $msg);
         }
 
         $rutas = [
-            'Vacaciones'  => 'empleado/mis-solicitudes/vacaciones',
-            'Permisos'    => 'empleado/mis-solicitudes/permisos',
+            'Vacaciones'   => 'empleado/mis-solicitudes/vacaciones',
+            'Permisos'     => 'empleado/mis-solicitudes/permisos',
             'Certificados' => 'empleado/mis-solicitudes/certificados',
         ];
 
-        return redirect()->to(base_url($rutas[$tipo] ?? 'empleado/dashboard'));
+        $rutaDestino = $rutas[$tipo] ?? 'empleado/dashboard';
+        return redirect()->to(site_url($rutaDestino));
     }
 
 

@@ -447,7 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Función para cargar puestos
 function cargarPuestos() {
-    fetch('<?= base_url('admin-th/puestos/obtener') ?>')
+    fetch('<?= site_url('admin-th/puestos/obtener') ?>')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -465,7 +465,7 @@ function cargarPuestos() {
 
 // Función para cargar departamentos
 function cargarDepartamentos() {
-    fetch('<?= base_url('admin-th/departamentos/activos') ?>')
+    fetch('<?= site_url('admin-th/departamentos/activos') ?>')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -732,7 +732,7 @@ document.getElementById('formPuesto').addEventListener('submit', function(e) {
     const formData = new FormData(this);
     const data = Object.fromEntries(formData.entries());
     
-    fetch('<?= base_url('admin-th/puestos/guardar') ?>', {
+    fetch('<?= site_url('admin-th/puestos/guardar') ?>', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -774,7 +774,7 @@ function eliminarPuesto(idPuesto) {
             const formData = new FormData();
             formData.append('id_puesto', idPuesto);
 
-            fetch('<?= base_url('admin-th/puestos/eliminar') ?>', {
+            fetch('<?= site_url('admin-th/puestos/eliminar') ?>', {
                 method: 'POST',
                 body: formData
             })
@@ -807,7 +807,7 @@ function generarAnuncio(id, titulo, departamento, descripcion) {
         ? descripcion.replace(/\n/g, '<br>') 
         : 'Buscamos un profesional comprometido para unirse a nuestro equipo. ¡Envía tu postulación escaneando el código QR!';
     
-    const urlPostulacion = '<?= base_url('postularse/') ?>' + id;
+    const urlPostulacion = '<?= site_url('postularse/') ?>' + id;
     document.getElementById('flyerUrlTexto').textContent = urlPostulacion;
     new QRCode(qrContainer, {
         text: urlPostulacion,
@@ -930,7 +930,7 @@ function verPostulantes(idPuesto) {
 
     document.getElementById('modalPostulantesLabel').textContent = `Postulantes al Puesto: ${puesto.titulo}`;
     
-    fetch(`<?= base_url('admin-th/puestos') ?>/${idPuesto}/postulantes`)
+    fetch(`<?= site_url('admin-th/puestos') ?>/${idPuesto}/postulantes`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -1015,7 +1015,7 @@ document.getElementById('formCambiarEstado').addEventListener('submit', function
     const formData = new FormData(this);
     const data = Object.fromEntries(formData.entries());
     
-    fetch('<?= base_url('postulaciones/cambiar-estado') ?>', {
+    fetch('<?= site_url('admin-th/postulaciones/cambiar-estado') ?>', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

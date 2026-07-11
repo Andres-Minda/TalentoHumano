@@ -111,8 +111,43 @@ class PostulacionController extends Controller
      */
     public function procesarPostulacion()
     {
+        ob_start();
+
         if (!$this->request->is('post')) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Método no permitido']);
+            ob_clean();
+            return $this->response->setStatusCode(405)->setJSON([
+                'status' => 'error',
+                'success' => false,
+                'message' => 'Método no permitido'
+            ]);
+        }
+
+        // 1. Reglas de Validación Nativa
+        $rules = [
+            'nombres'                  => 'required|alpha_space',
+            'apellidos'                => 'required|alpha_space',
+            'cedula'                   => 'required|numeric|exact_length[10]',
+            'email'                    => 'required|valid_email',
+            'telefono'                 => 'required|numeric',
+            'fecha_nacimiento'         => 'required',
+            'genero'                   => 'required',
+            'estado_civil'             => 'required',
+            'direccion'                => 'required',
+            'ciudad'                   => 'required',
+            'provincia'                => 'required',
+            'nacionalidad'             => 'required',
+            'disponibilidad_inmediata' => 'required'
+        ];
+
+        // Validar campos
+        if (!$this->validate($rules)) {
+            $errores = $this->validator->getErrors();
+            ob_clean();
+            return $this->response->setStatusCode(400)->setJSON([
+                'status' => 'error',
+                'success' => false,
+                'message' => 'Error de validación: ' . implode(', ', $errores)
+            ]);
         }
 
         $db = \Config\Database::connect();
@@ -121,19 +156,6 @@ class PostulacionController extends Controller
             $datos = $this->request->getPost();
             $idPuesto = $datos['id_puesto'] ?? null;
             $urlPostulacion = $datos['url_postulacion'] ?? '';
-            
-            // Validar datos requeridos
-            $camposRequeridos = [
-                'nombres', 'apellidos', 'cedula', 'email', 'telefono',
-                'fecha_nacimiento', 'genero', 'estado_civil', 'direccion',
-                'ciudad', 'provincia', 'nacionalidad', 'disponibilidad_inmediata'
-            ];
-
-            foreach ($camposRequeridos as $campo) {
-                if (empty($datos[$campo])) {
-                    return $this->response->setJSON(['success' => false, 'message' => "El campo $campo es obligatorio"]);
-                }
-            }
 
             // Buscar el puesto por ID o por URL
             $puesto = null;
@@ -144,12 +166,22 @@ class PostulacionController extends Controller
                 $puesto = $this->puestoModel->getPuestoPorUrl($urlPostulacion);
             }
             if (!$puesto) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Oferta de trabajo no válida']);
+                ob_clean();
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status' => 'error',
+                    'success' => false,
+                    'message' => 'Oferta de trabajo no válida'
+                ]);
             }
 
             // Bloquear POST si el puesto no está Abierto
             if ($puesto['estado'] !== 'Abierto' || ($puesto['activo'] ?? 1) != 1) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Este puesto no acepta postulaciones en este momento.']);
+                ob_clean();
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status' => 'error',
+                    'success' => false,
+                    'message' => 'Este puesto no acepta postulaciones en este momento.'
+                ]);
             }
 
             // Verificar si ya se postuló con esta cédula
@@ -158,7 +190,12 @@ class PostulacionController extends Controller
                                                          ->first();
             
             if ($postulacionExistente) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Ya se ha postulado a esta oferta con esta cédula']);
+                ob_clean();
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status' => 'error',
+                    'success' => false,
+                    'message' => 'Ya se ha postulado a esta oferta con esta cédula'
+                ]);
             }
 
             // ===== PASO 1: Subir CV a Google Drive (OAuth2 con token del usuario) =====
@@ -171,12 +208,22 @@ class PostulacionController extends Controller
                 $extension = strtolower($file->getExtension());
                 
                 if (!in_array($extension, $allowedTypes)) {
-                    return $this->response->setJSON(['success' => false, 'message' => 'Solo se permiten archivos PDF, DOC o DOCX']);
+                    ob_clean();
+                    return $this->response->setStatusCode(400)->setJSON([
+                        'status' => 'error',
+                        'success' => false,
+                        'message' => 'Solo se permiten archivos PDF, DOC o DOCX'
+                    ]);
                 }
 
                 // Validar tamaño (máximo 5MB)
                 if ($file->getSize() > 5 * 1024 * 1024) {
-                    return $this->response->setJSON(['success' => false, 'message' => 'El archivo no puede exceder 5MB']);
+                    ob_clean();
+                    return $this->response->setStatusCode(400)->setJSON([
+                        'status' => 'error',
+                        'success' => false,
+                        'message' => 'El archivo no puede exceder 5MB'
+                    ]);
                 }
 
                 // Generar nombre con el nombre del candidato
@@ -297,9 +344,11 @@ class PostulacionController extends Controller
                 $errores = $this->postulanteModel->errors();
                 $db->transRollback();
                 log_message('error', 'Validación falló al insertar postulante: ' . json_encode($errores));
-                return $this->response->setJSON([
+                ob_clean();
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status' => 'error',
                     'success' => false,
-                    'message' => 'Error de validación: ' . implode(', ', $errores)
+                    'message' => 'Error de validación del modelo: ' . implode(', ', $errores)
                 ]);
             }
 
@@ -308,53 +357,42 @@ class PostulacionController extends Controller
             $db->transComplete();
 
             if ($db->transStatus() === false) {
-                return $this->response->setJSON([
+                ob_clean();
+                return $this->response->setStatusCode(500)->setJSON([
+                    'status' => 'error',
                     'success' => false,
                     'message' => 'Error al guardar la postulación. La operación fue revertida.'
                 ]);
             }
 
-            return $this->response->setJSON([
+            ob_clean();
+            return $this->response->setStatusCode(200)->setJSON([
+                'status' => 'success',
                 'success' => true,
                 'message' => '¡Postulación enviada con éxito! Su CV ha sido recibido.'
             ]);
 
-        } catch (\Google\Service\Exception $e) {
-            // ── Error específico de la API de Google Drive ──
-            $db->transRollback();
-            $errorBody = $e->getMessage();
-
-            if (strpos($errorBody, 'invalid_grant') !== false) {
-                log_message('critical', '[Google Drive] Token revocado/expirado. Ejecutar obtener_token.php. Detalle: ' . $errorBody);
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'La conexión con Google Drive ha expirado. El administrador debe renovarla desde el panel. (Código: DRV-AUTH)'
-                ]);
-            }
-
-            log_message('error', '[Google Drive] Error de API: ' . $errorBody);
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error temporal al subir su CV al servidor. Por favor, intente nuevamente en unos minutos. (Código: DRV-API)'
-            ]);
-
-        } catch (\Exception $e) {
-            // ── Error general (BD, validación, token, etc.) ──
+        } catch (\Throwable $e) {
             $db->transRollback();
             $errorMsg = $e->getMessage();
 
+            // Mensajes amigables para errores de Google Drive conocidos
             if (strpos($errorMsg, 'TOKEN_INVALID_GRANT') !== false || strpos($errorMsg, 'invalid_grant') !== false) {
                 log_message('critical', '[Google Drive] Token inválido. Ejecutar obtener_token.php. Detalle: ' . $errorMsg);
-                return $this->response->setJSON([
+                ob_clean();
+                return $this->response->setStatusCode(500)->setJSON([
+                    'status' => 'error',
                     'success' => false,
                     'message' => 'La conexión con Google Drive ha expirado. El administrador debe renovarla desde el panel. (Código: DRV-AUTH)'
                 ]);
             }
 
-            log_message('error', 'Error al procesar postulación: ' . $errorMsg);
-            return $this->response->setJSON([
+            log_message('error', 'Error general al procesar postulación: ' . $errorMsg);
+            ob_clean();
+            return $this->response->setStatusCode(500)->setJSON([
+                'status' => 'error',
                 'success' => false,
-                'message' => 'Ocurrió un error inesperado al procesar su postulación. Por favor, intente nuevamente. (Código: SYS-ERR)'
+                'message' => 'Ocurrió un error al procesar su postulación: ' . $errorMsg
             ]);
         }
     }

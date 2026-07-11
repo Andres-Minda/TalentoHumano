@@ -383,6 +383,14 @@ function cargarEmpleados() {
                         <i class="ti ti-key"></i>
                     </button>`;
 
+                // Botón de resetear contraseña (solo para no-admins)
+                if (!esAdmin) {
+                    botonesAccion += `
+                    <button class="btn btn-sm btn-outline-warning btn-reset-password" data-id="${idEmp}" data-nombre="${empleado.nombres || ''} ${empleado.apellidos || ''}" title="Resetear Contraseña">
+                        <i class="ti ti-refresh"></i>
+                    </button>`;
+                }
+
                 // Ocultar botones de eliminar/inactivar para Admin TH
                 if (!esAdmin) {
                     botonesAccion += `
@@ -1167,5 +1175,78 @@ document.addEventListener('DOMContentLoaded', function() {
         cargarEstadisticas();
     }
 });
+
+// ==================== RESET PASSWORD CON SWEETALERT2 ====================
+// Cargar SweetAlert2 si no está disponible
+if (typeof Swal === 'undefined') {
+    const swalScript = document.createElement('script');
+    swalScript.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+    document.head.appendChild(swalScript);
+}
+
+// Delegación de eventos para botones de reseteo (cargados dinámicamente)
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-reset-password');
+    if (!btn) return;
+
+    e.preventDefault();
+    const idEmpleado = btn.dataset.id;
+    const nombreEmpleado = btn.dataset.nombre;
+
+    Swal.fire({
+        title: '¿Resetear contraseña?',
+        html: `La contraseña de <strong>${nombreEmpleado}</strong> volverá a ser su <strong>número de cédula</strong>.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e6a817',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="ti ti-refresh me-1"></i> Sí, resetear',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Mostrar loading
+            Swal.fire({
+                title: 'Procesando...',
+                text: 'Reseteando la contraseña',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            fetch(`<?= site_url('admin-th/empleados/reset-password/') ?>${idEmpleado}`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: '¡Contraseña reseteada!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonColor: '#198754'
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message || 'No se pudo resetear la contraseña.',
+                        icon: 'error',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error de conexión',
+                    text: 'No se pudo conectar con el servidor.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+            });
+        }
+    });
+});
+// ==================== FIN RESET PASSWORD ====================
 </script>
 <?= $this->endSection() ?>

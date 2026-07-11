@@ -35,6 +35,7 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->get('empleados/historial/(:num)', 'AdminTH\AdminTHController::obtenerHistorialEmpleado/$1');
     $routes->get('empleados/reporte-inactivos', 'AdminTH\AdminTHController::reporteEmpleadosInactivos');
     $routes->get('empleados/exportar-inactivos', 'AdminTH\AdminTHController::exportarEmpleadosInactivos');
+    $routes->post('empleados/reset-password/(:num)', 'AdminTH\AdminTHController::resetPassword/$1');
     
     // Gestión de departamentos
     $routes->get('departamentos', 'AdminTH\AdminTHController::departamentos');
@@ -104,6 +105,9 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     $routes->get('inasistencias', 'AdminTH\AdminTHController::inasistencias');
     $routes->get('inasistencias/listar', 'AdminTH\AdminTHController::listarInasistencias');
     $routes->get('inasistencias/registrar', 'AdminTH\AdminTHController::registrarInasistencia');
+    $routes->get('inasistencias/graficos', 'AdminTH\AdminTHController::datosGraficos');
+    $routes->get('inasistencias/obtener_graficos', 'AdminTH\AdminTHController::obtener_graficos');
+    $routes->get('inasistencias/reporte-top', 'AdminTH\AdminTHController::generarReporteTop');
     $routes->post('inasistencias/guardar', 'AdminTH\AdminTHController::guardarInasistencia');
     $routes->get('inasistencias/detalles/(:num)', 'AdminTH\AdminTHController::detalles/$1');
     $routes->delete('inasistencias/eliminar/(:num)', 'AdminTH\AdminTHController::eliminar/$1');
@@ -126,6 +130,11 @@ $routes->group('admin-th', ['filter' => 'auth'], function($routes) {
     
     // Políticas de inasistencia
     $routes->get('politicas-inasistencia', 'AdminTH\AdminTHController::politicasInasistencia');
+    $routes->post('politicas-inasistencia/guardar', 'AdminTH\PoliticasController::store');
+    $routes->get('politicas-inasistencia/editar/(:num)', 'AdminTH\PoliticasController::edit/$1');
+    $routes->post('politicas-inasistencia/actualizar/(:num)', 'AdminTH\PoliticasController::update/$1');
+    $routes->get('politicas-inasistencia/ver/(:num)', 'AdminTH\PoliticasController::show/$1');
+    $routes->delete('politicas-inasistencia/eliminar/(:num)', 'AdminTH\PoliticasController::delete/$1');
     $routes->post('politicas-inasistencia/eliminar-masivo', 'AdminTH\AdminTHController::eliminarPoliticasMasivo');
     
     // Solicitudes Administrativas (Reemplaza capacitaciones)

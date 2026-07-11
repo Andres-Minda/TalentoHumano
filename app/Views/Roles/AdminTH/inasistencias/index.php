@@ -11,8 +11,8 @@
                     <h4 class="page-title mb-0">Historial de Inasistencias</h4>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="<?= base_url('admin-th/dashboard') ?>">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="<?= base_url('admin-th/inasistencias') ?>">Inasistencias</a></li>
+                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/dashboard') ?>">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/inasistencias') ?>">Inasistencias</a></li>
                             <li class="breadcrumb-item active">Listado</li>
                         </ol>
                     </div>
@@ -29,13 +29,10 @@
                             Todas las Inasistencias
                         </h5>
                         <div class="d-flex align-items-center">
-                            <button type="button" class="btn btn-danger btn-sm me-2 d-none" id="btnEliminarSeleccion" onclick="eliminarSeleccionados()">
-                                <i class="ti ti-trash"></i> Eliminar ( <span id="contadorSeleccion">0</span> )
-                            </button>
                             <a href="<?= site_url('admin-th/inasistencias') ?>" class="btn btn-outline-secondary btn-sm me-2">
                                 <i class="ti ti-arrow-left me-1"></i>Regresar al Dashboard
                             </a>
-                            <a href="<?= base_url('admin-th/inasistencias/registrar') ?>" class="btn btn-primary btn-sm">
+                            <a href="<?= site_url('admin-th/inasistencias/registrar') ?>" class="btn btn-primary btn-sm">
                                 <i class="ti ti-plus me-1"></i>Registrar Inasistencia
                             </a>
                         </div>
@@ -45,10 +42,7 @@
                             <table class="table table-hover table-centered align-middle" id="tablaInasistenciasCompletas">
                                 <thead class="table-dark">
                                     <tr>
-                                        <!-- Estándar Modular: Checkbox Maestro -->
-                                        <th style="width:40px;">
-                                            <input type="checkbox" class="form-check-input" id="checkAll" onchange="toggleAll(this)">
-                                        </th>
+                                        
                                         <th>#</th>
                                         <th>Empleado</th>
                                         <th>Departamento</th>
@@ -63,9 +57,6 @@
                                     <?php if (isset($inasistencias) && !empty($inasistencias)): ?>
                                         <?php foreach ($inasistencias as $index => $ina): ?>
                                             <tr>
-                                                <td>
-                                                    <input type="checkbox" class="form-check-input chk-item" value="<?= $ina['id'] ?>" onchange="actualizarBotonEliminar()">
-                                                </td>
                                                 <td><?= $index + 1 ?></td>
                                                 <td>
                                                     <strong><?= esc($ina['apellidos'] ?? '') ?> <?= esc($ina['nombres'] ?? '') ?></strong><br>
@@ -85,7 +76,7 @@
                                                         'Injustificada' => 'danger',
                                                         'Permiso' => 'info',
                                                         'Vacaciones' => 'primary',
-                                                        'Licencia Médica' => 'warning'
+                                                        'Licencia MÃ©dica' => 'warning'
                                                     ];
                                                     $tipoClass = $tipoBadges[$ina['tipo_inasistencia']] ?? 'secondary';
                                                     ?>
@@ -105,16 +96,10 @@
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-sm btn-outline-info" 
-                                                        onclick="verDetalle(<?= $ina['id'] ?>)"
+                                                <a href="javascript:void(0)" class="btn btn-sm btn-outline-info btn-ver-detalles" data-id="<?= $ina['id'] ?? '' ?>" data-url="<?= site_url('admin-th/inasistencias/detalles/') ?>" 
                                                         data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
                                                     <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-outline-primary btn-ver-perfil" 
-                                                        data-id="<?= $ina['empleado_id'] ?>"
-                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Perfil">
-                                                    <i class="bi bi-person-badge"></i>
-                                                </button>
+                                                </a>
                                                 <a href="mailto:<?= $ina['correo'] ?? '' ?>?subject=Sobre tu inasistencia" 
                                                         class="btn btn-sm btn-outline-warning" 
                                                         data-bs-toggle="tooltip" data-bs-placement="top" title="Contactar">
@@ -130,12 +115,7 @@
                                                                 data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                                             <i class="bi bi-pencil"></i>
                                                         </a>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                                onclick="eliminarInasistencia(<?= $ina['id'] ?>)"
-                                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </div>
+                                                        </div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -157,127 +137,56 @@
 <!-- Bootstap Icons for table Actions -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <!-- SweetAlert2 Plugin -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11">    const botonesVerPerfilIndex = document.querySelectorAll('.btn-ver-perfil');
-    botonesVerPerfilIndex.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const empleadoId = this.getAttribute('data-id');
-            const url = `<?= site_url('admin-th/inasistencias/perfil-empleado/') ?>${empleadoId}`;
-            
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    if(data.success) {
-                        document.getElementById('perfil-nombre').textContent = data.nombre_completo || 'N/A';
-                        document.getElementById('perfil-cedula').textContent = data.cedula || 'N/A';
-                        document.getElementById('perfil-tipo').textContent = data.tipo_empleado || 'N/A';
-                        document.getElementById('perfil-departamento').textContent = data.departamento || 'N/A';
-                        document.getElementById('perfil-correo').textContent = data.correo || 'N/A';
-                        document.getElementById('perfil-telefono').textContent = data.telefono || 'N/A';
-                        document.getElementById('perfil-fecha').textContent = data.fecha_contratacion || 'N/A';
-                        
-                        const myModal = new bootstrap.Modal(document.getElementById('modalVerPerfil'));
-                        myModal.show();
-                    } else {
-                        Swal.fire('Error', data.message || 'No se pudo cargar el perfil', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching profile:', error);
-                    Swal.fire('Error', 'Problema de conexión', 'error');
-                });
-        });
-    });
-</script>
-<!-- Modal Ver Detalles -->
-<div class="modal fade" id="modalVerDetalle" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title"><i class="bi bi-info-circle me-2"></i>Detalle de la Inasistencia</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="contenidoDetalle">
-                <div class="text-center py-3"><div class="spinner-border text-info" role="status"></div></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            </div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Modal Detalles (Inyectado Automáticamente) -->
+<div class="modal fade" id="modalDetallesInasistencia" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="fas fa-info-circle"></i> Detalles de Inasistencia</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-2">
+          <div class="col-sm-4 fw-bold">Empleado:</div>
+          <div class="col-sm-8" id="detalle-empleado">Cargando...</div>
         </div>
+        <div class="row mb-2">
+          <div class="col-sm-4 fw-bold">Departamento:</div>
+          <div class="col-sm-8" id="detalle-departamento">Cargando...</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-sm-4 fw-bold">Fecha y Hora:</div>
+          <div class="col-sm-8"><span id="detalle-fecha"></span> a las <span id="detalle-hora"></span></div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-sm-4 fw-bold">Tipo:</div>
+          <div class="col-sm-8" id="detalle-tipo">Cargando...</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-sm-4 fw-bold">Motivo:</div>
+          <div class="col-sm-8 text-muted" id="detalle-motivo">Cargando...</div>
+        </div>
+      </div>
+      <div class="modal-footer d-flex justify-content-center">
+         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
     </div>
+  </div>
 </div>
 
-<!-- DataTables (Opcional si se requiere búsqueda/paginación nativa) -->
+<!-- DataTables (Opcional si se requiere bÃƒÂºsqueda/paginaciÃƒÂ³n nativa) -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js">    const botonesVerPerfilIndex = document.querySelectorAll('.btn-ver-perfil');
-    botonesVerPerfilIndex.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const empleadoId = this.getAttribute('data-id');
-            const url = `<?= site_url('admin-th/inasistencias/perfil-empleado/') ?>${empleadoId}`;
-            
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    if(data.success) {
-                        document.getElementById('perfil-nombre').textContent = data.nombre_completo || 'N/A';
-                        document.getElementById('perfil-cedula').textContent = data.cedula || 'N/A';
-                        document.getElementById('perfil-tipo').textContent = data.tipo_empleado || 'N/A';
-                        document.getElementById('perfil-departamento').textContent = data.departamento || 'N/A';
-                        document.getElementById('perfil-correo').textContent = data.correo || 'N/A';
-                        document.getElementById('perfil-telefono').textContent = data.telefono || 'N/A';
-                        document.getElementById('perfil-fecha').textContent = data.fecha_contratacion || 'N/A';
-                        
-                        const myModal = new bootstrap.Modal(document.getElementById('modalVerPerfil'));
-                        myModal.show();
-                    } else {
-                        Swal.fire('Error', data.message || 'No se pudo cargar el perfil', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching profile:', error);
-                    Swal.fire('Error', 'Problema de conexión', 'error');
-                });
-        });
-    });
-</script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js">    const botonesVerPerfilIndex = document.querySelectorAll('.btn-ver-perfil');
-    botonesVerPerfilIndex.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const empleadoId = this.getAttribute('data-id');
-            const url = `<?= site_url('admin-th/inasistencias/perfil-empleado/') ?>${empleadoId}`;
-            
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    if(data.success) {
-                        document.getElementById('perfil-nombre').textContent = data.nombre_completo || 'N/A';
-                        document.getElementById('perfil-cedula').textContent = data.cedula || 'N/A';
-                        document.getElementById('perfil-tipo').textContent = data.tipo_empleado || 'N/A';
-                        document.getElementById('perfil-departamento').textContent = data.departamento || 'N/A';
-                        document.getElementById('perfil-correo').textContent = data.correo || 'N/A';
-                        document.getElementById('perfil-telefono').textContent = data.telefono || 'N/A';
-                        document.getElementById('perfil-fecha').textContent = data.fecha_contratacion || 'N/A';
-                        
-                        const myModal = new bootstrap.Modal(document.getElementById('modalVerPerfil'));
-                        myModal.show();
-                    } else {
-                        Swal.fire('Error', data.message || 'No se pudo cargar el perfil', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching profile:', error);
-                    Swal.fire('Error', 'Problema de conexión', 'error');
-                });
-        });
-    });
-</script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 <script>
 $(document).ready(function() {
-    $('#tablaInasistenciasCompletas').DataTable({
+    $("#tablaInasistenciasCompletas").DataTable({
         language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json',
+            url: "//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json",
             emptyTable: "No hay inasistencias registradas en el sistema."
         },
-        order: [[3, 'desc']] // Ordenar por fecha desc por defecto
+        order: [[3, "desc"]] // Ordenar por fecha desc por defecto
     });
 
     // Inicializar Tooltips
@@ -287,233 +196,49 @@ $(document).ready(function() {
     });
 });
 
-function verDetalle(id) {
-    const modal = new bootstrap.Modal(document.getElementById('modalVerDetalle'));
-    modal.show();
-    document.getElementById('contenidoDetalle').innerHTML = '<div class="text-center py-3"><div class="spinner-border text-info" role="status"></div></div>';
 
-    fetch(`<?= site_url('admin-th/inasistencias/detalles/') ?>${id}`)
+$(document).on('click', '.btn-ver-detalles', function(e) {
+    e.preventDefault();
+    
+    // Obtenemos el ID desde el atributo del botón
+    const id = $(this).data('id');
+    const url = '<?= site_url("admin-th/inasistencias/detalles/") ?>' + id;
+    
+    // Mostramos que está cargando...
+    $('#detalle-empleado').text('Cargando...');
+    $('#detalle-departamento').text('Cargando...');
+    $('#detalle-fecha').text('...');
+    $('#detalle-hora').text('...');
+    $('#detalle-tipo').text('Cargando...');
+    $('#detalle-motivo').text('Cargando...');
+    
+    // Abrimos el modal preventivamente
+    $('#modalDetallesInasistencia').modal('show');
+    
+    // Hacemos el Fetch AJAX
+    fetch(url, { headers: {'X-Requested-With': 'XMLHttpRequest'} })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
+            if (data.success && data.inasistencia) {
                 const i = data.inasistencia;
-                document.getElementById('contenidoDetalle').innerHTML = `
-                    <div class="mb-3"><strong>Empleado:</strong> <br> ${i.apellidos} ${i.nombres}</div>
-                    <div class="mb-3"><strong>Fecha y Hora:</strong> <br> ${i.fecha_inasistencia} ${i.hora_inasistencia ? '- ' + i.hora_inasistencia : ''}</div>
-                    <div class="mb-3"><strong>Tipo:</strong> <br> <span class="badge bg-secondary">${i.tipo_inasistencia}</span></div>
-                    <div class="mb-3"><strong>Estado:</strong> <br> <span class="badge ${i.justificada == 1 ? 'bg-success' : 'bg-warning'}">${i.justificada == 1 ? 'Justificada' : 'Sin Justificar'}</span></div>
-                    <div class="mb-3"><strong>Motivo:</strong> <br> <p class="text-muted border p-2 rounded bg-light">${i.motivo}</p></div>
-                `;
+                
+                // Mapear el JSON a los campos HTML solicitados:
+                $('#detalle-empleado').text((i.nombres || '') + ' ' + (i.apellidos || ''));
+                $('#detalle-departamento').text(i.departamento || 'Sin asignar');
+                $('#detalle-fecha').text(i.fecha_inasistencia || 'N/A');
+                $('#detalle-hora').text(i.hora_inasistencia || 'N/A');
+                $('#detalle-tipo').text(i.tipo_inasistencia || 'N/A');
+                $('#detalle-motivo').text(i.motivo || 'Sin motivo reportado');
+                
             } else {
-                document.getElementById('contenidoDetalle').innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+                $('#detalle-empleado').text('Error: no se encontró registro.');
             }
         })
         .catch(error => {
-            document.getElementById('contenidoDetalle').innerHTML = `<div class="alert alert-danger">Error de conexión al cargar datos.</div>`;
+            console.error(error);
+            $('#detalle-empleado').text('Error de conexión.');
         });
-}
-
-function eliminarInasistencia(id) {
-    Swal.fire({
-        title: '¿Estás seguro?',
-        text: "Esta inasistencia será eliminada permanentemente.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }
-
-    // Lógica AJAX para Ver Perfil de Empleado
-    const botonesVerPerfil = document.querySelectorAll('.btn-ver-perfil');
-    botonesVerPerfil.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const empleadoId = this.getAttribute('data-id');
-            const tooltip = bootstrap.Tooltip.getInstance(this);
-            if(tooltip) tooltip.hide();
-            
-            // Mostrar modal y spinner
-            const modal = new bootstrap.Modal(document.getElementById('modalPerfilEmpleado'));
-            const contenido = document.getElementById('contenidoPerfil');
-            contenido.innerHTML = '<div class="text-center py-4 text-primary"><div class="spinner-border" role="status"></div><p class="mt-2">Cargando datos...</p></div>';
-            modal.show();
-            
-            fetch(`<?= site_url('admin-th/inasistencias/perfil-empleado/') ?>${empleadoId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if(data.success) {
-                        contenido.innerHTML = `
-                            <ul class="list-group list-group-flush mb-3">
-                                <li class="list-group-item"><strong>Nombre:</strong> ${data.nombre_completo}</li>
-                                <li class="list-group-item"><strong>Cédula:</strong> ${data.cedula ?? 'N/A'}</li>
-                                <li class="list-group-item"><strong>Departamento:</strong> ${data.departamento ?? 'N/A'}</li>
-                                <li class="list-group-item"><strong>Cargo / Rol:</strong> ${data.tipo_empleado ?? 'N/A'}</li>
-                                <li class="list-group-item"><strong>Email:</strong> <a href="mailto:${data.correo}">${data.correo ?? 'N/A'}</a></li>
-                                <li class="list-group-item"><strong>Teléfono:</strong> <a href="tel:${data.telefono}">${data.telefono ?? 'N/A'}</a></li>
-                                <li class="list-group-item"><strong>Contratación:</strong> ${data.fecha_contratacion ?? 'N/A'}</li>
-                            </ul>
-                            <div class="text-center">
-                                <a href="<?= site_url('admin-th/empleados/editar/') ?>${empleadoId}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil me-1"></i>Gestionar Perfil Completo</a>
-                            </div>
-                        `;
-                    } else {
-                        contenido.innerHTML = `<div class="alert alert-danger">${data.message || 'No se encontró el empleado.'}</div>`;
-                    }
-                })
-                .catch(err => {
-                    contenido.innerHTML = '<div class="alert alert-danger">Error de conexión con el servidor.</div>';
-                });
-        });
-    });).then((result) => {
-        if (result.isConfirmed) {
-            Swal.fire({ title: 'Eliminando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
-            
-            fetch(`<?= site_url('admin-th/inasistencias/eliminar/') ?>${id}`, {
-                method: 'DELETE',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) {
-                    Swal.fire('¡Eliminado!', 'El registro ha sido eliminado.', 'success').then(() => {
-                        window.location.reload();
-                    });
-                } else {
-                    Swal.fire('Error', data.message || 'No se pudo eliminar el registro.', 'error');
-                }
-            })
-            .catch(err => {
-                Swal.fire('Error', 'Problema de conexión con el servidor.', 'error');
-            });
-        }
-    });
-}
-
-// ==================== [ESTANDARIZACIÓN] LÓGICA DE BORRADO MASIVO ====================
-
-function toggleAll(master) {
-    // Usamos DataTables API para acceder a todas las filas, incluyendo las paginadas si está instanciado
-    const table = $('#tablaInasistenciasCompletas').DataTable();
-    const isChecked = master.checked;
-
-    // Actualizar el DOM actual y las páginas ocultas de DataTables
-    table.rows().nodes().to$().find('.chk-item').prop('checked', isChecked);
-    
-    actualizarBotonEliminar();
-}
-
-function actualizarBotonEliminar() {
-    const table = $('#tablaInasistenciasCompletas').DataTable();
-    // Obtener los checked de todas las páginas
-    const seleccionados = table.rows().nodes().to$().find('.chk-item:checked').length;
-    const btn = document.getElementById('btnEliminarSeleccion');
-    const contador = document.getElementById('contadorSeleccion');
-
-    if (seleccionados > 0) {
-        btn.classList.remove('d-none');
-        if (contador) contador.textContent = seleccionados;
-    } else {
-        btn.classList.add('d-none');
-        if (contador) contador.textContent = '0';
-    }
-
-    const todos = table.rows().nodes().to$().find('.chk-item').length;
-    const checkAll = document.getElementById('checkAll');
-    
-    if (todos > 0) {
-        if (checkAll) {
-            checkAll.checked = seleccionados === todos;
-            checkAll.indeterminate = seleccionados > 0 && seleccionados < todos;
-        }
-    }
-}
-
-function eliminarSeleccionados() {
-    const table = $('#tablaInasistenciasCompletas').DataTable();
-    const chks = table.rows().nodes().to$().find('.chk-item:checked');
-    const ids = Array.from(chks).map(chk => chk.value);
-
-    if (ids.length === 0) return;
-
-    Swal.fire({
-        title: '¿Confirmar eliminación masiva?',
-        text: `¿Eliminar ${ids.length} inasistencia(s)? Esta acción no se puede deshacer.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: '<i class="ti ti-trash me-1"></i> Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then(result => {
-        if (result.isConfirmed) procesarEliminacionAjaxMasiva(ids);
-    });
-}
-
-function procesarEliminacionAjaxMasiva(ids) {
-    const btnDelete = document.getElementById('btnEliminarSeleccion');
-    const htmlAnterior = btnDelete.innerHTML;
-    btnDelete.innerHTML = '<i class="ti ti-loader ti-spin"></i> Procesando...';
-    btnDelete.disabled = true;
-
-    const fnData = new FormData();
-    ids.forEach(id => fnData.append('ids[]', id));
-
-    fetch('<?= site_url('admin-th/inasistencias/eliminar-masivo') ?>', { 
-        method: 'POST', 
-        body: fnData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-    .then(r => r.json())
-    .then(data => {
-        btnDelete.innerHTML = htmlAnterior;
-        btnDelete.disabled = false;
-        
-        if (data.success) {
-            Swal.fire({icon: 'success', title: '¡Éxito!', text: data.message, timer: 3000, showConfirmButton: false})
-            .then(() => window.location.reload());
-        } else {
-            Swal.fire({icon: 'error', title: 'Error', text: data.message});
-        }
-    })
-    .catch(error => {
-        console.error(error);
-        btnDelete.innerHTML = htmlAnterior;
-        btnDelete.disabled = false;
-        Swal.fire({icon: 'error', title: 'Error', text: 'Fallo de red al intentar eliminar.'});
-    });
-}
-// ==================== FIN [ESTANDARIZACIÓN] ====================
-    const botonesVerPerfilIndex = document.querySelectorAll('.btn-ver-perfil');
-    botonesVerPerfilIndex.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const empleadoId = this.getAttribute('data-id');
-            const url = `<?= site_url('admin-th/inasistencias/perfil-empleado/') ?>${empleadoId}`;
-            
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    if(data.success) {
-                        document.getElementById('perfil-nombre').textContent = data.nombre_completo || 'N/A';
-                        document.getElementById('perfil-cedula').textContent = data.cedula || 'N/A';
-                        document.getElementById('perfil-tipo').textContent = data.tipo_empleado || 'N/A';
-                        document.getElementById('perfil-departamento').textContent = data.departamento || 'N/A';
-                        document.getElementById('perfil-correo').textContent = data.correo || 'N/A';
-                        document.getElementById('perfil-telefono').textContent = data.telefono || 'N/A';
-                        document.getElementById('perfil-fecha').textContent = data.fecha_contratacion || 'N/A';
-                        
-                        const myModal = new bootstrap.Modal(document.getElementById('modalVerPerfil'));
-                        myModal.show();
-                    } else {
-                        Swal.fire('Error', data.message || 'No se pudo cargar el perfil', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching profile:', error);
-                    Swal.fire('Error', 'Problema de conexión', 'error');
-                });
-        });
-    });
+});
 </script>
 
 <?= $this->endSection() ?>

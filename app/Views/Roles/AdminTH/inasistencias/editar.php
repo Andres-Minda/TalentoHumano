@@ -11,8 +11,8 @@
                     <h4 class="page-title mb-0">Editar Inasistencia</h4>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="<?= base_url('admin-th/dashboard') ?>">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="<?= base_url('admin-th/inasistencias') ?>">Inasistencias</a></li>
+                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/dashboard') ?>">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/inasistencias') ?>">Inasistencias</a></li>
                             <li class="breadcrumb-item active">Editar</li>
                         </ol>
                     </div>
@@ -86,7 +86,7 @@
                             </div>
 
                             <div class="d-flex justify-content-end border-top pt-3">
-                                <a href="javascript:history.back()" class="btn btn-light me-2">Cancelar</a>
+                                <a href="<?= site_url('admin-th/inasistencias') ?>" class="btn btn-light me-2">Cancelar</a>
                                 <button type="submit" class="btn btn-warning" id="btnGuardar">
                                     <i class="ti ti-device-floppy me-1"></i> Guardar Cambios
                                 </button>

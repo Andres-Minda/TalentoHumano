@@ -11,8 +11,8 @@
                     <h4 class="page-title mb-0">Reporte de Inasistencias</h4>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="<?= base_url('admin-th/dashboard') ?>">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="<?= base_url('admin-th/inasistencias') ?>">Inasistencias</a></li>
+                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/dashboard') ?>">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/inasistencias') ?>">Inasistencias</a></li>
                             <li class="breadcrumb-item active">Reporte</li>
                         </ol>
                     </div>
@@ -212,13 +212,6 @@
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <tr>
-                                            <td colspan="9" class="text-center text-muted">
-                                                <i class="bi bi-inbox fs-1"></i>
-                                                <p class="mt-2">No se encontraron resultados con los filtros aplicados</p>
-                                            </td>
-                                        </tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>
@@ -242,7 +235,8 @@
 $(document).ready(function() {
     $('#tablaReporte').DataTable({
         language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json',
+            emptyTable: 'No se encontraron resultados con los filtros aplicados.'
         },
         order: [[4, 'desc']]
     });

@@ -322,4 +322,30 @@ class InasistenciaModel extends Model
             ->get()
             ->getResultArray();
     }
+
+    /**
+     * Obtener inasistencias por departamento para gráficos
+     */
+    public function obtenerInasistenciasPorDepartamento()
+    {
+        $builder = $this->db->table($this->table . ' i');
+        $builder->select('COALESCE(e.departamento, \'Sin Asignar\') as departamento, COUNT(i.id) as total');
+        $builder->join('empleados e', 'e.id_empleado = i.empleado_id', 'left');
+        $builder->groupBy('e.departamento');
+        $builder->orderBy('total', 'DESC');
+        return $builder->get()->getResultArray();
+    }
+
+    /**
+     * Obtener tendencia semanal
+     */
+    public function obtenerTendenciaSemanal()
+    {
+        $builder = $this->db->table($this->table);
+        $builder->select('fecha_inasistencia as fecha, COUNT(*) as total');
+        $builder->where('fecha_inasistencia >=', date('Y-m-d', strtotime('-14 days')));
+        $builder->groupBy('fecha_inasistencia');
+        $builder->orderBy('fecha_inasistencia', 'ASC');
+        return $builder->get()->getResultArray();
+    }
 }

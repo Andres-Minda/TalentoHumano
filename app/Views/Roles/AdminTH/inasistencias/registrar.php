@@ -11,8 +11,8 @@
                     <h4 class="page-title mb-0">Registrar Nueva Inasistencia</h4>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="<?= base_url('admin-th/dashboard') ?>">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="<?= base_url('admin-th/inasistencias') ?>">Inasistencias</a></li>
+                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/dashboard') ?>">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/inasistencias') ?>">Inasistencias</a></li>
                             <li class="breadcrumb-item active">Registrar</li>
                         </ol>
                     </div>
@@ -92,7 +92,7 @@
 
                             <!-- Botones -->
                             <div class="d-flex justify-content-between">
-                                <a href="<?= base_url('admin-th/inasistencias') ?>" class="btn btn-secondary">
+                                <a href="<?= site_url('admin-th/inasistencias') ?>" class="btn btn-secondary">
                                     <i class="ti ti-arrow-left me-1"></i>Cancelar
                                 </a>
                                 <button type="button" class="btn btn-primary" onclick="guardarInasistencia()">
