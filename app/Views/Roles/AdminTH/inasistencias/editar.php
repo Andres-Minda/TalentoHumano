@@ -11,8 +11,8 @@
                     <h4 class="page-title mb-0">Editar Inasistencia</h4>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/dashboard') ?>">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/inasistencias') ?>">Inasistencias</a></li>
+                            <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/dashboard">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias">Inasistencias</a></li>
                             <li class="breadcrumb-item active">Editar</li>
                         </ol>
                     </div>
@@ -86,7 +86,7 @@
                             </div>
 
                             <div class="d-flex justify-content-end border-top pt-3">
-                                <a href="<?= site_url('admin-th/inasistencias') ?>" class="btn btn-light me-2">Cancelar</a>
+                                <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias" class="btn btn-light me-2">Cancelar</a>
                                 <button type="submit" class="btn btn-warning" id="btnGuardar">
                                     <i class="ti ti-device-floppy me-1"></i> Guardar Cambios
                                 </button>
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btnSubmit.disabled = true;
         btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Guardando...';
 
-        fetch(`<?= site_url('admin-th/inasistencias/actualizar/') ?>${id}`, {
+        fetch(`https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/actualizar/${id}`, {
             method: 'POST',
             body: formData,
             headers: {
@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             if (data.success) {
                 // El backend ya estableció un flashdata, pero por si acaso damos un fallback
-                window.location.href = '<?= site_url('admin-th/inasistencias') ?>';
+                window.location.href = 'https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias';
             } else {
                 Swal.fire({
                     icon: 'error',

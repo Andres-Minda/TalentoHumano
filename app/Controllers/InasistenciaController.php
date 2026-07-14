@@ -157,7 +157,7 @@ class InasistenciaController extends Controller
             return redirect()->to('/empleado/dashboard')->with('error', 'No se encontrÃ³ informaciÃ³n del empleado');
         }
 
-        if ($this->request->getMethod() === 'post') {
+        if (strtolower($this->request->getMethod()) === 'post') {
             $idInasistencia = $this->request->getPost('id_inasistencia');
             $justificacion = $this->request->getPost('justificacion');
 
@@ -234,16 +234,16 @@ class InasistenciaController extends Controller
 
                     $driveLink = $uploadedFile->webViewLink;
 
-                } catch (\Exception $e) {
-                    log_message('error', 'Error Drive Justificación: ' . $e->getMessage());
-                    return redirect()->back()->with('error', 'No se pudo subir el archivo: ' . $e->getMessage());
+                } catch (\Throwable $e) {
+                    log_message('error', 'Error Fatal Drive Justificación: ' . $e->getMessage() . ' en ' . $e->getFile() . ' L:' . $e->getLine());
+                    return redirect()->back()->with('error', 'Error crítico al subir: ' . $e->getMessage());
                 }
+            } else if ($archivo && !$archivo->isValid()) {
+                return redirect()->back()->with('error', 'El archivo subido no es válido o excede el límite de peso del servidor (Error PHP: ' . $archivo->getErrorString() . ').');
             }
 
             // Actualizar inasistencia (Usando nombres reales de la BD)
-            $data = [
-                'tipo_inasistencia' => 'PENDIENTE_JUSTIFICACION'
-            ];
+            $data = [];
             
             // Si el empleado escribió una justificación, la concatenamos al motivo existente para no perderla
             if (!empty($justificacion)) {
@@ -256,21 +256,26 @@ class InasistenciaController extends Controller
                 $data['archivo_justificacion'] = $driveLink;
             }
 
-            if ($this->inasistenciaModel->update($idInasistencia, $data)) {
-                return redirect()->to('/empleado/inasistencias')->with('success', 'Justificante subido a Google Drive exitosamente.');
-            } else {
-                return redirect()->back()->with('error', 'Error al actualizar la base de datos de inasistencias.');
+            if (empty($data)) {
+                return redirect()->back()->with('error', 'No se ha detectado ningún archivo válido o justificación escrita para guardar.');
+            }
+
+            try {
+                if ($this->inasistenciaModel->update($idInasistencia, $data)) {
+                    return redirect()->to('https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias')->with('success', 'Justificante subido y procesado exitosamente.');
+                } else {
+                    return redirect()->back()->with('error', 'Error al actualizar la base de datos de inasistencias.');
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Error al hacer update BD: ' . $e->getMessage());
+                return redirect()->back()->with('error', 'Error de Base de Datos: ' . $e->getMessage());
             }
         }
 
         // Obtener inasistencias pendientes de justificación para el dropdown
         $builder = $this->inasistenciaModel->builder();
         $builder->where('empleado_id', $empleado['id_empleado'])
-                ->groupStart()
-                    ->where('tipo_inasistencia', 'Injustificada')
-                    ->orWhere('tipo_inasistencia', 'NO_JUSTIFICADA')
-                    ->orWhere('justificada', 0)
-                ->groupEnd()
+                ->where('justificada', 0)
                 ->orderBy('fecha_inasistencia', 'DESC');
         $inasistenciasPendientes = $builder->get()->getResultArray();
 
@@ -395,14 +400,15 @@ class InasistenciaController extends Controller
             $idEmpleado = $empleado['id_empleado'];
 
             // Leer filtros opcionales del query string
-            $fechaDesde = $this->request->getGet('fecha_desde') ?: null;
+                    $fechaDesde = $this->request->getGet('fecha_desde') ?: null;
             $fechaHasta = $this->request->getGet('fecha_hasta') ?: null;
-            $tipo       = $this->request->getGet('tipo')        ?: null;
             $estado     = $this->request->getGet('estado')      ?: null;
 
             $resultado = $this->inasistenciaModel->getMisInasistencias(
-                $idEmpleado, $fechaDesde, $fechaHasta, $tipo, $estado
+                $idEmpleado, $fechaDesde, $fechaHasta, $estado
             );
+
+            log_message('info', 'DEBUG AJAX: Método obtenerMisInasistencias completado exitosamente antes del setJSON. Resultados: ' . count($resultado['data']));
 
             return $this->response->setJSON([
                 'success'     => true,
@@ -412,9 +418,9 @@ class InasistenciaController extends Controller
                 'pendientes'  => $resultado['pendientes'],
             ]);
 
-        } catch (\Exception $e) {
-            log_message('error', 'obtenerMisInasistencias: ' . $e->getMessage());
-            return $this->response->setJSON(['success' => false, 'message' => 'Error al obtener inasistencias: ' . $e->getMessage()]);
+        } catch (\Throwable $e) {
+            log_message('error', 'obtenerMisInasistencias FATAL: ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error Crítico: ' . $e->getMessage() . ' - ' . $e->getFile() . ':' . $e->getLine()]);
         }
     }
 

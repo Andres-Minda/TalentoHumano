@@ -11,8 +11,8 @@
                     <h4 class="page-title mb-0">Registrar Nueva Inasistencia</h4>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/dashboard') ?>">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/inasistencias') ?>">Inasistencias</a></li>
+                            <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/dashboard">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias">Inasistencias</a></li>
                             <li class="breadcrumb-item active">Registrar</li>
                         </ol>
                     </div>
@@ -92,7 +92,7 @@
 
                             <!-- Botones -->
                             <div class="d-flex justify-content-between">
-                                <a href="<?= site_url('admin-th/inasistencias') ?>" class="btn btn-secondary">
+                                <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias" class="btn btn-secondary">
                                     <i class="ti ti-arrow-left me-1"></i>Cancelar
                                 </a>
                                 <button type="button" class="btn btn-primary" onclick="guardarInasistencia()">
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('panelAcumulado').style.display = 'block';
             document.getElementById('contenidoAcumulado').innerHTML = '<div class="spinner-border spinner-border-sm text-warning"></div>';
 
-            fetch(`<?= base_url('index.php/admin-th/inasistencias/total') ?>/${id}`)
+            fetch(`https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/total/${id}`)
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
@@ -243,7 +243,7 @@ function guardarInasistencia() {
     Swal.fire({ title:'Registrando inasistencia...', allowOutsideClick:false, didOpen:() => Swal.showLoading() });
 
     const fd = new FormData(form);
-    fetch('<?= base_url("index.php/admin-th/inasistencias/guardar") ?>', { method:'POST', body: fd })
+    fetch('https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/guardar', { method:'POST', body: fd })
     .then(r => r.json())
     .then(data => {
         if (data.success) {
@@ -262,7 +262,7 @@ function guardarInasistencia() {
 
 // ==================== LISTAR INASISTENCIAS CON ACUMULADO (Req 4) ====================
 function cargarListaInasistencias() {
-    fetch('<?= base_url("index.php/admin-th/inasistencias/listar-json") ?>')
+    fetch('https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/listar-json')
     .then(r => r.json())
     .then(data => {
         if (data.success) {

@@ -7,7 +7,7 @@
             <div class="col-12">
                 <div class="page-title-box d-flex align-items-center justify-content-between mb-4 mt-2">
                     <div class="d-flex align-items-center">
-                        <a href="<?= base_url('empleado/inasistencias') ?>" class="btn btn-outline-secondary btn-sm me-3" title="Volver al Dashboard">
+                        <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias" class="btn btn-outline-secondary btn-sm me-3" title="Volver al Dashboard">
                             <i class="ti ti-arrow-left"></i> Volver
                         </a>
                         <h4 class="page-title mb-0">Análisis de Inasistencias</h4>
@@ -22,28 +22,13 @@
                     <div class="card-body">
                         <!-- Filtros de fecha -->
                         <div class="row mb-4">
-                            <div class="col-md-3">
+                            <div class="col-md-6">
                                 <label for="fecha_inicio" class="form-label">Fecha de Inicio</label>
-                                <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio">
+                                <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" onchange="generarReporte()">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-6">
                                 <label for="fecha_fin" class="form-label">Fecha de Fin</label>
-                                <input type="date" class="form-control" id="fecha_fin" name="fecha_fin">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="tipo_inasistencia" class="form-label">Tipo de Inasistencia</label>
-                                <select class="form-select" id="tipo_inasistencia" name="tipo_inasistencia">
-                                    <option value="">Todos los tipos</option>
-                                    <option value="1">Justificada</option>
-                                    <option value="2">No Justificada</option>
-                                    <option value="3">Pendiente de Revisión</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">&nbsp;</label>
-                                <button type="button" class="btn btn-primary d-block w-100" onclick="generarReporte()">
-                                    <i class="ti ti-chart-bar"></i> Generar Reporte
-                                </button>
+                                <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" onchange="generarReporte()">
                             </div>
                         </div>
 
@@ -167,7 +152,6 @@
                                                 <thead>
                                                     <tr>
                                                         <th>Fecha</th>
-                                                        <th>Tipo</th>
                                                         <th>Motivo</th>
                                                         <th>Estado</th>
                                                         <th>Justificación</th>
@@ -338,26 +322,22 @@ function inicializarGraficos() {
 function generarReporte() {
     const fechaInicio = document.getElementById('fecha_inicio').value;
     const fechaFin = document.getElementById('fecha_fin').value;
-    const tipoInasistencia = document.getElementById('tipo_inasistencia').value;
 
     mostrarLoading();
-    
-    // Convertir el tipo seleccionado al formato manejado por la BD o el filtro
-    let tipoParam = '';
-    if (tipoInasistencia === '1') tipoParam = 'JUSTIFICADA';
-    if (tipoInasistencia === '2') tipoParam = 'NO_JUSTIFICADA';
-    if (tipoInasistencia === '3') tipoParam = 'PENDIENTE_JUSTIFICACION';
 
     const params = new URLSearchParams();
     if (fechaInicio) params.append('fecha_desde', fechaInicio);
     if (fechaFin) params.append('fecha_hasta', fechaFin);
-    if (tipoParam) params.append('tipo', tipoParam);
 
-    fetch(`<?= base_url('empleado/inasistencias/obtener-mis-inasistencias') ?>?${params.toString()}`)
+    fetch(`https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias/obtener-mis-inasistencias?${params.toString()}`)
     .then(r => r.json())
     .then(data => {
         if(!data.success) {
-            Swal.fire({icon: 'error', title: 'Error', text: data.message || 'Error al obtener datos'});
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({icon: 'error', title: 'Error', text: data.message || 'Error al obtener datos'});
+            } else {
+                alert('Error al obtener datos: ' + (data.message || ''));
+            }
             ocultarLoading();
             return;
         }
@@ -397,6 +377,11 @@ function generarReporte() {
     })
     .catch(error => {
         console.error('Error:', error);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({icon: 'error', title: 'Error', text: 'Imposible conectar con el servidor para generar el reporte.'});
+        } else {
+            alert('Imposible conectar con el servidor para generar el reporte.\n' + error);
+        }
         ocultarLoading();
     });
 }
@@ -436,18 +421,12 @@ function actualizarTabla(inasistencias) {
         
         let badgeColor = 'secondary';
         if(isJustificada) badgeColor = 'success';
-        else if (i.tipo_inasistencia === 'PENDIENTE_JUSTIFICACION') badgeColor = 'warning';
         else badgeColor = 'danger';
 
         let justificacionTxt = i.archivo_justificacion ? 'Documento Adjunto' : 'Sin documentar';
 
         row.innerHTML = `
             <td>${formatearFecha(i.fecha_inasistencia)}</td>
-            <td>
-                <span class="badge bg-${badgeColor}">
-                    ${i.tipo_inasistencia || '—'}
-                </span>
-            </td>
             <td>${i.motivo || '—'}</td>
             <td>
                 <span class="badge bg-${badgeColor}">
@@ -456,7 +435,7 @@ function actualizarTabla(inasistencias) {
             </td>
             <td>${justificacionTxt}</td>
             <td>
-                <a href="<?= base_url('empleado/inasistencias/ver/') ?>${i.id}" class="btn btn-sm btn-outline-primary" title="Ver Detalle">
+                <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias/ver/${i.id}" class="btn btn-sm btn-outline-primary" title="Ver Detalle">
                     <i class="ti ti-eye"></i>
                 </a>
             </td>
@@ -507,9 +486,6 @@ function verDetalles(id) {
             <div class="col-md-6">
                 <p><strong>ID:</strong> ${detalles.id}</p>
                 <p><strong>Fecha:</strong> ${formatearFecha(detalles.fecha)}</p>
-                <p><strong>Tipo:</strong> 
-                    <span class="badge bg-${getBadgeColor(detalles.tipo)}">${detalles.tipo}</span>
-                </p>
                 <p><strong>Motivo:</strong> ${detalles.motivo}</p>
             </div>
             <div class="col-md-6">
@@ -536,16 +512,40 @@ function verDetalles(id) {
 }
 
 function exportarReporte() {
-    // Simular exportación
-    alert('Funcionalidad de exportación en desarrollo');
+    const tabla = document.getElementById('tablaInasistencias');
+    if (!tabla) return;
+    
+    let csv = [];
+    const filas = tabla.querySelectorAll('tr');
+    
+    for (let i = 0; i < filas.length; i++) {
+        let fila = [], cols = filas[i].querySelectorAll('td, th');
+        
+        for (let j = 0; j < cols.length - 1; j++) { // Omitir la columna de Acciones
+            let dato = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, '').trim();
+            fila.push('"' + dato + '"');
+        }
+        csv.push(fila.join(','));
+    }
+    
+    const csvString = csv.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.setAttribute('download', 'Reporte_Inasistencias.csv');
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
 }
 
 function mostrarLoading() {
-    // Implementar loading si es necesario
+    // Ya no hacemos logica de UI aqui, el backend responde en milisegundos
 }
 
 function ocultarLoading() {
-    // Ocultar loading si es necesario
+    // Vacio
 }
 </script>
 <?= $this->endSection() ?>

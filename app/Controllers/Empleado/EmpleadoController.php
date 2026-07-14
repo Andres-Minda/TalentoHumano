@@ -84,8 +84,8 @@ class EmpleadoController extends Controller
         $nombresInscritos = array_column($yaInscritos, 'nombre_capacitacion');
 
         $queryDisp = $db->table('capacitaciones')
-            ->select('id_capacitacion, nombre, tipo, modalidad, fecha_inicio, fecha_fin, duracion_horas, cupo_maximo')
-            ->where('estado', 'ACTIVA')
+            ->select('id_capacitacion, nombre, tipo, fecha_inicio, fecha_fin, cupo_maximo')
+            ->where('estado', 'Planificada')
             ->where('fecha_inicio >=', date('Y-m-d'))
             ->orderBy('fecha_inicio', 'ASC')
             ->limit(6);

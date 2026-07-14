@@ -10,7 +10,7 @@
                     <h4 class="page-title mb-0">Gestión de Inasistencias</h4>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/dashboard') ?>">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/dashboard">Dashboard</a></li>
                             <li class="breadcrumb-item active">Inasistencias</li>
                         </ol>
                     </div>
@@ -127,14 +127,14 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <a href="<?= site_url('admin-th/inasistencias/registrar') ?>" 
+                                <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/registrar" 
                                    class="btn btn-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center">
                                     <i class="bi bi-plus-circle fs-1 mb-2"></i>
                                     <span>Registrar Nueva Inasistencia</span>
                                 </a>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <a href="<?= site_url('admin-th/inasistencias/listar') ?>" 
+                                <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/listar" 
                                    class="btn btn-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center">
                                     <i class="bi bi-clipboard-check fs-1 mb-2"></i>
                                     <span>Revisar Justificaciones</span>
@@ -146,7 +146,7 @@
                                 </a>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <a href="<?= site_url('admin-th/inasistencias/reporte') ?>" 
+                                <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/reporte" 
                                    class="btn btn-info w-100 h-100 d-flex flex-column align-items-center justify-content-center">
                                     <i class="bi bi-bar-chart fs-1 mb-2"></i>
                                     <span>Generar Reportes</span>
@@ -201,7 +201,7 @@
                             Inasistencias Recientes
                         </h5>
                         <div class="d-flex align-items-center">
-                            <a href="<?= site_url('admin-th/inasistencias/listar') ?>" class="btn btn-outline-primary btn-sm">
+                            <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/listar" class="btn btn-outline-primary btn-sm">
                                 Ver Todas
                             </a>
                         </div>
@@ -277,7 +277,7 @@
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <a href="<?= site_url('admin-th/inasistencias/editar/' . $inasistencia['id']) ?>" 
+                                                        <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/editar/<?= $inasistencia['id'] ?>" 
                                                            class="btn btn-sm btn-outline-warning" 
                                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                                             <i class="bi bi-pencil"></i>
@@ -424,7 +424,7 @@
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <a href="<?= site_url('admin-th/inasistencias/reporte-empleado/' . ($empleado['empleado_id'] ?? 0)) ?>" 
+                                                        <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/reporte-empleado/<?= ($empleado['empleado_id'] ?? 0) ?>" 
                                                            target="_blank"
                                                            class="btn btn-sm btn-outline-danger" 
                                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Generar Reporte">
@@ -500,7 +500,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Si Chart.js no está definido globalmente, tratar de cargarlo. Asumiremos que el layout lo incluye, 
     // pero configuramos los llamados seguros.
-    fetch('<?= site_url('admin-th/inasistencias/obtener_graficos') ?>')
+    fetch('https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/obtener_graficos')
         .then(res => res.json())
         .then(data => {
             if (data.departamentos) {
@@ -554,7 +554,7 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     // Si Chart.js no está definido globalmente, tratar de cargarlo. Asumiremos que el layout lo incluye, 
     // pero configuramos los llamados seguros.
-    fetch('<?= site_url('admin-th/inasistencias/obtener_graficos') ?>')
+    fetch('https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/obtener_graficos')
         .then(res => res.json())
         .then(data => {
             if (data.departamentos) {
@@ -723,7 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.show();
 
             // Llamada Fetch
-            fetch(`<?= site_url('admin-th/inasistencias/perfil-empleado/') ?>${empleadoId}`)
+            fetch(`https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/perfil-empleado/${empleadoId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -781,7 +781,7 @@ function verDetallesEmpleadoMes(idEmpleado, nombreEmpleado) {
         allowOutsideClick: false,
         width: '700px',
         didOpen: () => {
-            fetch(`<?= site_url('admin-th/inasistencias/detalles-mes/') ?>${idEmpleado}`)
+            fetch(`https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/detalles-mes/${idEmpleado}`)
                 .then(res => res.json())
                 .then(response => {
                     if (!response.success) {
@@ -866,7 +866,7 @@ function verDetalle(id) {
     modal.show();
     document.getElementById('contenidoDetalle').innerHTML = '<div class="text-center py-3"><div class="spinner-border text-info" role="status"></div></div>';
 
-    fetch(`<?= site_url('admin-th/inasistencias/detalles/') ?>${id}`)
+    fetch(`https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/detalles/${id}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -901,7 +901,7 @@ function eliminarInasistencia(id) {
         if (result.isConfirmed) {
             Swal.fire({ title: 'Eliminando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
             
-            fetch(`<?= site_url('admin-th/inasistencias/eliminar/') ?>${id}`, {
+            fetch(`https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/eliminar/${id}`, {
                 method: 'DELETE',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
@@ -924,7 +924,7 @@ function eliminarInasistencia(id) {
 
 function revisarJustificacion(id) {
     // Obtener datos de la justificación
-    fetch(`<?= site_url('admin-th/inasistencias/obtener-justificacion') ?>?id=${id}`)
+    fetch(`https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/obtener-justificacion?id=${id}`)
         .then(res => res.json())
         .then(response => {
             if (!response.success) {
@@ -1000,7 +1000,7 @@ function procesarRevision(inasistenciaId, accion, observaciones) {
     formData.append('accion', accion);
     formData.append('observaciones', observaciones);
     
-    fetch('<?= site_url('admin-th/inasistencias/revisar-justificacion') ?>', {
+    fetch('https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/revisar-justificacion', {
         method: 'POST',
         body: formData,
         headers: {
@@ -1093,7 +1093,7 @@ function procesarEliminacionAjaxMasiva(ids) {
     const fnData = new FormData();
     ids.forEach(id => fnData.append('ids[]', id));
 
-    fetch('<?= site_url('admin-th/inasistencias/eliminar-masivo') ?>', { 
+    fetch('https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/eliminar-masivo', { 
         method: 'POST', 
         body: fnData,
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -1124,7 +1124,7 @@ function procesarEliminacionAjaxMasiva(ids) {
 document.addEventListener('DOMContentLoaded', function() {
     // Si Chart.js no está definido globalmente, tratar de cargarlo. Asumiremos que el layout lo incluye, 
     // pero configuramos los llamados seguros.
-    fetch('<?= site_url('admin-th/inasistencias/obtener_graficos') ?>')
+    fetch('https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/obtener_graficos')
         .then(res => res.json())
         .then(data => {
             if (data.departamentos) {

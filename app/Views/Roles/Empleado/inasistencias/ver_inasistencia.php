@@ -10,9 +10,9 @@
                     <h4 class="page-title mb-0">Detalle de Inasistencia</h4>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="<?= base_url('empleado/dashboard') ?>">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="<?= base_url('empleado/inasistencias') ?>">Inasistencias</a></li>
-                            <li class="breadcrumb-item"><a href="<?= base_url('empleado/inasistencias/mis-inasistencias') ?>">Mis Inasistencias</a></li>
+                            <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/dashboard">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias">Inasistencias</a></li>
+                            <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias/mis-inasistencias">Mis Inasistencias</a></li>
                             <li class="breadcrumb-item active">Detalle</li>
                         </ol>
                     </div>
@@ -190,7 +190,7 @@
                             </button>
                         <?php endif; ?>
                         
-                        <a href="<?= base_url('empleado/inasistencias/mis-inasistencias') ?>" 
+                        <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias/mis-inasistencias" 
                            class="btn btn-outline-secondary w-100 mb-2">
                             <i class="bi bi-arrow-left me-2"></i>
                             Volver a la Lista
@@ -347,7 +347,7 @@
                         <p class="text-muted">
                             La inasistencia que buscas no existe o no tienes permisos para verla.
                         </p>
-                        <a href="<?= base_url('empleado/inasistencias/mis-inasistencias') ?>" 
+                        <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias/mis-inasistencias" 
                            class="btn btn-primary">
                             <i class="bi bi-arrow-left me-2"></i>
                             Volver a la Lista
@@ -497,7 +497,7 @@ function subirJustificacion() {
     submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Enviando...';
     submitBtn.disabled = true;
     
-    fetch('<?= base_url('empleado/inasistencias/subir-justificacion') ?>', {
+    fetch('<?= site_url('empleado/inasistencias/subir-justificacion') ?>', {
         method: 'POST',
         body: formData
     })

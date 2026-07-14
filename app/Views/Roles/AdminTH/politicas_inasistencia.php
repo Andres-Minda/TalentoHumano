@@ -9,7 +9,7 @@
             <div class="ps-3">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb mb-0 p-0">
-                        <li class="breadcrumb-item"><a href="<?= site_url('admin-th/dashboard') ?>">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/dashboard">Dashboard</a></li>
                         <li class="breadcrumb-item active" aria-current="page">Políticas de Inasistencia</li>
                     </ol>
                 </nav>
@@ -181,7 +181,7 @@ function nuevaPolitica() {
 }
 
 function verPolitica(id) {
-    fetch(`<?= site_url('admin-th/politicas-inasistencia/ver/') ?>${id}`, {
+    fetch(`https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/politicas-inasistencia/ver/${id}`, {
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
     .then(r => r.json())
@@ -223,7 +223,7 @@ function verPolitica(id) {
 }
 
 function editarPolitica(id) {
-    fetch(`<?= site_url('admin-th/politicas-inasistencia/editar/') ?>${id}`, {
+    fetch(`https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/politicas-inasistencia/editar/${id}`, {
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
     .then(r => r.json())
@@ -276,7 +276,7 @@ function guardarPolitica() {
     btnGuardar.disabled = true;
 
     const id = document.getElementById('politica_id').value;
-    const url = id ? `<?= site_url('admin-th/politicas-inasistencia/actualizar/') ?>${id}` : `<?= site_url('admin-th/politicas-inasistencia/guardar') ?>`;
+    const url = id ? `https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/politicas-inasistencia/actualizar/${id}` : `https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/politicas-inasistencia/guardar`;
     
     const formData = new FormData(frm);
 
@@ -315,7 +315,7 @@ function eliminarPolitica(id) {
         confirmButtonText: '<i class="ti ti-trash"></i> Sí, eliminar'
     }).then((result) => {
         if (result.isConfirmed) {
-            fetch(`<?= site_url('admin-th/politicas-inasistencia/eliminar/') ?>${id}`, {
+            fetch(`https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/politicas-inasistencia/eliminar/${id}`, {
                 method: 'DELETE',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
@@ -425,7 +425,7 @@ function procesarEliminacionAjax(ids) {
     const fnData = new FormData();
     ids.forEach(id => fnData.append('ids[]', id));
 
-    fetch('<?= site_url('admin-th/politicas-inasistencia/eliminar-masivo') ?>', { 
+    fetch('https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/politicas-inasistencia/eliminar-masivo', { 
         method: 'POST', 
         body: fnData,
         headers: { 'X-Requested-With': 'XMLHttpRequest' }

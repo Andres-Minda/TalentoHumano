@@ -11,8 +11,8 @@
                     <h4 class="page-title mb-0">Reporte de Inasistencias</h4>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/dashboard') ?>">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/inasistencias') ?>">Inasistencias</a></li>
+                            <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/dashboard">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias">Inasistencias</a></li>
                             <li class="breadcrumb-item active">Reporte</li>
                         </ol>
                     </div>
@@ -31,7 +31,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <form id="formFiltros" method="GET" action="<?= site_url('admin-th/inasistencias/reporte') ?>">
+                        <form id="formFiltros" method="GET" action="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/reporte">
                             <div class="row">
                                 <div class="col-md-3">
                                     <label class="form-label">Fecha Inicio</label>
@@ -245,7 +245,7 @@ $(document).ready(function() {
 function exportarExcel() {
     const params = new URLSearchParams(window.location.search);
     params.set('formato', 'excel');
-    window.location.href = '<?= site_url('admin-th/inasistencias/exportar') ?>?' + params.toString();
+    window.location.href = 'https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/exportar?' + params.toString();
 }
 </script>
 

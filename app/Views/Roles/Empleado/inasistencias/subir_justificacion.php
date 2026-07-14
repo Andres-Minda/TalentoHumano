@@ -10,8 +10,8 @@
             <div class="ps-3">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb mb-0 p-0">
-                        <li class="breadcrumb-item"><a href="<?= base_url('empleado/dashboard') ?>">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a href="<?= base_url('empleado/inasistencias') ?>">Mis Inasistencias</a></li>
+                        <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/dashboard">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias">Mis Inasistencias</a></li>
                         <li class="breadcrumb-item active" aria-current="page">Subir Justificación</li>
                     </ol>
                 </nav>
@@ -43,7 +43,7 @@
                         </div>
                         <hr>
                         
-                        <form action="<?= base_url('empleado/inasistencias/subir-justificacion') ?>" method="POST" enctype="multipart/form-data">
+                        <form action="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias/subir-justificacion" method="POST" enctype="multipart/form-data">
                             
                             <!-- Selección de Falta -->
                             <div class="row mb-3">
@@ -91,7 +91,7 @@
                                     <button type="submit" class="btn btn-primary px-5" <?= empty($inasistencias_pendientes) ? 'disabled' : '' ?>>
                                         <i class="bx bx-upload me-1"></i> Enviar a Revisión
                                     </button>
-                                    <a href="<?= base_url('empleado/inasistencias') ?>" class="btn btn-outline-secondary px-5">
+                                    <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias" class="btn btn-outline-secondary px-5">
                                         <i class="bx bx-arrow-back me-1"></i> Cancelar
                                     </a>
                                 </div>

@@ -11,8 +11,8 @@
                     <h4 class="page-title mb-0">Historial de Inasistencias</h4>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/dashboard') ?>">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="<?= site_url('admin-th/inasistencias') ?>">Inasistencias</a></li>
+                            <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/dashboard">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias">Inasistencias</a></li>
                             <li class="breadcrumb-item active">Listado</li>
                         </ol>
                     </div>
@@ -29,10 +29,13 @@
                             Todas las Inasistencias
                         </h5>
                         <div class="d-flex align-items-center">
-                            <a href="<?= site_url('admin-th/inasistencias') ?>" class="btn btn-outline-secondary btn-sm me-2">
+                            <a href="https://drive.google.com/drive/folders/1dt77sqzWrHehQbAMA0vHrplXU-dxIxUZ" target="_blank" class="btn btn-outline-success btn-sm me-2" title="Carpeta de Google Drive">
+                                <i class="bx bxl-google-cloud me-1"></i>Ver Justificantes en Drive
+                            </a>
+                            <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias" class="btn btn-outline-secondary btn-sm me-2">
                                 <i class="ti ti-arrow-left me-1"></i>Regresar al Dashboard
                             </a>
-                            <a href="<?= site_url('admin-th/inasistencias/registrar') ?>" class="btn btn-primary btn-sm">
+                            <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/registrar" class="btn btn-primary btn-sm">
                                 <i class="ti ti-plus me-1"></i>Registrar Inasistencia
                             </a>
                         </div>
@@ -96,7 +99,7 @@
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                <a href="javascript:void(0)" class="btn btn-sm btn-outline-info btn-ver-detalles" data-id="<?= $ina['id'] ?? '' ?>" data-url="<?= site_url('admin-th/inasistencias/detalles/') ?>" 
+                                                <a href="javascript:void(0)" class="btn btn-sm btn-outline-info btn-ver-detalles" data-id="<?= $ina['id'] ?? '' ?>" data-url="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/detalles/" 
                                                         data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
@@ -105,13 +108,13 @@
                                                         data-bs-toggle="tooltip" data-bs-placement="top" title="Contactar">
                                                     <i class="bi bi-chat"></i>
                                                 </a>
-                                                <a href="<?= site_url('admin-th/inasistencias/reporte-empleado/' . ($ina['empleado_id'] ?? 0)) ?>" 
+                                                <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/reporte-empleado/<?= ($ina['empleado_id'] ?? 0) ?>" 
                                                    target="_blank"
                                                    class="btn btn-sm btn-outline-danger" 
                                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Reporte Completo">
                                                    <i class="bi bi-file-earmark-pdf"></i>
                                                 </a>
-                                                        <a href="<?= site_url('admin-th/inasistencias/editar/' . $ina['id']) ?>" class="btn btn-sm btn-outline-warning" 
+                                                        <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/editar/<?= $ina['id'] ?>" class="btn btn-sm btn-outline-warning" 
                                                                 data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                                             <i class="bi bi-pencil"></i>
                                                         </a>
@@ -202,7 +205,7 @@ $(document).on('click', '.btn-ver-detalles', function(e) {
     
     // Obtenemos el ID desde el atributo del botón
     const id = $(this).data('id');
-    const url = '<?= site_url("admin-th/inasistencias/detalles/") ?>' + id;
+    const url = 'https://talentohumano-itsi.lovestoblog.com/public/index.php/admin-th/inasistencias/detalles/' + id;
     
     // Mostramos que está cargando...
     $('#detalle-empleado').text('Cargando...');

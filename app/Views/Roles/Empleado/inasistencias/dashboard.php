@@ -10,7 +10,7 @@
             <div class="ps-3">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb mb-0 p-0">
-                        <li class="breadcrumb-item"><a href="<?= base_url('empleado/dashboard') ?>">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/dashboard" class="text-primary font-weight-bold">Dashboard</a></li>
                         <li class="breadcrumb-item active" aria-current="page">Inasistencias</li>
                     </ol>
                 </nav>
@@ -109,7 +109,7 @@
                                 <p class="mb-0 text-secondary">Últimas 5 inasistencias registradas</p>
                             </div>
                             <div class="ms-auto">
-                                <a href="<?= base_url('empleado/inasistencias/mis-inasistencias') ?>" class="btn btn-primary btn-sm">
+                                <a href="<?= site_url('empleado/inasistencias/mis-inasistencias') ?>" class="btn btn-primary btn-sm">
                                     <i class="bi bi-list me-1"></i>Ver Todas
                                 </a>
                             </div>
@@ -171,13 +171,13 @@
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <a href="<?= base_url('empleado/inasistencias/ver/' . ($inasistencia['id'] ?? '')) ?>" 
+                                                <a href="<?= site_url('empleado/inasistencias/ver/' . ($inasistencia['id'] ?? '')) ?>" 
                                                    class="btn btn-outline-primary btn-sm" 
                                                    title="Ver Detalle">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
                                                 <?php if ($inasistencia['tipo_inasistencia'] === 'NO_JUSTIFICADA'): ?>
-                                                <a href="<?= base_url('empleado/inasistencias/justificar') ?>" 
+                                                <a href="<?= site_url('empleado/inasistencias/justificar') ?>" 
                                                    class="btn btn-outline-warning btn-sm" 
                                                    title="Subir Justificación">
                                                     <i class="bi bi-upload"></i>
@@ -209,19 +209,19 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-4">
-                                <a href="<?= base_url('empleado/inasistencias/mis-inasistencias') ?>" class="btn btn-outline-primary w-100 mb-2">
+                                <a href="<?= site_url('empleado/inasistencias/mis-inasistencias') ?>" class="btn btn-outline-primary w-100 mb-2">
                                     <i class="bi bi-list-ul me-2"></i>
                                     Ver Mis Inasistencias
                                 </a>
                             </div>
                             <div class="col-md-4">
-                                <a href="<?= base_url('empleado/inasistencias/reporte') ?>" class="btn btn-outline-info w-100 mb-2">
+                                <a href="<?= site_url('empleado/inasistencias/reporte') ?>" class="btn btn-outline-info w-100 mb-2" target="_blank">
                                     <i class="bi bi-file-earmark-text me-2"></i>
                                     Generar Reporte
                                 </a>
                             </div>
                             <div class="col-md-4">
-                                <a href="<?= base_url('empleado/inasistencias/justificar') ?>" class="btn btn-outline-warning w-100 mb-2">
+                                <a href="<?= site_url('empleado/inasistencias/justificar') ?>" class="btn btn-outline-warning w-100 mb-2">
                                     <i class="bi bi-upload me-2"></i>
                                     Subir Justificación
                                 </a>

@@ -97,42 +97,17 @@ class InasistenciaModel extends Model
      * Usa los nombres reales de columnas de la tabla `inasistencias`.
      * Permite filtrar por fecha y tipo. Devuelve datos + estadísticas.
      */
-    public function getMisInasistencias($idEmpleado, $fechaDesde = null, $fechaHasta = null, $tipo = null, $estado = null)
+    public function getMisInasistencias($idEmpleado, $fechaDesde = null, $fechaHasta = null, $estado = null)
     {
         $builder = $this->db->table('inasistencias i');
         $builder->select('
             i.id,
-            i.empleado_id,
             i.fecha_inasistencia,
-            i.hora_inasistencia,
             i.motivo,
-            i.justificada,
-            i.tipo_inasistencia,
-            i.archivo_justificacion,
-            i.created_at,
-            e.nombres as emp_nombres,
-            e.apellidos as emp_apellidos
+            i.justificada
         ');
-        $builder->join('empleados e', 'e.id_empleado = i.empleado_id', 'left');
         $builder->where('i.empleado_id', $idEmpleado);
 
-        if ($fechaDesde) {
-            $builder->where('i.fecha_inasistencia >=', $fechaDesde);
-        }
-        if ($fechaHasta) {
-            $builder->where('i.fecha_inasistencia <=', $fechaHasta);
-        }
-        if ($tipo) {
-            $builder->where('i.tipo_inasistencia', $tipo);
-        }
-        // Filtro de estado basado en campo `justificada`
-        if ($estado === 'justificada') {
-            $builder->where('i.justificada', 1);
-        } elseif ($estado === 'pendiente') {
-            $builder->where('i.justificada', 0);
-        }
-
-        $builder->orderBy('i.fecha_inasistencia', 'DESC');
         $registros = $builder->get()->getResultArray();
 
         // Calcular estadísticas en PHP (evita doble query)
@@ -183,9 +158,9 @@ class InasistenciaModel extends Model
         $builder = $this->builder();
         $builder->select('
             COUNT(*) as total,
-            SUM(CASE WHEN tipo_inasistencia = "JUSTIFICADA" THEN 1 ELSE 0 END) as justificadas,
-            SUM(CASE WHEN tipo_inasistencia = "NO_JUSTIFICADA" THEN 1 ELSE 0 END) as no_justificadas,
-            SUM(CASE WHEN tipo_inasistencia = "PENDIENTE_JUSTIFICACION" THEN 1 ELSE 0 END) as pendientes
+            SUM(CASE WHEN justificada = 1 THEN 1 ELSE 0 END) as justificadas,
+            SUM(CASE WHEN justificada = 0 THEN 1 ELSE 0 END) as pendientes,
+            0 as no_justificadas
         ');
         
 
@@ -229,10 +204,6 @@ class InasistenciaModel extends Model
             $builder->where('i.empleado_id', $filtros['empleado_id']);
         }
         
-        if (isset($filtros['tipo_inasistencia'])) {
-            $builder->where('i.tipo_inasistencia', $filtros['tipo_inasistencia']);
-        }
-        
         if (isset($filtros['fecha_inicio'])) {
             $builder->where('i.fecha_inasistencia >=', $filtros['fecha_inicio']);
         }
@@ -258,7 +229,6 @@ class InasistenciaModel extends Model
     public function justificarInasistencia($idInasistencia, $justificacion, $documento = null)
     {
         $data = [
-            'tipo_inasistencia' => 'Justificada',
             'justificada'       => 1
         ];
         

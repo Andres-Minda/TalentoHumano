@@ -8,21 +8,35 @@
             <div class="col-12">
                 <div class="page-title-box d-flex align-items-center justify-content-between mb-3">
                     <div class="d-flex align-items-center">
-                        <a href="<?= base_url('empleado/inasistencias') ?>" class="btn btn-outline-secondary btn-sm me-3" title="Volver al Dashboard">
+                        <a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias" class="btn btn-outline-secondary btn-sm me-3" title="Volver al Dashboard">
                             <i class="ti ti-arrow-left"></i> Volver
                         </a>
                         <h4 class="page-title mb-0">Mis Inasistencias</h4>
                     </div>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="<?= base_url('empleado/dashboard') ?>">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="<?= base_url('empleado/inasistencias') ?>">Inasistencias</a></li>
+                            <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/dashboard">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias">Inasistencias</a></li>
                             <li class="breadcrumb-item active">Mis Inasistencias</li>
                         </ol>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Mensajes Flash -->
+        <?php if (session()->getFlashdata('success')): ?>
+            <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+                <?= session()->getFlashdata('success') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+        <?php if (session()->getFlashdata('error')): ?>
+            <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+                <?= session()->getFlashdata('error') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
 
         <!-- Estadísticas Rápidas -->
         <div class="row">
@@ -91,26 +105,15 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="row mb-3">
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <label for="fecha_desde" class="form-label">Fecha Desde</label>
                                 <input type="date" class="form-control" id="fecha_desde" name="fecha_desde">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <label for="fecha_hasta" class="form-label">Fecha Hasta</label>
                                 <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta">
                             </div>
-                            <div class="col-md-3">
-                                <label for="tipo_inasistencia" class="form-label">Tipo</label>
-                                <select class="form-select" id="tipo_inasistencia" name="tipo_inasistencia">
-                                    <option value="">Todos los tipos</option>
-                                    <?php if (isset($tiposInasistencia)): ?>
-                                        <?php foreach ($tiposInasistencia as $tipo): ?>
-                                            <option value="<?= $tipo['id'] ?>"><?= $tipo['nombre'] ?></option>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <label for="estado" class="form-label">Estado</label>
                                 <select class="form-select" id="estado" name="estado">
                                     <option value="">Todos los estados</option>
@@ -148,7 +151,7 @@
                                 <thead>
                                     <tr>
                                         <th>Fecha</th>
-                                        <th>Tipo</th>
+
                                         <th>Motivo</th>
                                         <th>Estado</th>
                                         <th>Justificación</th>
@@ -265,16 +268,16 @@ function cargarInasistencias() {
 
     const fechaDesde = document.getElementById('fecha_desde').value;
     const fechaHasta = document.getElementById('fecha_hasta').value;
-    const tipo = document.getElementById('tipo_inasistencia').value;
+
     const estado = document.getElementById('estado').value;
 
     const params = new URLSearchParams();
     if (fechaDesde) params.append('fecha_desde', fechaDesde);
     if (fechaHasta) params.append('fecha_hasta', fechaHasta);
-    if (tipo) params.append('tipo', tipo);
+
     if (estado) params.append('estado', estado);
 
-    fetch(`<?= base_url('empleado/inasistencias/obtener-mis-inasistencias') ?>?${params.toString()}`)
+    fetch(`https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias/obtener-mis-inasistencias?${params.toString()}`)
     .then(response => response.json())
     .then(data => {
         if (!data.success) {
@@ -331,7 +334,7 @@ function renderizarTabla(inasistencias) {
         html += `
             <tr>
                 <td><strong>${fechaFormat}</strong></td>
-                <td><span class="badge bg-secondary">${htmlEscape(i.tipo_inasistencia || '—')}</span></td>
+
                 <td><small class="text-truncate d-inline-block" style="max-width:200px;" title="${htmlEscape(i.motivo)}">${htmlEscape(i.motivo)}</small></td>
                 <td>${estadoBadge}</td>
                 <td>${justificacionContent}</td>
@@ -345,7 +348,7 @@ function renderizarTabla(inasistencias) {
 function limpiarFiltros() {
     document.getElementById('fecha_desde').value = '';
     document.getElementById('fecha_hasta').value = '';
-    document.getElementById('tipo_inasistencia').value = '';
+
     document.getElementById('estado').value = '';
     cargarInasistencias();
 }
@@ -353,7 +356,7 @@ function limpiarFiltros() {
 function subirJustificacion() {
     const formData = new FormData(document.getElementById('formJustificacion'));
     
-    fetch('<?= base_url('empleado/inasistencias/subir-justificacion') ?>', {
+    fetch('https://talentohumano-itsi.lovestoblog.com/public/index.php/empleado/inasistencias/subir-justificacion', {
         method: 'POST',
         body: formData
     })
@@ -387,3 +390,5 @@ function htmlEscape(str) {
 </script>
 
 <?= $this->endSection() ?>
+
+

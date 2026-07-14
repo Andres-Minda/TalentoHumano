@@ -171,7 +171,7 @@
                                 Recordarme
                             </label>
                         </div>
-                        <a href="<?= site_url('forgot-password') ?>" class="text-decoration-none">¿Olvidó su contraseña?</a>
+                        <a href="javascript:void(0);" class="text-decoration-none" onclick="mostrarAlertaRecuperacion()">¿Olvidó su contraseña?</a>
                     </div>
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary btn-login text-uppercase fw-bold" id="btnLogin">
@@ -187,10 +187,10 @@
         </div>
     </div>
     <script src="<?= base_url('login/assets/js/bootstrap.bundle.min.js') ?>"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Mostrar spinner al enviar
         document.getElementById('loginForm').addEventListener('submit', function(e) {
-            // Validación visual Bootstrap 5
             if (!this.checkValidity()) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -207,6 +207,17 @@
         tooltipTriggerList.forEach(function(tooltipTriggerEl) {
             new bootstrap.Tooltip(tooltipTriggerEl);
         });
+
+        // Recuperación de contraseña
+        function mostrarAlertaRecuperacion() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Recuperación de Acceso',
+                text: 'Por políticas de seguridad, para restablecer su contraseña debe comunicarse directamente con el Administrador del Sistema o el departamento de TI.',
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#0d6efd'
+            });
+        }
     </script>
 </body>
 
